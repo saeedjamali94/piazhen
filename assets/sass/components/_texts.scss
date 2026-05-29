@@ -5,7 +5,7 @@ h1 , h2 , h3 , h4 {
 }
 
 p {
-    color: rgba($textCOlor , 0.7);
+    color: rgba($textColor , 0.7);
 }
 .fs-54 {
     font-size: 54px;
@@ -36,32 +36,4 @@ p {
     @media(max-width: 575px){
         font-size: 16px;
     }
-}
-
-.bold {
-    font-weight: 700;
-}
-
-.semiBold {
-    font-weight: 500;
-}
-
-.whiteGradient {
-    @include textGradient();
-}
-
-.lightBlueColor {
-    color: $lightBlue
-}
-
-.textColor {
-    color: $textCOlor;
-}
-
-.blueGradient {
-    @include textGradient(#EEEEF6 , $lightBlue);
-}
-
-.whiteGradientVertical {
-    @include textGradient(to bottom , $white, rgba($white , 0.4));
 }

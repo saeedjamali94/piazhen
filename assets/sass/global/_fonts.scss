@@ -1,0 +1,45 @@
+
+@font-face {
+  font-family: "yekanBakh";
+  src: url("../fonts/yekanBakh-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "yekanBakh";
+  src: url("../fonts/yekanBakh-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "yekanBakh";
+  src: url("../fonts/YekanBakh-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Numbers';
+  src: url('../fonts/YekanBakhSemiBoldFN-Regular.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@mixin Regular {
+  font-weight: normal;
+}
+@mixin Medium {
+  font-weight: 500;
+}
+@mixin Bold {
+  font-weight: 700;
+}
+
+body {
+  @include Regular;
+}

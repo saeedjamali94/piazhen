@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 // Define theme constants
 define('PZH_THEME_DIR', get_template_directory());
 define('PZH_THEME_URI', get_template_directory_uri());
+define('SPRITE_URL' , PZH_THEME_URI.'/assets/images/sprite.svg?v='.time());
+define('SITE_URL' , get_site_url());
 
 // Theme setup
 function piazhen_theme_setup() {
@@ -30,8 +32,8 @@ function piazhen_theme_setup() {
     
     // Register navigation menus
     register_nav_menus(array(
-        'primary' => __('Primary Menu', 'piazhen'),
-        'footer' => __('Footer Menu', 'piazhen'),
+        'primary' => __('منوی اصلی', 'piazhen'),
+        'footer' => __('منوی فوتر', 'piazhen'),
     ));
 }
 add_action('after_setup_theme', 'piazhen_theme_setup');
@@ -51,7 +53,20 @@ function piazhen_scripts() {
         array(
             'theme_url' => PZH_THEME_URI,
             'ajax_url' => admin_url('admin-ajax.php'),
+            'sprite_url' => SPRITE_URL,
         )
     );
 }
 add_action('wp_enqueue_scripts', 'piazhen_scripts');
+
+
+
+
+/**
+ * Site Dashboard base url
+ * @return string
+ */
+function pzhDashboardUrl()
+{
+    return SITE_URL.'/my-account';
+}

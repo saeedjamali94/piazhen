@@ -1,0 +1,30 @@
+@use "../global/variables" as *;
+
+.mainInput {
+    border: 1px solid $lightText;
+    border-radius: 25px;
+    padding: 7px 13px;
+    &::placeholder {
+        color: $lightText;
+        opacity: 0.7;
+    }
+}
+
+.pzh_search_box {
+    position: relative;
+    width: 300px;
+    .mainInput {
+        width: 100%;
+    }
+    button[type="submit"]{
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+}

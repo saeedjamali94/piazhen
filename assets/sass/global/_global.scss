@@ -1,6 +1,9 @@
 @use "./variables" as *;
 @use "../components/btns";
 
+* {
+    outline: none;
+}
 html , body {
     margin: 0;
     padding: 0;
@@ -8,11 +11,13 @@ html , body {
     font-size: 16px;
     width: 100%;
     overflow-x: hidden;
-    background-color: $darkColor;
-    color: rgba($white , 0.9);
-    font-family: "Inter", sans-serif;
+    background-color: $white;
+    color: $textColor;
+    font-family: "Numbers", "YekanBakh", sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
+    min-height: 100vh;
+    line-height: 2;
 }
 
 ul , li {
@@ -36,32 +41,22 @@ button {
     color: white;
 }
 
-.section-title {
-    .topBtn {
-        padding: 8px 16px;
-        border: 1px solid rgba(#0E7BF71A , 0.1);
-        border-radius: 48px;
-        box-shadow: inset 0px 0px 6px rgba(#4F6AEB40, 0.39);
-        margin-bottom: 16px;
-        display: inline-block;
-    }
-}
-
 .rotate180 {
     rotate: 180deg;
 }
 
-.gradLine {
-    margin: 3rem auto;
-    height: 10px;
-    background: linear-gradient(to right , transparent , rgba($mediumBlue , 0.48) , transparent);
-    filter: blur(3px);
-    max-width: 600px;
-    box-shadow: 0 4px 86px -1px rgba($mediumBlue , 0.8);
-    &.noBlur {
-        background: linear-gradient(to right , transparent , rgba($lightBlue , 0.48) , transparent);
-        height: 2px;
-        filter: blur(0);
-        box-shadow: 0 4px 86px 5px rgba($lightBlue , 0.83);
+.icon {
+    width: 21px;
+    aspect-ratio: 1;
+    fill: $textColor;
+    &.stroke {
+        stroke: $textColor;
+        fill: none;
+        &.primary {
+            stroke: $siteYellow;
+        }
+        &.lightText {
+            stroke: $lightText;
+        }
     }
 }

@@ -4,18 +4,8 @@
     border: 1px solid rgba($color: $white, $alpha: 0.08);
     padding: 16px 24px;
     font-size: 18px;
-    background-color: $mediumBlue;
-    box-shadow: 0 6px 20px 0 rgba($mediumBlue , 0.4);
-    &.style2 {
-        background-image: radial-gradient(rgba($white , 0.14), rgba($white , 0.04));
-        background-color: transparent;
-        box-shadow: none;
-    }
-    &.style3 {
-        border-color: $lightBlue;
-        background-color: transparent;
-        box-shadow: none;
-    }
+    background-color: $black;
+    box-shadow: 0 6px 20px 0 rgba($black , 0.4);
     &.small {
         padding: 10px 24px;
         font-size: 14px;
