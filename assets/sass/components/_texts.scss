@@ -1,0 +1,67 @@
+@use "../global/variables" as *;
+
+h1 , h2 , h3 , h4 {
+    font-weight: 700;
+}
+
+p {
+    color: rgba($textCOlor , 0.7);
+}
+.fs-54 {
+    font-size: 54px;
+    @media(max-width: 575px){
+        font-size: 36px;
+    }
+}
+.fs-36 {
+    font-size: 36px;
+    @media(max-width: 575px){
+        font-size: 24px;
+    }
+}
+.fs-20 {
+    font-size: 20px;
+    @media(max-width: 575px){
+        font-size: 16px;
+    }
+}
+.fs-16 {
+    font-size: 16px;
+    @media(max-width: 575px){
+        font-size: 14px;
+    }
+}
+.fs-18 {
+    font-size: 18px;
+    @media(max-width: 575px){
+        font-size: 16px;
+    }
+}
+
+.bold {
+    font-weight: 700;
+}
+
+.semiBold {
+    font-weight: 500;
+}
+
+.whiteGradient {
+    @include textGradient();
+}
+
+.lightBlueColor {
+    color: $lightBlue
+}
+
+.textColor {
+    color: $textCOlor;
+}
+
+.blueGradient {
+    @include textGradient(#EEEEF6 , $lightBlue);
+}
+
+.whiteGradientVertical {
+    @include textGradient(to bottom , $white, rgba($white , 0.4));
+}

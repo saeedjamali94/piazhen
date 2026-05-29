@@ -1,0 +1,7 @@
+@use "../global/variables" as *;
+
+@mixin textGradient($direction: to right , $color1: rgba($white , 0.5) , $color2: $white) {
+    background: linear-gradient($direction, $color1, $color2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}

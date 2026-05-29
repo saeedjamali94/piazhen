@@ -1,0 +1,13 @@
+// include Bootstrap SASS
+@use "../../node_modules/bootstrap/scss/bootstrap.scss";
+
+@use "global/variables";
+@use "global/animations";
+@import "./global/mixins";
+@import "components/texts";
+@import "global/fonts";
+@import "global/global";
+@import "components/header";
+@import "components/footer";
+@import "components/homepage";
+

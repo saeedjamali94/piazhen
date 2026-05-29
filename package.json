@@ -1,0 +1,15 @@
+{
+    "name": "Bozy",
+    "version": "1.0.0",
+    "description": "Bozy Project",
+    "main": "index.html",
+    "scripts": {
+        "build": "sass ./assets/sass/styles.scss ./assets/css/styles.css",
+        "watch": "sass ./assets/sass/styles.scss ./assets/css/styles.css --watch"
+    },
+    "dependencies": {
+        "bootstrap": "^5.3.8",
+        "sass": "^1.85.0",
+        "swiper": "^12.1.3"
+    }
+}
