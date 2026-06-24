@@ -1,14 +1,27 @@
-// include Bootstrap SASS
+// ============================================================================
+// Piazhen Theme - Main Stylesheet
+// ============================================================================
+
+// Bootstrap 5.3
 @use "../../node_modules/bootstrap/scss/bootstrap.scss";
 
+// Global
 @use "global/variables";
 @use "global/animations";
-@import "./global/mixins";
-@import "components/texts";
+@import "global/mixins";
 @import "global/fonts";
 @import "global/global";
+
+// Component: Base
+@import "components/texts";
+@import "components/btns";
 @import "components/forms";
+
+// Component: Layout
 @import "components/header";
 @import "components/footer";
-@import "components/homepage";
 
+// Component: Pages
+@import "components/homepage";
+@import "components/archive";
+@import "components/single-product";

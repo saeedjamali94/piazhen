@@ -1,6 +1,56 @@
-// color variables
+// ============================================================================
+// Piazhen Theme - Color Variables & Design Tokens
+// ============================================================================
+
+// Brand Colors
 $white: #fff;
 $black: #000;
-$textColor: $black;
+$textColor: #1a1a1a;
 $siteYellow: #FBCA38;
+$siteYellowDark: #e5b000;
 $lightText: #2E3A59;
+$gray-100: #f8f9fa;
+$gray-200: #e9ecef;
+$gray-300: #dee2e6;
+$gray-400: #ced4da;
+$gray-500: #adb5bd;
+$gray-600: #6c757d;
+$gray-700: #495057;
+$gray-800: #343a40;
+
+// Semantic Colors
+$success: #28a745;
+$danger: #dc3545;
+$warning: #ffc107;
+$info: #17a2b8;
+$saleBadge: #e74c3c;
+$favoriteActive: #e74c3c;
+
+// Typography
+$fontFamily: "Numbers", "YekanBakh", sans-serif;
+$fontSizeBase: 16px;
+$lineHeightBase: 2;
+
+// Spacing
+$sectionPadding: 4rem;
+$sectionPaddingMobile: 2.5rem;
+$cardRadius: 12px;
+$btnRadius: 48px;
+
+// Shadows
+$shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+$shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+$shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+$shadow-xl: 0 12px 40px rgba(0,0,0,0.15);
+
+// Transitions
+$transition-fast: 0.2s ease;
+$transition-base: 0.3s ease;
+$transition-slow: 0.5s ease;
+
+// Breakpoints (matching Bootstrap)
+$bp-sm: 576px;
+$bp-md: 768px;
+$bp-lg: 992px;
+$bp-xl: 1200px;
+$bp-xxl: 1400px;

@@ -1,17 +1,63 @@
 @use "../global/variables" as *;
+
+// ============================================================================
+// Buttons
+// ============================================================================
+
 .mainBtn {
-    border-radius: 48px;
-    border: 1px solid rgba($color: $white, $alpha: 0.08);
-    padding: 16px 24px;
-    font-size: 18px;
-    background-color: $black;
-    box-shadow: 0 6px 20px 0 rgba($black , 0.4);
-    &.small {
-        padding: 10px 24px;
-        font-size: 14px;
+    display: inline-block;
+    border-radius: $btnRadius;
+    border: 2px solid $textColor;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    background-color: $textColor;
+    color: $white;
+    cursor: pointer;
+    text-align: center;
+    transition: all $transition-fast;
+    font-family: $fontFamily;
+    line-height: 1.5;
+
+    &:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
     }
+
+    &.small {
+        padding: 8px 20px;
+        font-size: 13px;
+        border-radius: $btnRadius;
+    }
+
     .icon {
-        margin-left: 15px;
-        width: 30px;
+        width: 18px;
+        height: 18px;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+}
+
+// Yellow variant (for cart/cta buttons)
+.mainBtn--yellow {
+    background-color: $siteYellow;
+    border-color: $siteYellow;
+    color: $textColor;
+
+    &:hover {
+        background-color: $siteYellowDark;
+        border-color: $siteYellowDark;
+    }
+}
+
+// Outline variant
+.mainBtn--outline {
+    background: transparent;
+    border-color: $gray-300;
+    color: $textColor;
+
+    &:hover {
+        border-color: $siteYellow;
+        background: rgba($siteYellow, 0.05);
     }
 }

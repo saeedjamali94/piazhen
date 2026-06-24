@@ -1,1 +1,707 @@
 @use "../global/variables" as *;
+
+// ============================================================================
+// Homepage Hero Section
+// ============================================================================
+
+.home_hero {
+    padding: 24px 0;
+
+    .hero-banner {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        height: 100%;
+        min-height: 200px;
+
+        &__bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: $gray-200;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.6s ease;
+            }
+        }
+
+        &:hover &__bg img {
+            transform: scale(1.05);
+        }
+
+        &__content {
+            position: relative;
+            z-index: 1;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+            min-height: 300px;
+            background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
+        }
+
+        &__title {
+            font-size: 24px;
+            font-weight: 800;
+            color: $white;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        &__subtitle {
+            font-size: 15px;
+            color: rgba($white, 0.9);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        &__cta {
+            align-self: flex-start;
+            padding: 10px 28px;
+            font-size: 14px;
+            background: $siteYellow;
+            color: $textColor;
+            border: 2px solid $siteYellow;
+            border-radius: $btnRadius;
+            font-weight: 700;
+            transition: all $transition-fast;
+
+            &:hover {
+                background: $siteYellowDark;
+                border-color: $siteYellowDark;
+            }
+        }
+
+        &__link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: $white;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+            transition: gap $transition-fast;
+
+            &:hover {
+                gap: 10px;
+            }
+        }
+
+        // Large banner
+        &--large {
+            .hero-banner__content {
+                min-height: 400px;
+                padding: 40px;
+            }
+            .hero-banner__title {
+                font-size: 32px;
+            }
+        }
+
+        // Small banners
+        &--small {
+            .hero-banner__content {
+                min-height: 185px;
+                padding: 24px;
+            }
+            .hero-banner__title {
+                font-size: 18px;
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Section Title (shared)
+// ============================================================================
+
+.section-title {
+    margin-bottom: 32px;
+
+    .topBtn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba($siteYellow, 0.15);
+        color: $siteYellowDark;
+        padding: 6px 16px;
+        border-radius: 24px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 12px;
+
+        svg {
+            fill: $siteYellowDark;
+        }
+    }
+
+    .whiteGradientVertical {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    p {
+        color: $gray-600;
+        font-size: 15px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+// ============================================================================
+// Most Selling Products Section
+// ============================================================================
+
+.home_most_selling {
+    background: $gray-100;
+}
+
+// ============================================================================
+// Newest & On-Sale Sections
+// ============================================================================
+
+.home_products_sections {
+    background: $white;
+}
+
+// ============================================================================
+// Swiper Navigation Buttons (shared across all carousels)
+// ============================================================================
+
+.swiper-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $white;
+    border: 1px solid $gray-300;
+    box-shadow: $shadow-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: $textColor;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: $siteYellow;
+        border-color: $siteYellow;
+        box-shadow: $shadow-md;
+    }
+
+    &--prev {
+        left: -18px;
+    }
+
+    &--next {
+        right: -18px;
+    }
+
+    &.swiper-button-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+}
+
+@media (max-width: $bp-md) {
+    .swiper-nav-btn {
+        width: 34px;
+        height: 34px;
+
+        &--prev { left: -10px; }
+        &--next { right: -10px; }
+    }
+}
+
+// ============================================================================
+// Product Card (shared between homepage and archive)
+// ============================================================================
+
+.product-card {
+    background: $white;
+    border-radius: $cardRadius;
+    overflow: hidden;
+    box-shadow: $shadow-sm;
+    transition: all $transition-base;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    &:hover {
+        box-shadow: $shadow-md;
+        transform: translateY(-2px);
+
+        .product-card__image img {
+            transform: scale(1.08);
+        }
+    }
+
+    &__image {
+        position: relative;
+        aspect-ratio: 1;
+        overflow: hidden;
+        background: $gray-100;
+
+        a {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+    }
+
+    &__badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 700;
+        color: $white;
+        z-index: 2;
+
+        &--sale {
+            background: $saleBadge;
+        }
+    }
+
+    &__favorite {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: $white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+        box-shadow: $shadow-sm;
+        transition: all $transition-fast;
+
+        .icon {
+            width: 18px;
+            height: 18px;
+            color: $gray-400;
+            transition: all $transition-fast;
+        }
+
+        &:hover .icon {
+            color: $favoriteActive;
+        }
+
+        &.active .icon {
+            fill: $favoriteActive;
+            stroke: $favoriteActive;
+            color: $favoriteActive;
+            animation: heartPop 0.3s ease;
+        }
+    }
+
+    &__details {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    &__title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        line-height: 1.5;
+        flex: 1;
+
+        a {
+            color: $textColor;
+            transition: color $transition-fast;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+
+            &:hover {
+                color: $siteYellowDark;
+            }
+        }
+    }
+
+    &__price {
+        font-size: 15px;
+        font-weight: 700;
+        color: $textColor;
+        margin-bottom: 12px;
+
+        del {
+            font-size: 13px;
+            color: $gray-500;
+            font-weight: 400;
+            margin-right: 6px;
+        }
+
+        ins {
+            text-decoration: none;
+            color: $saleBadge;
+        }
+
+        .woocommerce-Price-currencySymbol {
+            font-size: 11px;
+            margin-right: 2px;
+        }
+    }
+
+    &__add-to-cart {
+        width: 100%;
+        text-align: center;
+        padding: 8px 16px;
+        font-size: 13px;
+        margin-top: auto;
+        background: $siteYellow;
+        color: $textColor;
+        border: 2px solid $siteYellow;
+        border-radius: $btnRadius;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $siteYellowDark;
+            border-color: $siteYellowDark;
+        }
+
+        &.loading {
+            pointer-events: none;
+            opacity: 0.7;
+
+            &:after {
+                content: "";
+                width: 14px;
+                height: 14px;
+                border: 2px solid transparent;
+                border-top-color: currentColor;
+                border-radius: 50%;
+                animation: btnSpin 0.6s linear infinite;
+                display: inline-block;
+                margin-right: 6px;
+                vertical-align: middle;
+            }
+        }
+    }
+}
+
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+@keyframes btnSpin {
+    to { transform: rotate(360deg); }
+}
+
+// ============================================================================
+// Brands Grid
+// ============================================================================
+
+.home_brands {
+    background: $white;
+}
+
+.brands-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+
+    @media (max-width: $bp-md) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+.brand-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: $white;
+    border: 1px solid $gray-200;
+    border-radius: 12px;
+    transition: all $transition-base;
+    min-height: 100px;
+
+    &:hover {
+        border-color: $siteYellow;
+        box-shadow: $shadow-md;
+    }
+
+    &__logo {
+        max-width: 120px;
+        max-height: 60px;
+        object-fit: contain;
+    }
+
+    &__placeholder {
+        padding: 16px 24px;
+        background: $gray-100;
+        border-radius: 8px;
+        color: $gray-600;
+        font-size: 14px;
+        font-weight: 600;
+    }
+}
+
+// ============================================================================
+// Features Grid
+// ============================================================================
+
+.home_features {
+    background: linear-gradient(135deg, $gray-100 0%, $white 100%);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+
+    @media (max-width: $bp-md) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.feature-item {
+    padding: 24px 16px;
+
+    &__icon {
+        margin-bottom: 16px;
+        transition: transform $transition-base;
+    }
+
+    &:hover &__icon {
+        transform: translateY(-4px);
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 700;
+        color: $textColor;
+    }
+}
+
+// ============================================================================
+// Instagram & Blog Section
+// ============================================================================
+
+.home_instagram_blog {
+    .section-card {
+        background: $white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: $shadow-sm;
+        height: 100%;
+        border: 1px solid $gray-200;
+    }
+}
+
+// Instagram Card
+.instagram-card,
+.blog-card {
+    background: $white;
+    border-radius: 12px;
+    overflow: hidden;
+
+    &__image {
+        aspect-ratio: 16 / 10;
+        overflow: hidden;
+        border-radius: 8px;
+        margin-bottom: 16px;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        &:hover img {
+            transform: scale(1.05);
+        }
+    }
+
+    &__content {
+        padding: 0 8px;
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    &__excerpt {
+        font-size: 13px;
+        color: $gray-600;
+        line-height: 1.8;
+        margin-bottom: 12px;
+    }
+
+    &__date {
+        font-size: 12px;
+        color: $gray-500;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    &__link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: $lightText;
+        transition: all $transition-fast;
+
+        &:hover {
+            gap: 10px;
+            color: $siteYellowDark;
+        }
+    }
+}
+
+.instagram-placeholder {
+    color: $gray-500;
+    font-size: 14px;
+
+    svg {
+        display: block;
+        margin: 0 auto;
+    }
+
+    a {
+        display: inline-block;
+    }
+}
+
+// ============================================================================
+// Toast Notification
+// ============================================================================
+
+.pzh-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: $textColor;
+    color: $white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: $shadow-lg;
+    transition: transform $transition-base;
+    font-family: $fontFamily;
+
+    &.show {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    &--success {
+        background: $success;
+    }
+
+    &--error {
+        background: $danger;
+    }
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media (max-width: $bp-lg) {
+    .home_hero {
+        .hero-banner {
+            &__content {
+                min-height: 220px;
+                padding: 24px;
+            }
+            &__title {
+                font-size: 20px;
+            }
+            &--large .hero-banner__title {
+                font-size: 24px;
+            }
+        }
+    }
+
+    .section-title .whiteGradientVertical {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: $bp-md) {
+    .home_hero {
+        padding: 12px 0;
+
+        .hero-banner {
+            border-radius: 12px;
+
+            &__content {
+                min-height: 180px;
+                padding: 20px;
+            }
+            &__title {
+                font-size: 16px;
+            }
+            &__subtitle {
+                font-size: 13px;
+            }
+            &--large .hero-banner__title {
+                font-size: 18px;
+            }
+        }
+    }
+
+    .section-title {
+        margin-bottom: 20px;
+
+        .whiteGradientVertical {
+            font-size: 18px;
+        }
+        p {
+            font-size: 13px;
+        }
+    }
+
+    .product-card {
+        &__details { padding: 10px; }
+        &__title { font-size: 12px; }
+        &__price { font-size: 13px; }
+        &__add-to-cart { font-size: 11px; padding: 6px 12px; }
+    }
+}

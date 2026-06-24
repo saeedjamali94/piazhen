@@ -1,0 +1,470 @@
+@use "../global/variables" as *;
+
+// ============================================================================
+// WooCommerce Archive Page
+// ============================================================================
+
+.woo-archive {
+    padding: 24px 0 48px;
+
+    .archive-title {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 16px;
+    }
+}
+
+// ============================================================================
+// Categories Carousel
+// ============================================================================
+
+.categories-swiper-wrapper {
+    margin-bottom: 24px;
+}
+
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 8px;
+    transition: transform $transition-fast;
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .category-card__image {
+            border-color: $siteYellow;
+            box-shadow: $shadow-md;
+        }
+    }
+
+    &__image {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid $gray-200;
+        margin-bottom: 8px;
+        transition: all $transition-base;
+        background: $gray-100;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    &__title {
+        font-size: 13px;
+        font-weight: 600;
+        color: $textColor;
+        line-height: 1.4;
+    }
+}
+
+// ============================================================================
+// Filter Sidebar
+// ============================================================================
+
+.archive-filters {
+    background: $white;
+    border: 1px solid $gray-200;
+    border-radius: 12px;
+    padding: 20px;
+    position: sticky;
+    top: 120px;
+    margin-bottom: 24px;
+
+    &__title {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid $siteYellow;
+    }
+}
+
+.filter-group {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid $gray-100;
+
+    &:last-of-type {
+        border-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    &__title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: $textColor;
+    }
+
+    &__items {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-size: 13px;
+    transition: color $transition-fast;
+
+    &:hover {
+        color: $siteYellowDark;
+    }
+
+    input[type="checkbox"] {
+        display: none;
+
+        &:checked + .filter-checkbox__mark {
+            background: $siteYellow;
+            border-color: $siteYellow;
+
+            &:after {
+                opacity: 1;
+            }
+        }
+    }
+
+    &__mark {
+        width: 18px;
+        height: 18px;
+        border: 2px solid $gray-400;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all $transition-fast;
+        flex-shrink: 0;
+        position: relative;
+
+        &:after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
+            opacity: 0;
+            transition: opacity $transition-fast;
+        }
+    }
+
+    &__label {
+        flex: 1;
+        color: $gray-700;
+    }
+}
+
+// Price Range
+.price-range {
+    &__inputs {
+        margin-bottom: 12px;
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid $gray-300;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: $fontFamily;
+            text-align: center;
+
+            &:focus {
+                border-color: $siteYellow;
+                outline: none;
+            }
+
+            &::placeholder {
+                font-size: 11px;
+                color: $gray-500;
+            }
+        }
+    }
+
+    &__separator {
+        display: flex;
+        align-items: center;
+        color: $gray-500;
+        font-size: 14px;
+    }
+
+    &__slider {
+        width: 100%;
+        accent-color: $siteYellow;
+        height: 4px;
+    }
+}
+
+// Filter Action Buttons
+.filter-actions {
+    padding-top: 8px;
+
+    .apply-filters-btn {
+        background: $siteYellow !important;
+        color: $textColor !important;
+        border-color: $siteYellow !important;
+        font-size: 13px !important;
+        padding: 8px 16px !important;
+
+        &:hover {
+            background: $siteYellowDark !important;
+        }
+    }
+}
+
+// ============================================================================
+// Archive Toolbar (Sort + Count)
+// ============================================================================
+
+.archive-toolbar {
+    background: $white;
+    border: 1px solid $gray-200;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+
+.sort-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: $gray-700;
+    white-space: nowrap;
+}
+
+.sort-radio {
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: $gray-600;
+    transition: color $transition-fast;
+
+    input[type="radio"] {
+        display: none;
+
+        &:checked + span {
+            color: $siteYellowDark;
+            font-weight: 700;
+        }
+    }
+
+    &:hover span {
+        color: $textColor;
+    }
+}
+
+.products-count-wrapper {
+    font-size: 13px;
+    color: $gray-600;
+
+    .products-count {
+        font-weight: 700;
+        color: $textColor;
+    }
+}
+
+// ============================================================================
+// Products Grid
+// ============================================================================
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+
+    @media (max-width: $bp-lg) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    &__empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 48px 20px;
+        color: $gray-600;
+        font-size: 16px;
+    }
+}
+
+.products-grid-wrapper {
+    min-height: 200px;
+    position: relative;
+    transition: opacity $transition-fast;
+
+    &.loading {
+        opacity: 0.5;
+        pointer-events: none;
+
+        &:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 36px;
+            height: 36px;
+            border: 3px solid $gray-200;
+            border-top-color: $siteYellow;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+    }
+}
+
+// ============================================================================
+// Pagination
+// ============================================================================
+
+.products-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 32px;
+
+    &__btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid $gray-300;
+        background: $white;
+        font-size: 14px;
+        font-weight: 600;
+        color: $gray-700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all $transition-fast;
+        font-family: $fontFamily;
+
+        &:hover {
+            border-color: $siteYellow;
+            background: rgba($siteYellow, 0.1);
+        }
+
+        &.active {
+            background: $siteYellow;
+            border-color: $siteYellow;
+            color: $textColor;
+        }
+    }
+}
+
+// ============================================================================
+// SEO Description Box
+// ============================================================================
+
+.seo-section {
+    background: $white;
+    border: 1px solid $gray-200;
+    border-radius: 12px;
+    padding: 20px;
+
+    .textBox {
+        max-height: 100px;
+        overflow: hidden;
+        position: relative;
+        font-size: 14px;
+        color: $gray-600;
+        line-height: 2.2;
+        transition: max-height 0.4s ease;
+
+        &:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(to top, $white, transparent);
+        }
+
+        &.open {
+            max-height: 2000px;
+
+            &:after {
+                display: none;
+            }
+        }
+    }
+
+    .showMore {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        padding: 6px 16px;
+        border: 1px solid $gray-300;
+        border-radius: 20px;
+        background: $white;
+        color: $lightText;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all $transition-fast;
+        font-family: $fontFamily;
+
+        &:hover {
+            border-color: $siteYellow;
+            color: $siteYellowDark;
+        }
+    }
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media (max-width: $bp-md) {
+    .archive-filters {
+        position: static;
+        border-radius: 8px;
+        padding: 16px;
+    }
+
+    .archive-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start !important;
+
+        .sort-options {
+            flex-wrap: wrap;
+        }
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .categories-swiper-wrapper {
+        .category-card {
+            &__image {
+                width: 60px;
+                height: 60px;
+            }
+            &__title {
+                font-size: 11px;
+            }
+        }
+    }
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}

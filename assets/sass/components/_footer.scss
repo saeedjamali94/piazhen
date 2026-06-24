@@ -1,1 +1,236 @@
 @use "../global/variables" as *;
+
+// ============================================================================
+// Footer
+// ============================================================================
+
+.siteFooter {
+    background: $gray-800;
+    color: rgba($white, 0.8);
+    padding-top: 56px;
+
+    a {
+        color: rgba($white, 0.7);
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteYellow;
+        }
+    }
+}
+
+// ============================================================================
+// Footer Grid
+// ============================================================================
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 40px;
+
+    @media (max-width: $bp-lg) {
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+    }
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
+// ============================================================================
+// Footer Columns
+// ============================================================================
+
+.footer-col {
+    &__title {
+        font-size: 16px;
+        font-weight: 700;
+        color: $white;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        @media (max-width: $bp-md) {
+            cursor: pointer;
+            margin-bottom: 0;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba($white, 0.1);
+
+            svg {
+                transition: transform $transition-fast;
+            }
+
+            &.active svg {
+                transform: rotate(180deg);
+            }
+        }
+    }
+
+    // About Column
+    &--about {
+        .footer-logo {
+            margin-bottom: 16px;
+
+            img {
+                max-width: 140px;
+                height: auto;
+                filter: brightness(0) invert(1);
+            }
+        }
+
+        .footer-about-text {
+            font-size: 13px;
+            line-height: 2.2;
+            color: rgba($white, 0.6);
+            margin-bottom: 20px;
+        }
+    }
+}
+
+// Footer Nav (mobile collapsible)
+.footer-nav {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    transition: all $transition-base;
+
+    @media (max-width: $bp-md) {
+        max-height: 0;
+        overflow: hidden;
+
+        &.open {
+            max-height: 500px;
+            padding-bottom: 12px;
+        }
+    }
+
+    li {
+        margin-bottom: 10px;
+
+        a {
+            font-size: 13px;
+            line-height: 2;
+        }
+    }
+
+    &--contact {
+        li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+
+            svg {
+                flex-shrink: 0;
+                width: 16px;
+                height: 16px;
+                opacity: 0.5;
+            }
+        }
+    }
+}
+
+// Footer Menu (for wp_nav_menu output)
+.footer-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+        margin-bottom: 10px;
+
+        a {
+            font-size: 13px;
+            line-height: 2;
+        }
+
+        ul {
+            display: none;
+        }
+    }
+}
+
+// ============================================================================
+// Social Links
+// ============================================================================
+
+.footer-social {
+    &__link {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba($white, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $white;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $siteYellow;
+            color: $textColor;
+            transform: translateY(-2px);
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+        }
+    }
+}
+
+// ============================================================================
+// Footer Bottom Bar
+// ============================================================================
+
+.footer-bottom {
+    border-top: 1px solid rgba($white, 0.1);
+    padding: 20px 0;
+
+    &__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .footer-copyright {
+        font-size: 12px;
+        color: rgba($white, 0.5);
+        margin: 0;
+    }
+}
+
+// Trust Badges / Enamad
+.namad-placeholder {
+    padding: 8px 16px;
+    border: 1px solid rgba($white, 0.2);
+    border-radius: 6px;
+    font-size: 11px;
+    color: rgba($white, 0.5);
+    text-align: center;
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media (max-width: $bp-md) {
+    .siteFooter {
+        padding-top: 32px;
+    }
+
+    .footer-grid {
+        gap: 0;
+    }
+
+    .footer-bottom__inner {
+        flex-direction: column;
+        text-align: center;
+    }
+}

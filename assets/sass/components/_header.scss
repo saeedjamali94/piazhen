@@ -1,33 +1,764 @@
 @use "../global/variables" as *;
 
+// ============================================================================
+// Header
+// ============================================================================
+
 .pzh_header {
-  .top {
-    border-bottom: 1px solid rgba($black , 0.1);
-  }
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    background: $white;
+    box-shadow: $shadow-sm;
+
+    // Top Bar
+    &__top {
+        border-bottom: 1px solid rgba($black, 0.08);
+        font-size: 13px;
+        padding: 6px 0;
+
+        .top-bar {
+            a {
+                color: $gray-600;
+                transition: color $transition-fast;
+                &:hover { color: $textColor; }
+            }
+            &__contact {
+                color: $gray-600;
+            }
+        }
+    }
+
+    // Main Header Section
+    &__main {
+        padding: 12px 0;
+
+        .header-main {
+            &__logo img {
+                max-width: 167px;
+                height: auto;
+            }
+
+            &__nav {
+                flex: 1;
+                justify-content: center;
+            }
+
+            &__actions {
+                flex-shrink: 0;
+            }
+        }
+    }
 }
+
+// ============================================================================
+// Main Navigation + Mega Menu
+// ============================================================================
+
 .main-menu {
-  li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    > li {
+        position: relative;
+        padding: 8px 12px;
+
+        > a {
+            font-weight: 600;
+            font-size: 15px;
+            color: $textColor;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $siteYellowDark;
+            }
+
+            .menu-arrow {
+                transition: transform $transition-fast;
+            }
+        }
+
+        // Sub Menu (standard dropdown)
+        .sub-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 220px;
+            padding: 8px 0;
+            border-radius: 8px;
+            background: $white;
+            box-shadow: $shadow-lg;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: all $transition-base;
+
+            li {
+                a {
+                    display: block;
+                    padding: 8px 20px;
+                    font-size: 14px;
+                    color: $textColor;
+                    transition: background $transition-fast, color $transition-fast;
+
+                    &:hover {
+                        background: $gray-100;
+                        color: $siteYellowDark;
+                    }
+                }
+            }
+        }
+
+        &:hover > .sub-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    }
+}
+
+// ============================================================================
+// Mega Menu
+// ============================================================================
+
+.mega-menu {
+    position: absolute;
+    top: 100%;
+    right: 50%;
+    transform: translateX(50%) translateY(8px);
+    width: 90vw;
+    max-width: 1100px;
+    background: $white;
+    border-radius: 12px;
+    box-shadow: $shadow-xl;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transition: all $transition-base;
+    padding: 24px;
+
+    &__inner {
+        padding: 0;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    &__category {
+        &-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid $siteYellow;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $siteYellowDark;
+            }
+        }
+
+        &-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: $gray-200;
+        }
+
+        &-title {
+            font-weight: 700;
+            font-size: 14px;
+        }
+    }
+
+    &__subcategories {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        li {
+            a {
+                display: block;
+                padding: 4px 0;
+                font-size: 13px;
+                color: $gray-600;
+                transition: color $transition-fast, padding-right $transition-fast;
+
+                &:hover {
+                    color: $siteYellowDark;
+                    padding-right: 6px;
+                }
+            }
+        }
+    }
+}
+
+// Show mega menu on hover
+.main-menu > li.mega-menu:hover .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(50%) translateY(0);
+}
+
+// ============================================================================
+// Search Box
+// ============================================================================
+
+.search-wrapper {
     position: relative;
-    &:hover {
-      .sub-menu {
+}
+
+.pzh_search_box {
+    position: relative;
+    width: 260px;
+
+    input[type="search"] {
+        width: 100%;
+        padding: 8px 40px 8px 16px;
+        border: 1px solid $gray-300;
+        border-radius: 24px;
+        font-size: 13px;
+        font-family: $fontFamily;
+        background: $gray-100;
+        transition: all $transition-fast;
+        direction: rtl;
+
+        &:focus {
+            border-color: $siteYellow;
+            background: $white;
+            box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
+            outline: none;
+        }
+
+        &::placeholder {
+            color: $gray-500;
+        }
+    }
+
+    button {
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $lightText;
+    }
+}
+
+// AJAX Search Results Dropdown
+.search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 100%;
+    min-width: 320px;
+    background: $white;
+    border-radius: 10px;
+    box-shadow: $shadow-lg;
+    z-index: 100;
+    display: none;
+    overflow: hidden;
+
+    &.active {
+        display: block;
+    }
+
+    &.loading:before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, $siteYellow, $siteYellowDark, $siteYellow);
+        background-size: 200% 100%;
+        animation: searchLoading 1.5s linear infinite;
+    }
+
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    &__item {
+        border-bottom: 1px solid $gray-200;
+
+        &:last-child { border-bottom: 0; }
+
+        a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            transition: background $transition-fast;
+
+            &:hover {
+                background: $gray-100;
+            }
+
+            img {
+                width: 48px;
+                height: 48px;
+                border-radius: 6px;
+                object-fit: cover;
+                background: $gray-200;
+            }
+        }
+    }
+
+    &__info {
+        flex: 1;
+    }
+
+    &__name {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: $textColor;
+        line-height: 1.4;
+    }
+
+    &__price {
+        font-size: 12px;
+        font-weight: 700;
+        color: $siteYellowDark;
+
+        del {
+            color: $gray-500;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        ins {
+            text-decoration: none;
+        }
+    }
+
+    &__all {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        background: $gray-100;
+        font-size: 13px;
+        font-weight: 600;
+        color: $lightText;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: $gray-200;
+        }
+    }
+
+    &__empty {
+        padding: 20px;
+        text-align: center;
+        color: $gray-600;
+        font-size: 13px;
+    }
+}
+
+@keyframes searchLoading {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+}
+
+// ============================================================================
+// Cart Icon & Dropdown
+// ============================================================================
+
+.cart-icon-wrapper {
+    position: relative;
+
+    .cart-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        color: $textColor;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteYellowDark;
+        }
+    }
+
+    .cart-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: $saleBadge;
+        color: $white;
+        font-size: 10px;
+        font-weight: 700;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        font-family: $fontFamily;
+    }
+}
+
+.cart-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    width: 360px;
+    max-height: 480px;
+    background: $white;
+    border-radius: 12px;
+    box-shadow: $shadow-xl;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: all $transition-base;
+    overflow: hidden;
+
+    &.active {
         opacity: 1;
         visibility: visible;
-      }
+        transform: translateY(0);
     }
-    .sub-menu {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      width: 300px;
-      padding: 5px;
-      border-radius: 5px;
-      background-color: $white;
-      z-index: 2;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s;
-      flex-direction: column;
-      @include boxShadow(0 , 0 , 10px , 20px , rgba($textColor , 0.1));
+}
+
+// ============================================================================
+// Mini Cart
+// ============================================================================
+
+.mini-cart {
+    padding: 16px;
+
+    &__items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 280px;
+        overflow-y: auto;
     }
-  }
+
+    &__item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid $gray-200;
+        align-items: flex-start;
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        &-image {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: $gray-200;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+
+        &-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &-name {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: $textColor;
+            line-height: 1.4;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &-qty {
+            font-size: 12px;
+            color: $gray-600;
+        }
+
+        &-variation {
+            font-size: 11px;
+            color: $gray-500;
+            display: block;
+        }
+    }
+
+    &__remove {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: $gray-400;
+        transition: color $transition-fast;
+        display: flex;
+
+        &:hover {
+            color: $danger;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    &__footer {
+        border-top: 1px solid $gray-200;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
+
+    &__total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    &__discount {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: $success;
+        margin-bottom: 12px;
+    }
+
+    &__cart-btn,
+    &__checkout-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 6px;
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    &__cart-btn {
+        background: $siteYellow !important;
+        color: $textColor !important;
+        border-color: $siteYellow !important;
+
+        &:hover {
+            background: $siteYellowDark !important;
+        }
+    }
+
+    &__checkout-btn {
+        background: $textColor !important;
+        color: $white !important;
+        border-color: $textColor !important;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    &__empty {
+        text-align: center;
+        padding: 24px;
+        color: $gray-600;
+        font-size: 14px;
+    }
+}
+
+// ============================================================================
+// User Icon
+// ============================================================================
+
+.user-icon {
+    display: flex;
+    align-items: center;
+    color: $textColor;
+    transition: color $transition-fast;
+
+    &:hover {
+        color: $siteYellowDark;
+    }
+}
+
+// ============================================================================
+// Mobile Navigation
+// ============================================================================
+
+.menuBtn {
+    display: none;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: $textColor;
+
+    @media (max-width: $bp-lg - 1px) {
+        display: flex;
+    }
+}
+
+.mobile-search {
+    border-top: 1px solid $gray-200;
+
+    .pzh_search_box {
+        width: 100%;
+    }
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media (max-width: $bp-lg - 1px) {
+    .pzh_header {
+        &__top {
+            font-size: 12px;
+        }
+
+        &__main {
+            .header-main {
+                &__nav {
+                    display: none !important;
+                }
+                &__logo img {
+                    max-width: 120px;
+                }
+            }
+        }
+    }
+
+    .search-wrapper {
+        display: none !important;
+    }
+
+    .cart-dropdown {
+        width: 300px;
+        left: -80px;
+    }
+
+    .mega-menu {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        padding: 12px !important;
+
+        &__grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+        }
+    }
+
+    .main-menu .sub-menu {
+        position: static !important;
+        box-shadow: none !important;
+        padding: 0 12px !important;
+    }
+}
+
+@media (max-width: $bp-sm) {
+    .cart-dropdown {
+        width: 280px;
+        left: -100px;
+    }
+
+    .mega-menu__grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+// ============================================================================
+// Mobile Nav Overlay
+// ============================================================================
+
+.mobileNav {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100vh;
+    background: $white;
+    z-index: 1050;
+    box-shadow: $shadow-xl;
+    padding: 80px 20px 20px;
+    transition: right $transition-base;
+    overflow-y: auto;
+
+    &.open {
+        right: 0;
+    }
+
+    .menuClose {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: $textColor;
+        line-height: 1;
+    }
+
+    .main-menu {
+        flex-direction: column !important;
+        gap: 0 !important;
+
+        > li {
+            border-bottom: 1px solid $gray-200;
+
+            > a {
+                padding: 12px 0;
+                justify-content: space-between;
+            }
+        }
+
+        .mega-menu {
+            display: none;
+            &.open { display: block; }
+        }
+
+        .sub-menu {
+            display: none;
+            &.open { display: block; }
+        }
+    }
+}
+
+body.menu-open {
+    overflow: hidden;
+
+    &:after {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba($black, 0.5);
+        z-index: 1040;
+    }
 }
