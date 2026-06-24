@@ -85,7 +85,7 @@ if ($current_term && is_a($current_term, 'WP_Term') && $current_term->taxonomy =
         <div class="row">
             <!-- b. Sidebar with AJAX Filters -->
             <aside class="col-lg-3">
-                <div class="archive-filters" data-category="<?= $current_category ? esc_attr($current_category->slug) : ''; ?>">
+                <div class="archive-filters" data-category-id="<?= $current_category ? esc_attr($current_category->term_id) : ''; ?>">
                     <h3 class="archive-filters__title"><?php _e('فیلترها', 'piazhen'); ?></h3>
 
                     <!-- Brand Filter -->
@@ -108,19 +108,33 @@ if ($current_term && is_a($current_term, 'WP_Term') && $current_term->taxonomy =
                     <?php endif; endif; ?>
 
                     <!-- Price Range Filter -->
-                    <div class="filter-group">
+                    <?php
+                    $cat_id  = $current_category ? $current_category->term_id : 0;
+                    $prices  = pzh_get_category_price_range($cat_id);
+                    $p_min   = $prices['min'];
+                    $p_max   = $prices['max'];
+                    // Use GET params if present, otherwise auto-detect from category
+                    $val_min = isset($_GET['min_price']) ? intval($_GET['min_price']) : $p_min;
+                    $val_max = isset($_GET['max_price']) ? intval($_GET['max_price']) : $p_max;
+                    ?>
+                    <div class="filter-group" id="price-filter-group">
                         <h4 class="filter-group__title"><?php _e('محدوده قیمت', 'piazhen'); ?></h4>
                         <div class="price-range">
                             <div class="price-range__inputs d-flex gap-2">
                                 <input type="number" id="price-min" class="mainInput" placeholder="<?php _e('حداقل', 'piazhen'); ?>"
-                                       value="<?= isset($_GET['min_price']) ? intval($_GET['min_price']) : ''; ?>"
-                                       min="0" step="1000">
+                                       value="<?= $val_min; ?>" min="<?= $p_min; ?>" step="1000">
                                 <span class="price-range__separator">-</span>
                                 <input type="number" id="price-max" class="mainInput" placeholder="<?php _e('حداکثر', 'piazhen'); ?>"
-                                       value="<?= isset($_GET['max_price']) ? intval($_GET['max_price']) : ''; ?>"
-                                       min="0" step="1000">
+                                       value="<?= $val_max; ?>" min="<?= $p_min; ?>" step="1000">
                             </div>
-                            <input type="range" id="price-range-slider" class="price-range__slider" min="0" max="10000000" step="1000">
+                            <div class="price-range__slider-wrapper">
+                                <input type="range" id="price-range-min" class="price-range__slider price-range__slider--min"
+                                       min="<?= $p_min; ?>" max="<?= $p_max; ?>" step="1000"
+                                       value="<?= $val_min; ?>">
+                                <input type="range" id="price-range-max" class="price-range__slider price-range__slider--max"
+                                       min="<?= $p_min; ?>" max="<?= $p_max; ?>" step="1000"
+                                       value="<?= $val_max; ?>">
+                            </div>
                         </div>
                     </div>
 
@@ -151,8 +165,8 @@ if ($current_term && is_a($current_term, 'WP_Term') && $current_term->taxonomy =
 
                     <!-- Filter Buttons -->
                     <div class="filter-group filter-actions d-flex gap-2">
-                        <button class="apply-filters-btn mainBtn small w-100"><?php _e('اعمال فیلتر', 'piazhen'); ?></button>
-                        <button class="reset-filters-btn mainBtn small w-100" style="background: transparent; color: var(--textColor); border-color: #ddd;">
+                        <button type="button" class="apply-filters-btn mainBtn small w-100"><?php _e('اعمال فیلتر', 'piazhen'); ?></button>
+                        <button type="button" class="reset-filters-btn mainBtn small w-100" style="background: transparent; color: var(--textColor); border-color: #ddd;">
                             <?php _e('حذف فیلتر', 'piazhen'); ?>
                         </button>
                     </div>
@@ -239,6 +253,15 @@ if ($current_term && is_a($current_term, 'WP_Term') && $current_term->taxonomy =
                     </button>
                 </section>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variation Popup Modal (hidden by default) -->
+    <div class="variation-modal-overlay" id="variation-modal" style="display:none;">
+        <div class="variation-modal">
+            <div class="variation-modal__inner" id="variation-modal-inner">
+                <!-- AJAX content loads here -->
             </div>
         </div>
     </div>

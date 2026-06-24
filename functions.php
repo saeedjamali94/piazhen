@@ -122,10 +122,18 @@ function pzh_get_product_card_html($product_id) {
             <div class="product-card__price">
                 <?php echo $product->get_price_html(); ?>
             </div>
-            <button class="product-card__add-to-cart mainBtn small"
-                    data-product-id="<?php echo esc_attr($product_id); ?>">
-                <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
-            </button>
+            <?php if ($product->is_type('variable')): ?>
+                <button class="product-card__add-to-cart mainBtn small product-card__add-to-cart--variable"
+                        data-product-id="<?php echo esc_attr($product_id); ?>"
+                        data-has-variations="1">
+                    <?php _e('انتخاب و خرید', 'piazhen'); ?>
+                </button>
+            <?php else: ?>
+                <button class="product-card__add-to-cart mainBtn small"
+                        data-product-id="<?php echo esc_attr($product_id); ?>">
+                    <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -157,6 +165,45 @@ function pzh_get_discount_percentage($product) {
         return round((($regular_price - $sale_price) / $regular_price) * 100);
     }
     return 0;
+}
+
+/**
+ * Get actual min/max prices for products (optionally scoped to a category)
+ * Returns array('min' => int, 'max' => int) in Tomans (rounded up/down to nearest 1000)
+ */
+function pzh_get_category_price_range($category_id = 0) {
+    global $wpdb;
+
+    $join  = '';
+    $where = "WHERE post_type = 'product' AND post_status = 'publish'";
+
+    if ($category_id) {
+        $join  = "INNER JOIN {$wpdb->term_relationships} AS tr ON ({$wpdb->posts}.ID = tr.object_id)";
+        $join .= " INNER JOIN {$wpdb->term_taxonomy} AS tt ON (tr.term_taxonomy_id = tt.term_taxonomy_id)";
+        $where .= $wpdb->prepare(" AND tt.term_id = %d AND tt.taxonomy = 'product_cat'", $category_id);
+    }
+
+    $sql = "SELECT MIN(CAST(pm_min.meta_value AS UNSIGNED)) as min_price,
+                   MAX(CAST(pm_max.meta_value AS UNSIGNED)) as max_price
+            FROM {$wpdb->posts}
+            {$join}
+            INNER JOIN {$wpdb->postmeta} AS pm_min ON ({$wpdb->posts}.ID = pm_min.post_id AND pm_min.meta_key = '_price')
+            INNER JOIN {$wpdb->postmeta} AS pm_max ON ({$wpdb->posts}.ID = pm_max.post_id AND pm_max.meta_key = '_price')
+            {$where}";
+
+    $result = $wpdb->get_row($sql);
+
+    $min = $result && $result->min_price ? intval($result->min_price) : 0;
+    $max = $result && $result->max_price ? intval($result->max_price) : 50000000;
+
+    // Round down min to nearest 1000, round up max to nearest 1000
+    $min = floor($min / 1000) * 1000;
+    $max = ceil($max / 1000) * 1000;
+
+    // Ensure a sensible range
+    if ($max <= $min) $max = $min + 1000000;
+
+    return array('min' => $min, 'max' => $max);
 }
 
 /**
@@ -376,15 +423,19 @@ add_action('wp_ajax_nopriv_pzh_get_cart_data', 'pzh_get_cart_data');
 function pzh_add_to_cart() {
     check_ajax_referer('pzh_ajax_nonce', 'nonce');
 
-    $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
-    $quantity   = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
-    $variation  = isset($_POST['variation']) ? $_POST['variation'] : array();
+    $product_id   = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    $quantity     = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+    $variation_id = isset($_POST['variation_id']) ? intval($_POST['variation_id']) : 0;
+    $variation    = isset($_POST['variation']) ? $_POST['variation'] : array();
 
-    if (!$product_id) {
+    // If variation_id is set, use it as the product to add
+    $add_id = $variation_id ? $variation_id : $product_id;
+
+    if (!$add_id) {
         wp_send_json_error(array('message' => __('محصول نامعتبر است.', 'piazhen')));
     }
 
-    $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, $variation);
+    $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, $variation_id, $variation);
 
     if ($cart_item_key) {
         // Get updated cart data
@@ -405,6 +456,140 @@ function pzh_add_to_cart() {
 }
 add_action('wp_ajax_pzh_add_to_cart', 'pzh_add_to_cart');
 add_action('wp_ajax_nopriv_pzh_add_to_cart', 'pzh_add_to_cart');
+
+/**
+ * AJAX Get Variation Popup HTML
+ */
+function pzh_get_variation_popup() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    if (!$product_id) {
+        wp_send_json_error(array('message' => __('محصول نامعتبر است.', 'piazhen')));
+    }
+
+    $product = wc_get_product($product_id);
+    if (!$product || !$product->is_type('variable')) {
+        wp_send_json_error(array('message' => __('این محصول متغیر نیست.', 'piazhen')));
+    }
+
+    ob_start();
+    ?>
+    <div class="variation-popup" id="variation-popup-content">
+        <button class="variation-popup__close" type="button">&times;</button>
+
+        <div class="variation-popup__header">
+            <div class="variation-popup__image">
+                <?php echo $product->get_image('pzh_product_card'); ?>
+            </div>
+            <div class="variation-popup__info">
+                <h3 class="variation-popup__title"><?php echo $product->get_name(); ?></h3>
+                <div class="variation-popup__price"><?php echo $product->get_price_html(); ?></div>
+            </div>
+        </div>
+
+        <div class="variation-popup__form">
+            <?php
+            // Get available variations as JSON for WooCommerce variation form
+            $available_variations = $product->get_available_variations();
+            $attributes = $product->get_variation_attributes();
+            ?>
+
+            <?php if (!empty($attributes)): ?>
+                <div class="variation-fields">
+                    <?php foreach ($attributes as $attribute_name => $options): ?>
+                        <?php
+                        $selected = isset($_REQUEST['attribute_' . sanitize_title($attribute_name)])
+                            ? wc_clean(stripslashes($_REQUEST['attribute_' . sanitize_title($attribute_name)]))
+                            : $product->get_variation_default_attribute($attribute_name);
+                        ?>
+                        <div class="variation-field">
+                            <label class="variation-field__label">
+                                <?php echo wc_attribute_label($attribute_name); ?>
+                            </label>
+                            <div class="variation-field__options">
+                                <select class="variation-select"
+                                        data-attribute_name="<?php echo esc_attr(wc_variation_attribute_name($attribute_name)); ?>"
+                                        name="<?php echo esc_attr(wc_variation_attribute_name($attribute_name)); ?>">
+                                    <option value=""><?php echo esc_html(sprintf(__('انتخاب %s', 'piazhen'), wc_attribute_label($attribute_name))); ?></option>
+                                    <?php foreach ($options as $option): ?>
+                                        <option value="<?php echo esc_attr($option); ?>"
+                                            <?php selected($selected, $option); ?>>
+                                            <?php echo esc_html(apply_filters('woocommerce_variation_option_name', $option, null, $attribute_name, $product)); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="variation-popup__qty">
+                <label class="variation-field__label"><?php _e('تعداد', 'piazhen'); ?></label>
+                <div class="quantity-selector d-flex align-items-center gap-2">
+                    <button class="qty-btn qty-minus" type="button">-</button>
+                    <input type="number" class="qty-input" id="popup-qty" value="1" min="1" max="99">
+                    <button class="qty-btn qty-plus" type="button">+</button>
+                </div>
+            </div>
+
+            <div class="variation-popup__message"></div>
+
+            <button class="variation-popup__submit mainBtn mainBtn--yellow w-100"
+                    data-product-id="<?php echo $product_id; ?>">
+                <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+            </button>
+        </div>
+    </div>
+    <?php
+    $html = ob_get_clean();
+
+    wp_send_json_success(array('html' => $html));
+}
+add_action('wp_ajax_pzh_get_variation_popup', 'pzh_get_variation_popup');
+add_action('wp_ajax_nopriv_pzh_get_variation_popup', 'pzh_get_variation_popup');
+
+/**
+ * AJAX Match Variation - find variation ID from selected attributes
+ */
+function pzh_get_variation_match() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    $attributes = isset($_POST['attributes']) ? $_POST['attributes'] : array();
+
+    if (!$product_id || empty($attributes)) {
+        wp_send_json_error();
+    }
+
+    $product = wc_get_product($product_id);
+    if (!$product || !$product->is_type('variable')) {
+        wp_send_json_error();
+    }
+
+    // Find matching variation
+    $data_store = WC_Data_Store::load('product');
+    $variation_id = $data_store->find_matching_product_variation($product, $attributes);
+
+    if ($variation_id) {
+        $variation = wc_get_product($variation_id);
+        $availability = $variation->is_in_stock()
+            ? __('موجود در انبار', 'piazhen')
+            : __('ناموجود', 'piazhen');
+
+        wp_send_json_success(array(
+            'variation_id' => $variation_id,
+            'price_html'   => $variation->get_price_html(),
+            'availability' => $availability,
+            'in_stock'     => $variation->is_in_stock(),
+        ));
+    } else {
+        wp_send_json_error(array('message' => __('ترکیب انتخاب شده موجود نیست.', 'piazhen')));
+    }
+}
+add_action('wp_ajax_pzh_get_variation_match', 'pzh_get_variation_match');
+add_action('wp_ajax_nopriv_pzh_get_variation_match', 'pzh_get_variation_match');
 
 /**
  * AJAX Remove from Cart
@@ -488,7 +673,7 @@ function pzh_filter_products() {
     $brands   = isset($_POST['brands']) ? array_map('intval', $_POST['brands']) : array();
     $min_price = isset($_POST['min_price']) ? floatval($_POST['min_price']) : 0;
     $max_price = isset($_POST['max_price']) ? floatval($_POST['max_price']) : 0;
-    $category  = isset($_POST['category']) ? sanitize_text_field($_POST['category']) : '';
+    $category  = isset($_POST['category']) ? ($_POST['category']) : '';
 
     // Build query args
     $args = array(

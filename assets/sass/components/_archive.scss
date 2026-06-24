@@ -196,10 +196,98 @@
         font-size: 14px;
     }
 
+    // Dual-range slider wrapper
+    &__slider-wrapper {
+        position: relative;
+        height: 36px;
+        display: flex;
+        align-items: center;
+    }
+
     &__slider {
+        position: absolute;
+        left: 0;
+        right: 0;
         width: 100%;
-        accent-color: $siteYellow;
         height: 4px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        pointer-events: none;
+        margin: 0;
+        padding: 0;
+
+        // The thumbs are the only pointer-receiving parts
+        &::-webkit-slider-thumb {
+            pointer-events: all;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: $siteYellow;
+            border: 3px solid $white;
+            box-shadow: $shadow-sm;
+            cursor: pointer;
+            transition: transform $transition-fast;
+            margin-top: -9px;
+            position: relative;
+            z-index: 2;
+
+            &:hover {
+                transform: scale(1.15);
+            }
+            &:active {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 6px rgba($siteYellow, 0.2);
+            }
+        }
+
+        &::-moz-range-thumb {
+            pointer-events: all;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: $siteYellow;
+            border: 3px solid $white;
+            box-shadow: $shadow-sm;
+            cursor: pointer;
+        }
+
+        // Track: the colored bar between thumbs
+        &::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        &::-moz-range-track {
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        // Min slider: thumb on the left, track is the left portion
+        &--min {
+            z-index: 3;
+
+            &::-webkit-slider-runnable-track {
+                background: $gray-200;
+            }
+            &::-moz-range-track {
+                background: $gray-200;
+            }
+        }
+
+        // Max slider: transparent track, thumb on the right
+        &--max {
+            z-index: 2;
+
+            &::-webkit-slider-runnable-track {
+                background: transparent;
+            }
+            &::-moz-range-track {
+                background: transparent;
+            }
+        }
     }
 }
 
@@ -462,6 +550,231 @@
                 font-size: 11px;
             }
         }
+    }
+}
+
+// ============================================================================
+// Filter Action Buttons Fixes
+// ============================================================================
+
+.filter-actions {
+
+    .reset-filters-btn {
+        background: transparent !important;
+        color: $gray-600 !important;
+        border-color: $gray-300 !important;
+        font-size: 13px !important;
+        padding: 8px 16px !important;
+
+        &:hover {
+            border-color: $danger !important;
+            color: $danger !important;
+            background: rgba($danger, 0.03) !important;
+        }
+    }
+}
+
+// ============================================================================
+// Variation Popup Modal
+// ============================================================================
+
+.variation-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba($black, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.variation-modal {
+    background: $white;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: $shadow-xl;
+    position: relative;
+    animation: modalSlideUp 0.25s ease;
+
+    &__inner {
+        padding: 0;
+    }
+
+    &__loading {
+        text-align: center;
+        padding: 48px 24px;
+        font-size: 15px;
+        color: $gray-500;
+    }
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+// Variation Popup Content
+.variation-popup {
+    padding: 24px;
+
+    &__close {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid $gray-200;
+        background: $white;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+        color: $gray-600;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $gray-100;
+            color: $textColor;
+        }
+    }
+
+    &__header {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid $gray-200;
+    }
+
+    &__image {
+        width: 80px;
+        height: 80px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: $gray-100;
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    &__info {
+        flex: 1;
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-bottom: 6px;
+    }
+
+    &__price {
+        font-size: 18px;
+        font-weight: 800;
+        color: $textColor;
+
+        del {
+            font-size: 14px;
+            color: $gray-400;
+            font-weight: 400;
+            margin-right: 6px;
+        }
+        ins {
+            text-decoration: none;
+            color: $saleBadge;
+        }
+    }
+
+    &__form {
+        // variation form content
+    }
+
+    &__qty {
+        margin-bottom: 16px;
+    }
+
+    &__message {
+        font-size: 13px;
+        margin-bottom: 12px;
+        min-height: 20px;
+
+        .text-success { color: $success; }
+        .text-danger  { color: $danger; }
+    }
+
+    &__submit {
+        padding: 12px 24px;
+        font-size: 15px;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+}
+
+// Variation Fields inside popup
+.variation-fields {
+    margin-bottom: 16px;
+}
+
+.variation-field {
+    margin-bottom: 14px;
+
+    &__label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: $textColor;
+    }
+
+    &__options {
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid $gray-300;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: $fontFamily;
+            background: $white;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%236c757d' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+
+            &:focus {
+                border-color: $siteYellow;
+                outline: none;
+            }
+        }
+    }
+}
+
+// Quantity selector inside popup (reuses .qty-btn / .qty-input from single-product)
+
+@media (max-width: $bp-sm) {
+    .variation-modal {
+        max-width: 100%;
+        margin: 0 8px;
+        border-radius: 12px 12px 0 0;
+        max-height: 85vh;
+    }
+
+    .variation-popup {
+        padding: 20px 16px 24px;
     }
 }
 

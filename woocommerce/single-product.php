@@ -99,23 +99,29 @@ while (have_posts()): the_post();
                     <!-- Thumbnails -->
                     <?php if (count($all_images) > 1): ?>
                     <div class="product-gallery__thumbs">
-                        <div class="swiper product-thumbs-swiper">
+                        <div class="swiper product-thumbs-swiper" id="product-thumbs-swiper">
                             <div class="swiper-wrapper">
-                                <?php foreach ($all_images as $img_id): ?>
-                                    <div class="swiper-slide">
-                                        <div class="product-gallery__thumb <?php echo $img_id === $all_images[0] ? 'active' : ''; ?>"
-                                             data-full="<?php echo wp_get_attachment_image_url($img_id, 'woocommerce_single'); ?>"
-                                             data-zoom="<?php echo wp_get_attachment_image_url($img_id, 'full'); ?>">
-                                            <?php echo wp_get_attachment_image($img_id, 'pzh_product_thumb', false, array('class' => 'w-100')); ?>
+                                <?php foreach ($all_images as $idx => $img_id):
+                                    $full_url  = wp_get_attachment_image_url($img_id, 'woocommerce_single');
+                                    $zoom_url  = wp_get_attachment_image_url($img_id, 'full');
+                                ?>
+                                    <div class="swiper-slide"
+                                         role="button"
+                                         tabindex="0"
+                                         data-full="<?php echo esc_url($full_url); ?>"
+                                         data-zoom="<?php echo esc_url($zoom_url); ?>"
+                                         data-index="<?php echo $idx; ?>">
+                                        <div class="product-gallery__thumb <?php echo $idx === 0 ? 'active' : ''; ?>">
+                                            <?php echo wp_get_attachment_image($img_id, 'pzh_product_thumb', false, array('class' => 'w-100', 'draggable' => 'false')); ?>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                         </div>
-                        <button class="thumb-nav thumb-nav--prev">
+                        <button class="thumb-nav thumb-nav--prev" type="button" aria-label="<?php _e('قبلی', 'piazhen'); ?>">
                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </button>
-                        <button class="thumb-nav thumb-nav--next">
+                        <button class="thumb-nav thumb-nav--next" type="button" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </button>
                     </div>
