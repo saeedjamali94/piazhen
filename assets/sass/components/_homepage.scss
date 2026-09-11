@@ -1,116 +1,141 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Homepage Hero Section
+// Homepage Hero Section (new design)
 // ============================================================================
 
-.home_hero {
+.heroSection {
     padding: 24px 0;
 
-    .hero-banner {
-        position: relative;
-        border-radius: 16px;
+    > .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    // Row 1: large banner + two side cards
+    .heroSection__main {
+        display: flex;
+        gap: 20px;
+    }
+
+    // Large banner (right side)
+    .right {
+        flex: 0 0 calc(60% - 10px);
+        height: 524px;
+        border-radius: $heroRadius;
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-start;
+        background-color: $siteOrange;
+        background-size: cover;
+        background-position: center;
         overflow: hidden;
-        height: 100%;
-        min-height: 200px;
 
-        &__bg {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            background: $gray-200;
-
-            img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                transition: transform 0.6s ease;
-            }
-        }
-
-        &:hover &__bg img {
-            transform: scale(1.05);
-        }
-
-        &__content {
-            position: relative;
-            z-index: 1;
-            padding: 32px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            height: 100%;
-            min-height: 300px;
-            background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
-        }
-
-        &__title {
-            font-size: 24px;
+        h2 {
+            color: $white;
+            font-size: 40px;
             font-weight: 800;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 12px rgba($black, 0.45);
+        }
+
+        p {
+            color: rgba($white, 0.92);
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 24px;
+            text-shadow: 0 2px 8px rgba($black, 0.4);
+        }
+    }
+
+    // Side cards column (left)
+    .left {
+        flex: 0 0 calc(40% - 10px);
+        display: flex;
+        flex-direction: column;
+
+        .card {
+            flex: 1;
+        }
+    }
+
+    // Bottom cards row
+    .bottom {
+        display: flex;
+        gap: 20px;
+        justify-content: space-between;
+
+        .card {
+            flex: 0 0 calc(33.33% - 20px);
+        }
+    }
+
+    // Card (shared)
+    .card {
+        height: 252px;
+        background-color: $gray-200;
+        background-size: cover;
+        background-position: center -37px;
+        border-radius: $heroRadius;
+        color: $white;
+        margin-bottom: 20px;
+        position: relative;
+        display: flex;
+        transition: transform $transition-base, box-shadow $transition-base;
+
+        h2 {
             color: $white;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        &__subtitle {
-            font-size: 15px;
-            color: rgba($white, 0.9);
-            margin-bottom: 16px;
-            line-height: 1.6;
-        }
-
-        &__cta {
-            align-self: flex-start;
-            padding: 10px 28px;
-            font-size: 14px;
-            background: $siteYellow;
-            color: $textColor;
-            border: 2px solid $siteYellow;
-            border-radius: $btnRadius;
-            font-weight: 700;
-            transition: all $transition-fast;
-
-            &:hover {
-                background: $siteYellowDark;
-                border-color: $siteYellowDark;
-            }
-        }
-
-        &__link {
-            display: inline-flex;
+            position: absolute;
+            bottom: 24px;
+            right: 43px;
+            left: 20px;
+            font-size: 40px;
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 6px;
-            color: $white;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 8px;
-            transition: gap $transition-fast;
+            margin: 0;
+            line-height: 1.5;
+            text-shadow: 0 2px 12px rgba($black, 0.45);
 
-            &:hover {
-                gap: 10px;
+            i {
+                rotate: -45deg;
+                font-size: 28px;
+                transition: transform $transition-fast;
             }
         }
 
-        // Large banner
-        &--large {
-            .hero-banner__content {
-                min-height: 400px;
-                padding: 40px;
-            }
-            .hero-banner__title {
-                font-size: 32px;
+        &:hover {
+            transform: translateY(-4px);
+            box-shadow: $shadow-lg;
+
+            h2 i {
+                transform: translateX(-4px);
             }
         }
+    }
 
-        // Small banners
-        &--small {
-            .hero-banner__content {
-                min-height: 185px;
-                padding: 24px;
-            }
-            .hero-banner__title {
-                font-size: 18px;
-            }
+    .bottom .card {
+        margin-bottom: 0;
+    }
+
+    // Hero CTA button
+    .button {
+        display: inline-block;
+        background-color: $siteOrange;
+        color: $white;
+        padding: 20px 44px;
+        border-radius: $heroRadius;
+        font-size: 16px;
+        font-weight: 700;
+        transition: background-color $transition-fast;
+
+        &:hover {
+            background-color: $black;
         }
     }
 }
@@ -643,19 +668,46 @@
 // Responsive
 // ============================================================================
 
-@media (max-width: $bp-lg) {
-    .home_hero {
-        .hero-banner {
-            &__content {
-                min-height: 220px;
-                padding: 24px;
+@media (max-width: $bp-xl - 1px) {
+    .heroSection {
+        .right {
+            padding: 40px;
+
+            h2 { font-size: 32px; }
+        }
+
+        .card h2 {
+            font-size: 30px;
+            right: 28px;
+        }
+    }
+}
+
+@media (max-width: $bp-lg - 1px) {
+    .heroSection {
+        padding: 16px 0;
+
+        .heroSection__main {
+            flex-direction: column;
+        }
+
+        .right {
+            flex: 1 1 auto;
+            height: 420px;
+        }
+
+        .left {
+            flex-direction: row;
+            gap: 20px;
+
+            .card {
+                flex: 1;
+                margin-bottom: 0;
             }
-            &__title {
-                font-size: 20px;
-            }
-            &--large .hero-banner__title {
-                font-size: 24px;
-            }
+        }
+
+        .card h2 {
+            font-size: 24px;
         }
     }
 
@@ -664,26 +716,55 @@
     }
 }
 
-@media (max-width: $bp-md) {
-    .home_hero {
-        padding: 12px 0;
+@media (max-width: $bp-md - 1px) {
+    .heroSection {
+        > .container {
+            gap: 16px;
+        }
 
-        .hero-banner {
-            border-radius: 12px;
+        .right {
+            height: 360px;
+            padding: 28px;
+            border-radius: 28px;
 
-            &__content {
-                min-height: 180px;
-                padding: 20px;
+            h2 { font-size: 26px; }
+            p { font-size: 15px; margin-bottom: 16px; }
+        }
+
+        .left {
+            flex-direction: column;
+
+            .card {
+                margin-bottom: 16px;
             }
-            &__title {
-                font-size: 16px;
+        }
+
+        .bottom {
+            flex-direction: column;
+            gap: 16px;
+
+            .card {
+                flex: 1 1 auto;
             }
-            &__subtitle {
-                font-size: 13px;
+        }
+
+        .card {
+            height: 200px;
+            border-radius: 28px;
+
+            h2 {
+                font-size: 22px;
+                right: 24px;
+                left: 16px;
+                bottom: 16px;
+
+                i { font-size: 20px; }
             }
-            &--large .hero-banner__title {
-                font-size: 18px;
-            }
+        }
+
+        .button {
+            padding: 14px 32px;
+            border-radius: 28px;
         }
     }
 

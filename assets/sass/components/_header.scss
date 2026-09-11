@@ -1,53 +1,67 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Header
+// Site Header (new design)
 // ============================================================================
 
-.pzh_header {
-    position: sticky;
-    top: 0;
-    z-index: 1020;
+.siteHeader {
     background: $white;
-    box-shadow: $shadow-sm;
+    font-size: 18px;
 
-    // Top Bar
-    &__top {
-        border-bottom: 1px solid rgba($black, 0.08);
-        font-size: 13px;
-        padding: 6px 0;
+    // Top Bar (links row)
+    .top {
+        padding: 24px 0;
+        border-bottom: 1px solid rgba($black, 0.05);
 
-        .top-bar {
+        &__links {
+            display: flex;
+            gap: 32px;
+
             a {
-                color: $gray-600;
+                color: $textColor;
                 transition: color $transition-fast;
-                &:hover { color: $textColor; }
-            }
-            &__contact {
-                color: $gray-600;
+
+                &:hover { color: $siteOrange; }
             }
         }
     }
 
-    // Main Header Section
-    &__main {
-        padding: 12px 0;
+    // Main Row (logo + nav + icons)
+    .bottom {
+        padding: 28px 0;
 
-        .header-main {
-            &__logo img {
-                max-width: 167px;
-                height: auto;
-            }
-
-            &__nav {
-                flex: 1;
-                justify-content: center;
-            }
-
-            &__actions {
-                flex-shrink: 0;
-            }
+        &__inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
         }
+    }
+
+    .logo {
+        flex: 0 1 167px;
+
+        a {
+            display: inline-flex;
+        }
+
+        img {
+            max-width: 167px;
+            height: auto;
+        }
+    }
+
+    .navBar {
+        font-weight: 700;
+    }
+
+    .icons {
+        flex: 0 1 167px;
+        direction: ltr;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: $siteYellow;
     }
 }
 
@@ -59,18 +73,20 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 40px;
 
     > li {
         position: relative;
-        padding: 8px 12px;
+        font-size: 18px;
+        font-weight: 700;
 
         > a {
-            font-weight: 600;
-            font-size: 15px;
             color: $textColor;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             white-space: nowrap;
             transition: color $transition-fast;
 
@@ -104,6 +120,7 @@
                     display: block;
                     padding: 8px 20px;
                     font-size: 14px;
+                    font-weight: 500;
                     color: $textColor;
                     transition: background $transition-fast, color $transition-fast;
 
@@ -192,6 +209,7 @@
                 display: block;
                 padding: 4px 0;
                 font-size: 13px;
+                font-weight: 500;
                 color: $gray-600;
                 transition: color $transition-fast, padding-right $transition-fast;
 
@@ -212,11 +230,57 @@
 }
 
 // ============================================================================
-// Search Box
+// Search Toggle + AJAX Search
 // ============================================================================
 
 .search-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
+
+    .searchToggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        font-size: 24px;
+        color: $siteYellow;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteYellowDark;
+        }
+    }
+
+    .search-panel {
+        position: absolute;
+        top: calc(100% + 14px);
+        left: 0;
+        width: 320px;
+        background: $white;
+        border-radius: 12px;
+        box-shadow: $shadow-xl;
+        padding: 14px;
+        z-index: 100;
+        display: none;
+        direction: rtl;
+
+        .pzh_search_box {
+            width: 100%;
+        }
+
+        .search-results {
+            box-shadow: none;
+            margin-top: 8px;
+        }
+    }
+
+    &.open .search-panel {
+        display: block;
+    }
 }
 
 .pzh_search_box {
@@ -264,17 +328,13 @@
 
 // AJAX Search Results Dropdown
 .search-results {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 100%;
-    min-width: 320px;
     background: $white;
     border-radius: 10px;
     box-shadow: $shadow-lg;
     z-index: 100;
     display: none;
     overflow: hidden;
+    margin-top: 8px;
 
     &.active {
         display: block;
@@ -282,8 +342,7 @@
 
     &.loading:before {
         content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0;
+        display: block;
         height: 3px;
         background: linear-gradient(90deg, $siteYellow, $siteYellowDark, $siteYellow);
         background-size: 200% 100%;
@@ -385,12 +444,15 @@
 
 .cart-icon-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 
     .cart-icon {
         position: relative;
         display: flex;
         align-items: center;
-        color: $textColor;
+        font-size: 24px;
+        color: $siteYellow;
         transition: color $transition-fast;
 
         &:hover {
@@ -401,7 +463,7 @@
     .cart-count {
         position: absolute;
         top: -8px;
-        right: -8px;
+        right: -10px;
         background: $saleBadge;
         color: $white;
         font-size: 10px;
@@ -432,6 +494,7 @@
     transform: translateY(8px);
     transition: all $transition-base;
     overflow: hidden;
+    direction: rtl;
 
     &.active {
         opacity: 1;
@@ -598,7 +661,8 @@
 .user-icon {
     display: flex;
     align-items: center;
-    color: $textColor;
+    font-size: 24px;
+    color: $siteYellow;
     transition: color $transition-fast;
 
     &:hover {
@@ -617,9 +681,12 @@
     padding: 8px;
     cursor: pointer;
     color: $textColor;
+    font-size: 24px;
 
     @media (max-width: $bp-lg - 1px) {
         display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
 
@@ -636,20 +703,32 @@
 // ============================================================================
 
 @media (max-width: $bp-lg - 1px) {
-    .pzh_header {
-        &__top {
-            font-size: 12px;
+    .siteHeader {
+        font-size: 16px;
+
+        .top {
+            padding: 14px 0;
+
+            &__links {
+                gap: 20px;
+            }
         }
 
-        &__main {
-            .header-main {
-                &__nav {
-                    display: none !important;
-                }
-                &__logo img {
-                    max-width: 120px;
-                }
+        .bottom {
+            padding: 16px 0;
+        }
+
+        .logo {
+            flex: 0 1 auto;
+
+            img {
+                max-width: 120px;
             }
+        }
+
+        .icons {
+            flex: 0 1 auto;
+            gap: 14px;
         }
     }
 
@@ -729,6 +808,7 @@
     .main-menu {
         flex-direction: column !important;
         gap: 0 !important;
+        align-items: stretch;
 
         > li {
             border-bottom: 1px solid $gray-200;

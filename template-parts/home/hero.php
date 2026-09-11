@@ -1,70 +1,52 @@
 <?php
 /**
  * Homepage Hero Section
- * Grid of banners: 1 large (col-lg-8) + 2 small (col-lg-4)
+ * Large banner (right) + 2 side cards (left) + 3 bottom cards.
+ * Banners data comes from pzh_hero_banners() in functions.php.
  */
+
+$hero = pzh_hero_banners();
 ?>
-<section class="home_hero">
+<section class="heroSection">
     <div class="container">
-        <div class="row g-3">
-            <!-- Large Banner (col-lg-8) -->
-            <div class="col-lg-8">
-                <div class="hero-banner hero-banner--large">
-                    <div class="hero-banner__bg">
-                        <img src="<?= PZH_THEME_URI ?>/assets/images/hero-banner-1.jpg"
-                             alt="<?php _e('بنر اصلی', 'piazhen'); ?>"
-                             class="hero-banner__image"
-                             onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#f0f0f0';">
-                    </div>
-                    <div class="hero-banner__content">
-                        <h2 class="hero-banner__title"><?php _e('عنوان بنر اصلی', 'piazhen'); ?></h2>
-                        <p class="hero-banner__subtitle"><?php _e('زیرعنوان بنر اصلی - توضیحات بیشتر درباره این پیشنهاد ویژه', 'piazhen'); ?></p>
-                        <a href="<?= SITE_URL ?>/shop" class="hero-banner__cta mainBtn">
-                            <?php _e('همین حالا بخرید', 'piazhen'); ?>
-                        </a>
-                    </div>
-                </div>
+        <div class="heroSection__main">
+            <!-- Large Banner -->
+            <div class="right"
+                 style="background-image: url('<?= esc_url($hero['main']['image']); ?>');">
+                <h2><?= esc_html($hero['main']['title']); ?></h2>
+                <p><?= esc_html($hero['main']['subtitle']); ?></p>
+                <a class="button" href="<?= esc_url($hero['main']['link']); ?>">
+                    <?= esc_html($hero['main']['cta']); ?>
+                </a>
             </div>
 
-            <!-- Small Banners (col-lg-4) -->
-            <div class="col-lg-4">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <div class="hero-banner hero-banner--small">
-                            <div class="hero-banner__bg">
-                                <img src="<?= PZH_THEME_URI ?>/assets/images/hero-banner-2.jpg"
-                                     alt="<?php _e('بنر دوم', 'piazhen'); ?>"
-                                     class="hero-banner__image"
-                                     onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#e8f4f8';">
-                            </div>
-                            <div class="hero-banner__content">
-                                <h3 class="hero-banner__title"><?php _e('عنوان بنر دوم', 'piazhen'); ?></h3>
-                                <a href="<?= SITE_URL ?>/shop" class="hero-banner__link">
-                                    <?php _e('مشاهده محصولات', 'piazhen'); ?>
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L14 8L10 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 8H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="hero-banner hero-banner--small">
-                            <div class="hero-banner__bg">
-                                <img src="<?= PZH_THEME_URI ?>/assets/images/hero-banner-3.jpg"
-                                     alt="<?php _e('بنر سوم', 'piazhen'); ?>"
-                                     class="hero-banner__image"
-                                     onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#fef3e4';">
-                            </div>
-                            <div class="hero-banner__content">
-                                <h3 class="hero-banner__title"><?php _e('عنوان بنر سوم', 'piazhen'); ?></h3>
-                                <a href="<?= SITE_URL ?>/shop" class="hero-banner__link">
-                                    <?php _e('مشاهده محصولات', 'piazhen'); ?>
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L14 8L10 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 8H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Two Side Cards -->
+            <div class="left">
+                <?php foreach ($hero['side_cards'] as $card): ?>
+                    <a class="card"
+                       href="<?= esc_url($card['link']); ?>"
+                       style="background-image: url('<?= esc_url($card['image']); ?>');">
+                        <h2>
+                            <?= esc_html($card['title']); ?>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </h2>
+                    </a>
+                <?php endforeach; ?>
             </div>
+        </div>
+
+        <!-- Three Bottom Cards -->
+        <div class="bottom">
+            <?php foreach ($hero['bottom_cards'] as $card): ?>
+                <a class="card"
+                   href="<?= esc_url($card['link']); ?>"
+                   style="background-image: url('<?= esc_url($card['image']); ?>');">
+                    <h2>
+                        <?= esc_html($card['title']); ?>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </h2>
+                </a>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>

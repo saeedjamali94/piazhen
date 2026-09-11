@@ -107,10 +107,13 @@ $(document).ready(function () {
             });
         }, 300));
 
-        // Hide search results on outside click
+        // Hide search results / close search panel on outside click
         $(document).on('click', function (e) {
             if (!$(e.target).closest('.pzh_search_box').length) {
                 $searchResults.removeClass('active');
+            }
+            if (!$(e.target).closest('.search-wrapper').length) {
+                $('.search-wrapper').removeClass('open');
             }
         });
 
@@ -118,6 +121,17 @@ $(document).ready(function () {
         $searchInput.on('focus', function () {
             if ($(this).val().trim().length >= 2 && $searchResults.html().trim()) {
                 $searchResults.addClass('active');
+            }
+        });
+
+        // Toggle the header search panel
+        $('.searchToggle').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $wrapper = $(this).closest('.search-wrapper');
+            $wrapper.toggleClass('open');
+            if ($wrapper.hasClass('open')) {
+                $wrapper.find('input[type="search"]').focus();
             }
         });
     }

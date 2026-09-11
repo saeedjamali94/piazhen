@@ -57,6 +57,7 @@ function piazhen_scripts() {
 
     // Styles
     wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11.1.0');
+    wp_enqueue_style('piazhen-font-awesome', PZH_THEME_URI . '/assets/font-icons/css/all.min.css', array(), '7.3.1');
     wp_enqueue_style('piazhen-main-style', PZH_THEME_URI . '/assets/css/styles.css', array('swiper-css'), $version);
 
     // Scripts
@@ -224,6 +225,38 @@ function pzh_get_brands() {
         }
     }
     return $brands;
+}
+
+/**
+ * Hero banners data (title / image / link)
+ * Editable via the 'pzh_hero_banners' filter.
+ */
+function pzh_hero_banners() {
+    $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
+
+    $banners = array(
+        // Large panel (right side)
+        'main' => array(
+            'title'    => __('اصلاحی سریع، دقیق و بی نقص', 'piazhen'),
+            'subtitle' => __('ظاهر جذاب، تیپی تازه همراه همیشگی آقایان خوش‌تیپ', 'piazhen'),
+            'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
+            'link'     => $shop_url,
+            'cta'      => __('مشاهده محصولات', 'piazhen'),
+        ),
+        // Two cards on top-left
+        'side_cards' => array(
+            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
+            array('title' => __('اپیلاتور', 'piazhen'),       'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+        ),
+        // Three cards on the bottom row
+        'bottom_cards' => array(
+            array('title' => __('ماشین اصلاح', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
+            array('title' => __('ریش تراش', 'piazhen'),    'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+            array('title' => __('لوازم اصلاح', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card3.png', 'link' => $shop_url),
+        ),
+    );
+
+    return apply_filters('pzh_hero_banners', $banners);
 }
 
 /**
@@ -863,6 +896,33 @@ remove_action('woocommerce_sidebar', 'woocommerce_get_sidebar', 10);
 // ============================================================================
 // Mega Menu Walker
 // ============================================================================
+
+/**
+ * Primary menu fallback: use the first available menu (preferring one whose
+ * name contains "هدر") when no menu is assigned to the 'primary' location.
+ */
+function pzh_primary_menu_fallback() {
+    $menus = wp_get_nav_menus();
+    if (empty($menus)) return;
+
+    $chosen = null;
+    foreach ($menus as $menu) {
+        if (false !== strpos($menu->name, 'هدر')) {
+            $chosen = $menu;
+            break;
+        }
+    }
+    if (!$chosen) {
+        $chosen = $menus[0];
+    }
+
+    wp_nav_menu(array(
+        'menu'       => $chosen,
+        'menu_class' => 'main-menu',
+        'container'  => 'ul',
+        'walker'     => new PZH_Mega_Menu_Walker(),
+    ));
+}
 
 class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
 
