@@ -1260,6 +1260,275 @@ $(document).ready(function () {
         }
     }
 
+    // ========================================================================
+    // Auth: Login / Registration (SMS OTP — AJAX, no plugins)
+    // ========================================================================
+    var $authPage = $('[data-auth-page]');
+
+    if ($authPage.length) {
+        var $card = $authPage.find('.pzh-auth-card');
+        var $steps = $card.find('.auth-step');
+        var authPhone = '';
+        var timerInterval = null;
+        var redirectTo = $('#auth-redirect').val() || '';
+
+        function showAuthStep(name) {
+            $steps.hide();
+            var $target = $card.find('.auth-step[data-step="' + name + '"]');
+            // Remove the hidden attribute (Bootstrap's [hidden] rule uses
+            // !important and would keep the step invisible otherwise)
+            $target.prop('hidden', false).show();
+        }
+
+        function showAuthError(step, msg) {
+            $card.find('#auth-error-' + step).text(msg).show();
+        }
+
+        function clearAuthErrors() {
+            $card.find('.auth-error').empty().hide();
+        }
+
+        function fmtTimer(s) {
+            var m = Math.floor(s / 60), ss = s % 60;
+            return ('0' + m).slice(-2) + ':' + ('0' + ss).slice(-2);
+        }
+
+        function startAuthTimer(seconds) {
+            if (timerInterval) clearInterval(timerInterval);
+            var left = seconds;
+            var $timer = $('#auth-timer');
+            var $resend = $('#auth-resend');
+            $resend.prop('disabled', true);
+            $timer.text(fmtTimer(left));
+            timerInterval = setInterval(function () {
+                left--;
+                if (left <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    $timer.text('00:00');
+                    $resend.prop('disabled', false);
+                } else {
+                    $timer.text(fmtTimer(left));
+                }
+            }, 1000);
+        }
+
+        // Tabs (cosmetic — the OTP flow serves both login and registration)
+        $card.on('click', '.auth-tab', function () {
+            $card.find('.auth-tab').removeClass('active');
+            $(this).addClass('active');
+        });
+
+        // Phone input: digits only, strip the leading zero (the +98 prefix shows it)
+        var $phoneInput = $('#auth-phone');
+        $phoneInput.on('input', function () {
+            var v = $(this).val().replace(/[^0-9]/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 0 && v[0] === '0') v = v.slice(1);
+            $(this).val(v);
+        });
+
+        // --- Send / resend OTP ---
+        function requestOtp(showStepOnError) {
+            clearAuthErrors();
+            var raw = $phoneInput.val().trim();
+            var v = raw.replace(/[^0-9]/g, '');
+            if (v.length === 10) v = '0' + v;
+            if (!/^09[0-9]{9}$/.test(v)) {
+                showAuthError('phone', 'شماره موبایل معتبر نیست. (مثال: 9123456789)');
+                return;
+            }
+
+            var $btn = $('#auth-send').addClass('loading').prop('disabled', true);
+
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_auth_send_otp',
+                    phone: v,
+                    redirect_to: redirectTo,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        authPhone = resp.data.phone;
+                        $('#auth-phone-stored').val(authPhone);
+                        $('#auth-otp-phone').text(authPhone);
+                        startAuthTimer(120);
+                        showAuthStep('otp');
+                        $card.find('.auth-otp-input').eq(0).focus();
+                    } else {
+                        var cooldown = (resp && resp.data && resp.data.cooldown) ? resp.data.cooldown : 0;
+                        var msg = (resp && resp.data && resp.data.message) || 'خطا در ارسال کد.';
+                        if (cooldown > 0) {
+                            startAuthTimer(cooldown);
+                            showAuthStep('otp');
+                            showAuthError('otp', msg);
+                        } else {
+                            showAuthError('phone', msg);
+                        }
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    showAuthError('phone', 'خطا در ارتباط با سرور.');
+                }
+            });
+        }
+
+        $('#auth-send').on('click', function () { requestOtp(); });
+        $('#auth-resend').on('click', function () {
+            if ($(this).prop('disabled')) return;
+            requestOtp();
+        });
+
+        // --- OTP boxes: auto-advance, backspace, paste ---
+        var $otpBoxes = $card.find('.auth-otp-input');
+
+        function updateVerifyState() {
+            var codeVal = '';
+            $otpBoxes.each(function () { codeVal += $(this).val(); });
+            $('#auth-verify').prop('disabled', codeVal.length !== 5);
+            if (codeVal.length === 5) {
+                $('#auth-code-stored').val(codeVal);
+            }
+        }
+
+        $otpBoxes.on('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 1);
+            if (this.value) {
+                $(this).addClass('filled');
+                $(this).next('.auth-otp-input').focus();
+            }
+            updateVerifyState();
+        });
+
+        $otpBoxes.on('keydown', function (e) {
+            if (e.key === 'Backspace' && !this.value) {
+                $(this).removeClass('filled');
+                $(this).prev('.auth-otp-input').val('').removeClass('filled').focus();
+                updateVerifyState();
+            }
+        });
+
+        $otpBoxes.on('paste', function (e) {
+            e.preventDefault();
+            var text = ((e.originalEvent.clipboardData || {}).getData('text') || '').replace(/[^0-9]/g, '');
+            if (text.length >= 5) {
+                $otpBoxes.each(function (i) {
+                    $(this).val(text[i] || '').toggleClass('filled', !!text[i]);
+                });
+                $otpBoxes.eq(4).focus();
+                updateVerifyState();
+            }
+        });
+
+        // --- Edit phone number ---
+        $('#auth-edit-phone').on('click', function () {
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            $otpBoxes.val('').removeClass('filled');
+            $('#auth-verify').prop('disabled', true);
+            $('#auth-resend').prop('disabled', true);
+            clearAuthErrors();
+            showAuthStep('phone');
+        });
+
+        // --- Verify OTP ---
+        $('#auth-verify').on('click', function () {
+            clearAuthErrors();
+            var codeVal = '';
+            $otpBoxes.each(function () { codeVal += $(this).val(); });
+
+            var $btn = $(this).addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_auth_verify_otp',
+                    phone: authPhone,
+                    code: codeVal,
+                    redirect_to: redirectTo,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
+                    if (resp && resp.success) {
+                        if (resp.data.next === 'register') {
+                            showAuthStep('register');
+                        } else {
+                            finishAuth(resp.data.redirect);
+                        }
+                    } else {
+                        showAuthError('otp', (resp && resp.data && resp.data.message) || 'کد وارد شده صحیح نیست.');
+                        $otpBoxes.val('').removeClass('filled');
+                        $otpBoxes.eq(0).focus();
+                        $('#auth-verify').prop('disabled', true);
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
+                    showAuthError('otp', 'خطا در ارتباط با سرور.');
+                }
+            });
+        });
+
+        // --- Register (new users) ---
+        $('#auth-register-btn').on('click', function () {
+            clearAuthErrors();
+            var first = $('#auth-first-name').val().trim();
+            var last = $('#auth-last-name').val().trim();
+            var email = $('#auth-email').val().trim();
+            var pass = $('#auth-password').val();
+            var confirm = $('#auth-password-confirm').val();
+
+            if (!first || !last) { showAuthError('register', 'نام و نام خانوادگی الزامی است.'); return; }
+            if (pass.length < 6) { showAuthError('register', 'رمز عبور باید حداقل ۶ کاراکتر باشد.'); return; }
+            if (pass !== confirm) { showAuthError('register', 'تکرار رمز عبور مطابقت ندارد.'); return; }
+
+            var $btn = $(this).addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_auth_register',
+                    phone: authPhone,
+                    first_name: first,
+                    last_name: last,
+                    email: email,
+                    password: pass,
+                    redirect_to: redirectTo,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        $('#auth-success-text').text(resp.data.message || 'ورود با موفقیت انجام شد.');
+                        finishAuth(resp.data.redirect);
+                    } else {
+                        showAuthError('register', (resp && resp.data && resp.data.message) || 'خطا در ثبت‌نام.');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    showAuthError('register', 'خطا در ارتباط با سرور.');
+                }
+            });
+        });
+
+        function finishAuth(redirect) {
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            showAuthStep('success');
+            setTimeout(function () {
+                window.location.href = redirect || '/';
+            }, 1500);
+        }
+    }
+
     // --- Tabs Navigation: Smooth Scroll + Active State ---
     var $tabLinks = $('.tab-nav-link');
     var $tabSections = $('.single-product-section');

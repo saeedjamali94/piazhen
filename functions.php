@@ -97,13 +97,14 @@ add_action('wp_enqueue_scripts', 'piazhen_scripts');
 // ============================================================================
 
 /**
- * Get dashboard URL (WooCommerce my-account or wp-admin)
+ * Get dashboard URL: WooCommerce my-account for logged-in users,
+ * the login/registration page for guests.
  */
 function pzhDashboardUrl() {
-    if (class_exists('WooCommerce')) {
-        return wc_get_page_permalink('myaccount');
+    if (is_user_logged_in()) {
+        return class_exists('WooCommerce') ? wc_get_page_permalink('myaccount') : SITE_URL . '/my-account';
     }
-    return SITE_URL . '/my-account';
+    return pzh_auth_page_url();
 }
 
 /**
@@ -1776,6 +1777,279 @@ function pzh_checkout_save_map_coords($order_id, $posted) {
 }
 add_action('woocommerce_checkout_update_order_meta', 'pzh_checkout_save_map_coords', 20, 2);
 add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
+
+// ============================================================================
+// Auth: Login / Registration with SMS OTP (Melipayamak) — custom AJAX, no plugins
+// ============================================================================
+
+/**
+ * Melipayamak credentials (override with constants or the pzh_sms_credentials filter)
+ */
+function pzh_sms_credentials() {
+    return apply_filters('pzh_sms_credentials', array(
+        'username' => defined('PZH_SMS_USERNAME') ? PZH_SMS_USERNAME : '09127772167',
+        'password' => defined('PZH_SMS_PASSWORD') ? PZH_SMS_PASSWORD : 'aa601577-a7ad-436d-9d42-4a2de9bfd2de',
+        'sender'   => defined('PZH_SMS_SENDER') ? PZH_SMS_SENDER : '50002710072167',
+        'pattern'  => defined('PZH_SMS_PATTERN') ? PZH_SMS_PATTERN : '186253',
+    ));
+}
+
+/**
+ * Normalize an Iranian mobile number to 09xxxxxxxxx (Persian digits, +98, spaces)
+ */
+function pzh_normalize_phone($phone) {
+    $phone = strtr(trim((string) $phone), array(
+        '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+        '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+    ));
+    $phone = preg_replace('/[^0-9]/', '', $phone);
+
+    if (strlen($phone) === 10 && $phone[0] === '9') $phone = '0' . $phone;
+    if (strlen($phone) === 12 && substr($phone, 0, 2) === '98') $phone = '0' . substr($phone, 2);
+    if (strlen($phone) === 13 && substr($phone, 0, 3) === '980') $phone = '0' . substr($phone, 3);
+
+    return preg_match('/^09[0-9]{9}$/', $phone) ? $phone : '';
+}
+
+/**
+ * Send the OTP code through the Melipayamak pattern (bodyId)
+ */
+function pzh_send_sms_otp($phone, $code) {
+    $creds = pzh_sms_credentials();
+
+    $resp = wp_remote_post('https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber', array(
+        'timeout' => 15,
+        'headers' => array('Content-Type' => 'application/json'),
+        'body'    => wp_json_encode(array(
+            'username' => $creds['username'],
+            'password' => $creds['password'],
+            'text'     => (string) $code,
+            'to'       => $phone,
+            'bodyId'   => intval($creds['pattern']),
+        )),
+    ));
+
+    if (is_wp_error($resp)) {
+        return false;
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($resp), true);
+    return !empty($body) && isset($body['RetStatus']) && intval($body['RetStatus']) === 1;
+}
+
+// --- OTP storage (hashed, with attempts + resend cooldown) ---
+
+function pzh_otp_store_key($phone) {
+    return 'pzh_otp_' . md5($phone);
+}
+
+function pzh_otp_set($phone, $code) {
+    set_transient(pzh_otp_store_key($phone), array(
+        'hash'     => wp_hash($code),
+        'attempts' => 0,
+        'verified' => false,
+        'sent_at'  => time(),
+    ), 5 * MINUTE_IN_SECONDS);
+}
+
+function pzh_otp_get($phone) {
+    return get_transient(pzh_otp_store_key($phone));
+}
+
+function pzh_otp_attempts($phone) {
+    $data = pzh_otp_get($phone);
+    return $data ? intval($data['attempts'] ?? 0) : 0;
+}
+
+function pzh_otp_is_verified($phone) {
+    $data = pzh_otp_get($phone);
+    return ($data && !empty($data['verified']));
+}
+
+function pzh_otp_delete($phone) {
+    delete_transient(pzh_otp_store_key($phone));
+}
+
+/**
+ * Check the entered code. On success marks the phone verified for 10 minutes.
+ */
+function pzh_otp_verify($phone, $code) {
+    $data = pzh_otp_get($phone);
+    if (!$data || empty($data['hash'])) {
+        return false;
+    }
+
+    if (hash_equals($data['hash'], wp_hash($code))) {
+        $data['verified'] = true;
+        set_transient(pzh_otp_store_key($phone), $data, 10 * MINUTE_IN_SECONDS);
+        return true;
+    }
+
+    $data['attempts'] = intval($data['attempts'] ?? 0) + 1;
+    set_transient(pzh_otp_store_key($phone), $data, 5 * MINUTE_IN_SECONDS);
+    return false;
+}
+
+/**
+ * URL of the login/registration page (the page using the page-login.php template)
+ */
+function pzh_auth_page_url() {
+    $pages = get_pages(array(
+        'meta_key'   => '_wp_page_template',
+        'meta_value' => 'page-login.php',
+        'number'     => 1,
+    ));
+    if (!empty($pages)) {
+        return get_permalink($pages[0]);
+    }
+    return class_exists('WooCommerce') ? wc_get_page_permalink('myaccount') : home_url('/login/');
+}
+
+/**
+ * Redirect target after successful login/registration
+ */
+function pzh_auth_redirect_url() {
+    if (!empty($_REQUEST['redirect_to'])) {
+        return esc_url_raw(wp_unslash($_REQUEST['redirect_to']));
+    }
+    return class_exists('WooCommerce') ? wc_get_page_permalink('myaccount') : home_url('/');
+}
+
+/**
+ * AJAX: request an OTP (also used for resend)
+ */
+function pzh_auth_send_otp() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $phone = pzh_normalize_phone(isset($_POST['phone']) ? $_POST['phone'] : '');
+    if (!$phone) {
+        wp_send_json_error(array('message' => __('شماره موبایل معتبر نیست.', 'piazhen')));
+    }
+
+    // Resend cooldown (60s)
+    $existing = pzh_otp_get($phone);
+    if ($existing && !empty($existing['sent_at']) && (time() - intval($existing['sent_at'])) < 60) {
+        $wait = 60 - (time() - intval($existing['sent_at']));
+        wp_send_json_error(array(
+            'message'  => sprintf(__('لطفاً %s ثانیه صبر کنید و دوباره تلاش کنید.', 'piazhen'), pzh_fa_num($wait)),
+            'cooldown' => $wait,
+        ));
+    }
+
+    $code = str_pad((string) wp_rand(0, 99999), 5, '0', STR_PAD_LEFT);
+    pzh_otp_set($phone, $code);
+
+    $sent = pzh_send_sms_otp($phone, $code);
+    if (!$sent) {
+        pzh_otp_delete($phone);
+        wp_send_json_error(array('message' => __('خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.', 'piazhen')));
+    }
+
+    wp_send_json_success(array(
+        'message' => __('کد تایید پیامک شد.', 'piazhen'),
+        'phone'   => $phone,
+    ));
+}
+add_action('wp_ajax_pzh_auth_send_otp', 'pzh_auth_send_otp');
+add_action('wp_ajax_nopriv_pzh_auth_send_otp', 'pzh_auth_send_otp');
+
+/**
+ * AJAX: verify the OTP — logs in existing users, sends new users to the profile step
+ */
+function pzh_auth_verify_otp() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $phone = pzh_normalize_phone(isset($_POST['phone']) ? $_POST['phone'] : '');
+    $code  = trim(sanitize_text_field(isset($_POST['code']) ? $_POST['code'] : ''));
+
+    if (!$phone || $code === '') {
+        wp_send_json_error(array('message' => __('شماره یا کد نامعتبر است.', 'piazhen')));
+    }
+
+    if (pzh_otp_attempts($phone) >= 5) {
+        wp_send_json_error(array('message' => __('تعداد تلاش‌های ناموفق زیاد است. لطفاً دوباره درخواست کد کنید.', 'piazhen')));
+    }
+
+    if (!pzh_otp_verify($phone, $code)) {
+        $remaining = 5 - pzh_otp_attempts($phone);
+        wp_send_json_error(array('message' => __('کد وارد شده صحیح نیست.', 'piazhen')));
+    }
+
+    // Existing user → log in directly
+    $user = get_user_by('login', $phone);
+    if ($user) {
+        wp_set_auth_cookie($user->ID, true);
+        do_action('wp_login', $user->user_login, $user);
+        pzh_otp_delete($phone);
+        wp_send_json_success(array(
+            'next'     => 'done',
+            'is_new'   => false,
+            'redirect' => pzh_auth_redirect_url(),
+        ));
+    }
+
+    // New user → profile completion step
+    wp_send_json_success(array(
+        'next'   => 'register',
+        'is_new' => true,
+    ));
+}
+add_action('wp_ajax_pzh_auth_verify_otp', 'pzh_auth_verify_otp');
+add_action('wp_ajax_nopriv_pzh_auth_verify_otp', 'pzh_auth_verify_otp');
+
+/**
+ * AJAX: create the account after OTP verification
+ */
+function pzh_auth_register() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $phone = pzh_normalize_phone(isset($_POST['phone']) ? $_POST['phone'] : '');
+    if (!$phone || !pzh_otp_is_verified($phone)) {
+        wp_send_json_error(array('message' => __('ابتدا کد تایید را وارد کنید.', 'piazhen')));
+    }
+
+    $first_name = sanitize_text_field(isset($_POST['first_name']) ? $_POST['first_name'] : '');
+    $last_name  = sanitize_text_field(isset($_POST['last_name']) ? $_POST['last_name'] : '');
+    $email      = sanitize_email(isset($_POST['email']) ? $_POST['email'] : '');
+    $password   = isset($_POST['password']) ? $_POST['password'] : '';
+
+    if (!$first_name || !$last_name) {
+        wp_send_json_error(array('message' => __('نام و نام خانوادگی الزامی است.', 'piazhen')));
+    }
+    if (strlen($password) < 6) {
+        wp_send_json_error(array('message' => __('رمز عبور باید حداقل ۶ کاراکتر باشد.', 'piazhen')));
+    }
+
+    $user_id = wp_insert_user(array(
+        'user_login'      => $phone,
+        'user_pass'       => $password,
+        'user_email'      => $email ?: ($phone . '@piazhen.local'),
+        'first_name'      => $first_name,
+        'last_name'       => $last_name,
+        'display_name'    => trim($first_name . ' ' . $last_name),
+        'nickname'        => $first_name,
+        'role'            => 'customer',
+        'user_registered' => current_time('mysql'),
+    ));
+
+    if (is_wp_error($user_id)) {
+        wp_send_json_error(array('message' => $user_id->get_error_message()));
+    }
+
+    update_user_meta($user_id, 'billing_phone', $phone);
+    pzh_otp_delete($phone);
+
+    $user = get_user_by('id', $user_id);
+    wp_set_auth_cookie($user_id, true);
+    do_action('wp_login', $user->user_login, $user);
+
+    wp_send_json_success(array(
+        'message'  => __('حساب کاربری شما با موفقیت ساخته شد.', 'piazhen'),
+        'redirect' => pzh_auth_redirect_url(),
+    ));
+}
+add_action('wp_ajax_pzh_auth_register', 'pzh_auth_register');
+add_action('wp_ajax_nopriv_pzh_auth_register', 'pzh_auth_register');
 
 // ============================================================================
 // WooCommerce Hooks
