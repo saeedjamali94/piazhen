@@ -980,6 +980,101 @@
 }
 
 // ============================================================================
+// Checkout Map (Neshan)
+// ============================================================================
+
+.checkout-map-block {
+    margin-top: 6px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: $textColor;
+        margin-bottom: 10px;
+
+        i {
+            color: $siteYellowDark;
+        }
+    }
+
+    &__address {
+        margin-top: 10px;
+        padding: 10px 14px;
+        background: rgba($siteYellow, 0.1);
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: $gray-700;
+        line-height: 1.8;
+        min-height: 20px;
+    }
+}
+
+.checkout-map {
+    height: 280px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid $gray-200;
+    background: $gray-100;
+    z-index: 1;
+    position: relative;
+
+    @media (max-width: $bp-sm) {
+        height: 220px;
+    }
+
+    // Leaflet polish
+    .leaflet-control-zoom a {
+        color: $textColor;
+    }
+
+    .leaflet-control-attribution {
+        display: none;
+    }
+}
+
+// Custom map pin (matches the design's orange pin)
+.pzh-map-pin {
+    background: none;
+    border: none;
+
+    .pzh-map-pin__inner {
+        position: relative;
+        width: 34px;
+        height: 34px;
+
+        .pin-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 26px;
+            height: 26px;
+            border-radius: 50% 50% 50% 0;
+            transform: translateX(-50%) rotate(-45deg);
+            background: $siteOrange;
+            border: 3px solid $white;
+            box-shadow: 0 3px 10px rgba($black, 0.3);
+        }
+
+        .pin-dot {
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: $white;
+            z-index: 2;
+        }
+    }
+}
+
+// ============================================================================
 // Thank You page
 // ============================================================================
 

@@ -1158,6 +1158,108 @@ $(document).ready(function () {
     }
     pzhCheckoutSummaryOrder();
 
+    // ========================================================================
+    // Checkout Map (Neshan SDK with API key, or Leaflet + OSM fallback)
+    // ========================================================================
+    var $checkoutMap = $('#checkout-map');
+
+    if ($checkoutMap.length && typeof L !== 'undefined') {
+        var mapCenter = (window.pzh_options && pzh_options.map_center) || [35.7219, 51.3347];
+        var mapZoom   = (window.pzh_options && pzh_options.map_zoom) || 12;
+        var neshanKey = (window.pzh_options && pzh_options.neshan_key) || '';
+        var map;
+
+        if (neshanKey) {
+            // Official Neshan SDK (Persian labels)
+            map = new L.Map('checkout-map', {
+                key: neshanKey,
+                maptype: 'dreamy',
+                poi: true,
+                traffic: false,
+                center: mapCenter,
+                zoom: mapZoom,
+                zoomControl: true,
+                scrollWheelZoom: false
+            });
+        } else {
+            map = L.map('checkout-map', {
+                center: mapCenter,
+                zoom: mapZoom,
+                zoomControl: true,
+                attributionControl: false,
+                scrollWheelZoom: false
+            });
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                minZoom: 5
+            }).addTo(map);
+        }
+
+        // Custom pin (matches the design)
+        var pinIcon = L.divIcon({
+            className: 'pzh-map-pin',
+            html: '<div class="pzh-map-pin__inner"><span class="pin-head"></span><span class="pin-dot"></span></div>',
+            iconSize: [34, 34],
+            iconAnchor: [17, 32]
+        });
+
+        var marker = null;
+        var $mapAddress = $('#checkout-map-address');
+        var $latInput = $('#billing-latitude');
+        var $lngInput = $('#billing-longitude');
+
+        function placePin(latlng, animate) {
+            if (marker) {
+                marker.setLatLng(latlng);
+            } else {
+                marker = L.marker(latlng, { icon: pinIcon }).addTo(map);
+            }
+            if (animate) map.panTo(latlng);
+
+            $latInput.val(latlng.lat.toFixed(6));
+            $lngInput.val(latlng.lng.toFixed(6));
+            $mapAddress.html('<span class="muted-note">در حال دریافت آدرس...</span>');
+
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_reverse_geocode',
+                    lat: latlng.lat,
+                    lng: latlng.lng,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    if (resp && resp.success && resp.data.geocoded && resp.data.address) {
+                        $mapAddress.html('<i class="fa-solid fa-location-dot" style="color:#F26A26"></i> ' + resp.data.address);
+                        // Pre-fill the address + district fields when empty
+                        var $addr = $('#billing_address_1');
+                        if ($addr.length && !$addr.val()) $addr.val(resp.data.address);
+                        if (resp.data.district) {
+                            var $dist = $('#billing_district');
+                            if ($dist.length && !$dist.val()) $dist.val(resp.data.district);
+                        }
+                    } else {
+                        $mapAddress.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+                    }
+                },
+                error: function () {
+                    $mapAddress.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+                }
+            });
+        }
+
+        map.on('click', function (e) {
+            placePin(e.latlng, false);
+        });
+
+        // Restore an existing pick (page reload with saved values)
+        if ($latInput.val() && $lngInput.val()) {
+            placePin(L.latLng(parseFloat($latInput.val()), parseFloat($lngInput.val())), false);
+        }
+    }
+
     // --- Tabs Navigation: Smooth Scroll + Active State ---
     var $tabLinks = $('.tab-nav-link');
     var $tabSections = $('.single-product-section');

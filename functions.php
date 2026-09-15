@@ -66,6 +66,18 @@ function piazhen_scripts() {
     wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.8', true);
     wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), $version, true);
 
+    // Checkout map (Neshan SDK with API key, or plain Leaflet + OSM fallback)
+    if (is_checkout()) {
+        if (pzh_neshan_api_key()) {
+            // Official Neshan Leaflet SDK (Persian map tiles)
+            wp_enqueue_style('leaflet-css', 'https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.css', array(), '1.0.8');
+            wp_enqueue_script('leaflet-js', 'https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.js', array('jquery'), '1.0.8', true);
+        } else {
+            wp_enqueue_style('leaflet-css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4');
+            wp_enqueue_script('leaflet-js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array('jquery'), '1.9.4', true);
+        }
+    }
+
     wp_localize_script('piazhen-js', 'pzh_options', array(
         'theme_url'  => PZH_THEME_URI,
         'ajax_url'   => admin_url('admin-ajax.php'),
@@ -73,6 +85,9 @@ function piazhen_scripts() {
         'site_url'   => SITE_URL,
         'nonce'      => wp_create_nonce('pzh_ajax_nonce'),
         'is_rtl'     => is_rtl(),
+        'neshan_key' => pzh_neshan_api_key(),
+        'map_center' => apply_filters('pzh_map_center', array(35.7219, 51.3347)), // Tehran
+        'map_zoom'   => apply_filters('pzh_map_zoom', 12),
     ));
 }
 add_action('wp_enqueue_scripts', 'piazhen_scripts');
@@ -1649,6 +1664,117 @@ function pzh_force_ship_to_billing_only() {
     }
 }
 add_action('init', 'pzh_force_ship_to_billing_only');
+
+// ============================================================================
+// Checkout Map (Neshan raster tiles + optional reverse geocoding — AJAX)
+// ============================================================================
+
+/**
+ * Neshan API key (optional). Define PZH_NESHAN_API_KEY in wp-config.php or use
+ * the 'pzh_neshan_api_key' filter. Without a key the map still works
+ * (raster tiles are public); only reverse geocoding/search is skipped.
+ */
+function pzh_neshan_api_key() {
+    return apply_filters('pzh_neshan_api_key', defined('PZH_NESHAN_API_KEY') ? PZH_NESHAN_API_KEY : '');
+}
+
+/**
+ * Checkout fields: hide company, force country to IR, add the محله field
+ */
+function pzh_checkout_fields($fields) {
+    // Country is always Iran (hidden field)
+    if (isset($fields['billing']['billing_country'])) {
+        $fields['billing']['billing_country'] = array(
+            'type'     => 'hidden',
+            'default'  => 'IR',
+            'required' => true,
+            'class'    => array('form-row-wide'),
+        );
+    }
+
+    // No company field in the design
+    unset($fields['billing']['billing_company']);
+
+    // محله (district) — plain text; the map can fill it via reverse geocoding
+    if (!isset($fields['billing']['billing_district'])) {
+        $fields['billing']['billing_district'] = array(
+            'label'       => __('محله', 'piazhen'),
+            'type'        => 'text',
+            'placeholder' => __('مثال: سعادت‌آباد', 'piazhen'),
+            'required'    => false,
+            'class'       => array('form-row-wide'),
+            'clear'       => true,
+            'priority'    => 47,
+        );
+    }
+
+    return $fields;
+}
+add_filter('woocommerce_checkout_fields', 'pzh_checkout_fields', 30);
+
+/**
+ * AJAX: reverse geocode map coordinates via Neshan (requires the API key)
+ */
+function pzh_reverse_geocode() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
+    $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
+
+    if (!$lat || !$lng) {
+        wp_send_json_error(array('message' => __('موقعیت نامعتبر است.', 'piazhen')));
+    }
+
+    $key = pzh_neshan_api_key();
+    if (!$key) {
+        // No key: coordinates are still saved, address stays manual
+        wp_send_json_success(array(
+            'geocoded' => false,
+            'address'  => '',
+            'state'    => '',
+            'city'     => '',
+            'district' => '',
+        ));
+    }
+
+    $url = 'https://api.neshan.org/v5/reverse?lat=' . $lat . '&lng=' . $lng;
+    $resp = wp_remote_get($url, array(
+        'headers' => array('Api-Key' => $key),
+        'timeout' => 10,
+    ));
+
+    if (is_wp_error($resp) || wp_remote_retrieve_response_code($resp) !== 200) {
+        wp_send_json_error(array('message' => __('خطا در دریافت آدرس از نقشه.', 'piazhen')));
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($resp), true);
+    if (empty($body)) {
+        wp_send_json_error(array('message' => __('پاسخی از نقشه دریافت نشد.', 'piazhen')));
+    }
+
+    wp_send_json_success(array(
+        'geocoded' => true,
+        'address'  => isset($body['formatted_address']) ? $body['formatted_address'] : (isset($body['address']) ? $body['address'] : ''),
+        'state'    => isset($body['state']) ? $body['state'] : '',
+        'city'     => isset($body['city']) ? $body['city'] : '',
+        'district' => isset($body['neighbourhood']) ? $body['neighbourhood'] : (isset($body['neighborhood']) ? $body['neighborhood'] : (isset($body['district']) ? $body['district'] : '')),
+    ));
+}
+add_action('wp_ajax_pzh_reverse_geocode', 'pzh_reverse_geocode');
+add_action('wp_ajax_nopriv_pzh_reverse_geocode', 'pzh_reverse_geocode');
+
+/**
+ * Save the picked map coordinates to the order
+ */
+function pzh_checkout_save_map_coords($order_id, $posted) {
+    if (isset($posted['billing_latitude']) && $posted['billing_latitude'] !== '') {
+        $order = wc_get_order($order_id);
+        $order->update_meta_data('_billing_latitude', sanitize_text_field($posted['billing_latitude']));
+        $order->update_meta_data('_billing_longitude', sanitize_text_field($posted['billing_longitude']));
+        $order->save();
+    }
+}
+add_action('woocommerce_checkout_update_order_meta', 'pzh_checkout_save_map_coords', 20, 2);
 add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
 
 // ============================================================================
