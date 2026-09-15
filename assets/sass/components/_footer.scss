@@ -20,6 +20,86 @@
 }
 
 // ============================================================================
+// Newsletter Bar
+// ============================================================================
+
+.footer-newsletter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 28px 0 36px;
+    margin-bottom: 36px;
+    border-bottom: 1px solid rgba($white, 0.08);
+
+    &__text {
+        h4 {
+            font-size: 19px;
+            font-weight: 800;
+            color: $white;
+            margin-bottom: 6px;
+        }
+
+        p {
+            font-size: 13px;
+            color: rgba($white, 0.55);
+            margin: 0;
+        }
+    }
+
+    &__form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+
+        input[type="email"] {
+            width: 300px;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba($white, 0.15);
+            background: rgba($white, 0.06);
+            color: $white;
+            font-size: 13px;
+            font-family: $fontFamily;
+            direction: rtl;
+            transition: all $transition-fast;
+
+            &::placeholder {
+                color: rgba($white, 0.4);
+            }
+
+            &:focus {
+                border-color: $siteYellow;
+                background: rgba($white, 0.1);
+                outline: none;
+            }
+        }
+
+        .mainBtn {
+            white-space: nowrap;
+            padding: 12px 28px;
+            font-size: 14px;
+        }
+    }
+
+    @media (max-width: $bp-md) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+
+        &__form {
+            width: 100%;
+
+            input[type="email"] {
+                flex: 1;
+                width: auto;
+            }
+        }
+    }
+}
+
+// ============================================================================
 // Footer Grid
 // ============================================================================
 

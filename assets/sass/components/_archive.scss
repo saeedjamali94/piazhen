@@ -1,25 +1,58 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// WooCommerce Archive Page
+// WooCommerce Archive Page (shop, categories, brands)
 // ============================================================================
 
 .woo-archive {
-    padding: 24px 0 48px;
+    padding: 8px 0 48px;
 
     .archive-title {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 800;
-        margin-bottom: 16px;
+        margin: 0;
     }
 }
 
 // ============================================================================
-// Categories Carousel
+// Breadcrumb
+// ============================================================================
+
+.archive-breadcrumb {
+    font-size: 13px;
+    color: $gray-600;
+
+    .breadcrumb-trail {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .breadcrumb-delimiter {
+        color: $gray-400;
+        margin: 0 4px;
+    }
+
+    a {
+        color: $gray-600;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteYellowDark;
+        }
+    }
+}
+
+// ============================================================================
+// Categories Carousel (circles)
 // ============================================================================
 
 .categories-swiper-wrapper {
-    margin-bottom: 24px;
+    margin: 8px 0 4px;
+    background: $gray-100;
+    border-radius: 16px;
+    padding: 16px 12px;
 }
 
 .category-card {
@@ -27,7 +60,7 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 12px 8px;
+    padding: 6px 8px;
     transition: transform $transition-fast;
 
     &:hover {
@@ -40,14 +73,15 @@
     }
 
     &__image {
-        width: 80px;
-        height: 80px;
+        width: 84px;
+        height: 84px;
         border-radius: 50%;
         overflow: hidden;
-        border: 2px solid $gray-200;
+        border: 2px solid $white;
+        box-shadow: $shadow-sm;
         margin-bottom: 8px;
         transition: all $transition-base;
-        background: $gray-100;
+        background: $white;
 
         img {
             width: 100%;
@@ -60,7 +94,7 @@
         font-size: 13px;
         font-weight: 600;
         color: $textColor;
-        line-height: 1.4;
+        line-height: 1.5;
     }
 }
 
@@ -71,43 +105,189 @@
 .archive-filters {
     background: $white;
     border: 1px solid $gray-200;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 20px;
     position: sticky;
-    top: 120px;
+    top: 20px;
     margin-bottom: 24px;
 
-    &__title {
-        font-size: 18px;
-        font-weight: 800;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
         border-bottom: 2px solid $siteYellow;
+    }
+
+    &__title {
+        font-size: 17px;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+            font-size: 15px;
+            color: $siteYellowDark;
+        }
+    }
+
+    .clear-all-filters {
+        font-size: 12px;
+        font-weight: 700;
+        color: $danger;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: darken($danger, 10%);
+        }
     }
 }
 
 .filter-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     padding-bottom: 16px;
     border-bottom: 1px solid $gray-100;
 
     &:last-of-type {
         border-bottom: 0;
         margin-bottom: 0;
+        padding-bottom: 0;
     }
 
     &__title {
         font-size: 14px;
         font-weight: 700;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         color: $textColor;
     }
 
     &__items {
-        max-height: 200px;
+        max-height: 220px;
         overflow-y: auto;
+        padding-left: 4px;
+
+        &::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: $gray-300;
+            border-radius: 4px;
+        }
     }
 }
+
+// Filter count badge
+.filter-count {
+    font-size: 11px;
+    color: $gray-500;
+    background: $gray-100;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-weight: 500;
+}
+
+// ============================================================================
+// Category Tree (sidebar)
+// ============================================================================
+
+.category-tree {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    &__item {
+        &.current > .category-tree__row .category-tree__link {
+            color: $siteYellowDark;
+            font-weight: 700;
+        }
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__toggle {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: $gray-500;
+        border-radius: 4px;
+        transition: all $transition-fast;
+
+        svg {
+            transition: transform $transition-fast;
+        }
+
+        &.open svg {
+            transform: rotate(90deg);
+        }
+
+        &:hover {
+            background: rgba($siteYellow, 0.15);
+            color: $siteYellowDark;
+        }
+    }
+
+    &__toggle-placeholder {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    &__link {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: $gray-700;
+        padding: 5px 0;
+        line-height: 1.6;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteYellowDark;
+        }
+    }
+
+    &__children {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        padding-right: 24px;
+        display: none;
+
+        &.open {
+            display: block;
+        }
+
+        .category-tree__link {
+            font-size: 12px;
+            color: $gray-600;
+        }
+    }
+}
+
+// ============================================================================
+// Checkboxes
+// ============================================================================
 
 .filter-checkbox {
     display: flex;
@@ -139,7 +319,7 @@
         width: 18px;
         height: 18px;
         border: 2px solid $gray-400;
-        border-radius: 4px;
+        border-radius: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -149,8 +329,8 @@
 
         &:after {
             content: "";
-            width: 8px;
-            height: 8px;
+            width: 9px;
+            height: 9px;
             background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
             opacity: 0;
             transition: opacity $transition-fast;
@@ -159,20 +339,79 @@
 
     &__label {
         flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
         color: $gray-700;
     }
 }
 
-// Price Range
+// ============================================================================
+// In-Stock Toggle Switch
+// ============================================================================
+
+.filter-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: $gray-700;
+    padding: 4px 0;
+
+    input[type="checkbox"] {
+        display: none;
+
+        &:checked + .filter-switch__track {
+            background: $siteYellow;
+
+            .filter-switch__thumb {
+                transform: translateX(-18px);
+            }
+        }
+    }
+
+    &__track {
+        width: 40px;
+        height: 22px;
+        border-radius: 11px;
+        background: $gray-300;
+        display: flex;
+        align-items: center;
+        padding: 0 3px;
+        transition: background $transition-fast;
+        flex-shrink: 0;
+    }
+
+    &__thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: $white;
+        box-shadow: $shadow-sm;
+        transition: transform $transition-fast;
+    }
+
+    &__label {
+        flex: 1;
+    }
+}
+
+// ============================================================================
+// Price Range (dual-handle slider)
+// ============================================================================
+
 .price-range {
     &__inputs {
-        margin-bottom: 12px;
+        margin-bottom: 14px;
 
         input[type="number"] {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid $gray-300;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 13px;
             font-family: $fontFamily;
             text-align: center;
@@ -186,6 +425,15 @@
                 font-size: 11px;
                 color: $gray-500;
             }
+
+            // Hide number spinners
+            &::-webkit-outer-spin-button,
+            &::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+            -moz-appearance: textfield;
+            appearance: textfield;
         }
     }
 
@@ -202,6 +450,8 @@
         height: 36px;
         display: flex;
         align-items: center;
+        background: $gray-300;
+        border-radius: 2px;
     }
 
     &__slider {
@@ -289,42 +539,76 @@
             }
         }
     }
+
+    // "از X تا Y تومان" label
+    &__display {
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: rgba($siteYellow, 0.12);
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $gray-700;
+        text-align: center;
+    }
 }
 
+// ============================================================================
 // Filter Action Buttons
+// ============================================================================
+
 .filter-actions {
-    padding-top: 8px;
+    padding-top: 6px;
 
     .apply-filters-btn {
         background: $siteYellow !important;
         color: $textColor !important;
         border-color: $siteYellow !important;
         font-size: 13px !important;
-        padding: 8px 16px !important;
+        padding: 9px 16px !important;
 
         &:hover {
             background: $siteYellowDark !important;
         }
     }
+
+    .reset-filters-btn {
+        background: transparent !important;
+        color: $gray-600 !important;
+        border-color: $gray-300 !important;
+        font-size: 13px !important;
+        padding: 9px 16px !important;
+
+        &:hover {
+            border-color: $danger !important;
+            color: $danger !important;
+            background: rgba($danger, 0.03) !important;
+        }
+    }
 }
 
 // ============================================================================
-// Archive Toolbar (Sort + Count)
+// Archive Toolbar (count + sort pills)
 // ============================================================================
 
 .archive-toolbar {
     background: $white;
     border: 1px solid $gray-200;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 12px 16px;
     margin-bottom: 20px;
 }
 
-.sort-label {
+.products-count-wrapper {
     font-size: 13px;
-    font-weight: 600;
-    color: $gray-700;
+    color: $gray-600;
     white-space: nowrap;
+
+    .products-count {
+        font-weight: 800;
+        color: $textColor;
+        margin-left: 4px;
+    }
 }
 
 .sort-radio {
@@ -332,7 +616,6 @@
     font-size: 13px;
     display: flex;
     align-items: center;
-    gap: 4px;
     color: $gray-600;
     transition: color $transition-fast;
 
@@ -340,23 +623,46 @@
         display: none;
 
         &:checked + span {
-            color: $siteYellowDark;
+            background: $siteYellow;
+            border-color: $siteYellow;
+            color: $textColor;
             font-weight: 700;
         }
     }
 
+    span {
+        padding: 6px 14px;
+        border: 1px solid $gray-200;
+        border-radius: 50px;
+        background: $white;
+        transition: all $transition-fast;
+        line-height: 1.6;
+    }
+
     &:hover span {
-        color: $textColor;
+        border-color: $siteYellow;
     }
 }
 
-.products-count-wrapper {
+// Mobile filter toggle button
+.mobile-filters-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border: 1px solid $siteYellow;
+    border-radius: 50px;
+    background: rgba($siteYellow, 0.1);
+    color: $textColor;
     font-size: 13px;
-    color: $gray-600;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all $transition-fast;
+    font-family: $fontFamily;
 
-    .products-count {
-        font-weight: 700;
-        color: $textColor;
+    &:hover,
+    &.active {
+        background: $siteYellow;
     }
 }
 
@@ -381,9 +687,13 @@
     &__empty {
         grid-column: 1 / -1;
         text-align: center;
-        padding: 48px 20px;
+        padding: 56px 20px;
         color: $gray-600;
-        font-size: 16px;
+        font-size: 15px;
+
+        p {
+            margin-bottom: 16px;
+        }
     }
 }
 
@@ -414,7 +724,7 @@
 }
 
 // ============================================================================
-// Pagination
+// Pagination (prev / numbers / next)
 // ============================================================================
 
 .products-pagination {
@@ -423,10 +733,12 @@
     justify-content: center;
     gap: 6px;
     margin-top: 32px;
+    flex-wrap: wrap;
 
     &__btn {
-        width: 38px;
+        min-width: 38px;
         height: 38px;
+        padding: 0 6px;
         border-radius: 50%;
         border: 1px solid $gray-300;
         background: $white;
@@ -434,7 +746,7 @@
         font-weight: 600;
         color: $gray-700;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         transition: all $transition-fast;
@@ -449,7 +761,23 @@
             background: $siteYellow;
             border-color: $siteYellow;
             color: $textColor;
+            font-weight: 800;
         }
+
+        &--arrow {
+            font-size: 15px;
+        }
+
+        &.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+    }
+
+    &__dots {
+        color: $gray-500;
+        padding: 0 2px;
+        user-select: none;
     }
 }
 
@@ -458,19 +786,33 @@
 // ============================================================================
 
 .seo-section {
+    margin-top: 40px;
     background: $white;
     border: 1px solid $gray-200;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 24px;
+
+    &__title {
+        font-size: 17px;
+        font-weight: 800;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid $siteYellow;
+        display: inline-block;
+    }
 
     .textBox {
-        max-height: 100px;
+        max-height: 110px;
         overflow: hidden;
         position: relative;
         font-size: 14px;
         color: $gray-600;
         line-height: 2.2;
         transition: max-height 0.4s ease;
+
+        p {
+            color: $gray-600;
+        }
 
         &:after {
             content: "";
@@ -483,7 +825,7 @@
         }
 
         &.open {
-            max-height: 2000px;
+            max-height: 3000px;
 
             &:after {
                 display: none;
@@ -496,13 +838,13 @@
         align-items: center;
         gap: 6px;
         margin-top: 12px;
-        padding: 6px 16px;
+        padding: 7px 18px;
         border: 1px solid $gray-300;
         border-radius: 20px;
         background: $white;
         color: $lightText;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         transition: all $transition-fast;
         font-family: $fontFamily;
@@ -518,20 +860,37 @@
 // Responsive
 // ============================================================================
 
-@media (max-width: $bp-md) {
-    .archive-filters {
-        position: static;
-        border-radius: 8px;
-        padding: 16px;
+@media (max-width: $bp-lg - 1px) {
+    // Filters collapse into a toggleable panel on mobile (JS toggles visibility)
+    aside.col-lg-3 {
+        order: -1;
+        width: 100%;
     }
 
+    .archive-filters {
+        position: static;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .categories-swiper-wrapper {
+        padding: 12px 8px;
+    }
+}
+
+@media (max-width: $bp-md - 1px) {
     .archive-toolbar {
         flex-direction: column;
         gap: 10px;
-        align-items: flex-start !important;
+        align-items: stretch !important;
 
         .sort-options {
-            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .mobile-filters-toggle {
+            justify-content: center;
         }
     }
 
@@ -540,37 +899,18 @@
         gap: 10px;
     }
 
-    .categories-swiper-wrapper {
-        .category-card {
-            &__image {
-                width: 60px;
-                height: 60px;
-            }
-            &__title {
-                font-size: 11px;
-            }
+    .category-card {
+        &__image {
+            width: 64px;
+            height: 64px;
+        }
+        &__title {
+            font-size: 11px;
         }
     }
-}
 
-// ============================================================================
-// Filter Action Buttons Fixes
-// ============================================================================
-
-.filter-actions {
-
-    .reset-filters-btn {
-        background: transparent !important;
-        color: $gray-600 !important;
-        border-color: $gray-300 !important;
-        font-size: 13px !important;
-        padding: 8px 16px !important;
-
-        &:hover {
-            border-color: $danger !important;
-            color: $danger !important;
-            background: rgba($danger, 0.03) !important;
-        }
+    .seo-section {
+        padding: 16px;
     }
 }
 
@@ -762,8 +1102,6 @@
         }
     }
 }
-
-// Quantity selector inside popup (reuses .qty-btn / .qty-input from single-product)
 
 @media (max-width: $bp-sm) {
     .variation-modal {

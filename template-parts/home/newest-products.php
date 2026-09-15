@@ -7,16 +7,27 @@ $products_query = pzh_get_newest_products(8);
 if (!$products_query->have_posts()) {
     return;
 }
+
+$shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
 ?>
 <div class="home_newest col-md-6">
-    <?php
-    set_query_var('texts', array(
-        'topBtnText' => __('جدیدترین‌ها', 'piazhen'),
-        'heading'    => __('محصولات جدید', 'piazhen'),
-        'text'       => __('جدیدترین محصولات اضافه شده به فروشگاه', 'piazhen'),
-    ));
-    get_template_part('template-parts/global/section', 'title');
-    ?>
+    <div class="section-head">
+        <div class="section-head__right">
+            <span class="section-head__icon">
+                <svg width="24" height="24" viewBox="0 0 14 14" fill="currentColor">
+                    <path d="M6.8 13.6C6.8 7.5 6.8 7.5 6.8 13.6C6.4 7.5 6.1 7.2 0 6.8C6.1 6.8 6.1 6.8 0 6.8C6.1 6.4 6.4 6.1 6.8 0C6.8 6.1 6.8 6.1 6.8 0C7.2 6.1 7.5 6.4 13.6 6.8C7.5 6.8 7.5 6.8 13.6 6.8C7.5 7.2 7.2 7.5 6.8 13.6Z"/>
+                </svg>
+            </span>
+            <div>
+                <span class="section-head__badge"><?php _e('جدیدترین‌ها', 'piazhen'); ?></span>
+                <h3 class="section-head__title"><?php _e('محصولات جدید', 'piazhen'); ?></h3>
+            </div>
+        </div>
+        <a class="see-all-link" href="<?= esc_url($shop_url); ?>">
+            <?php _e('مشاهده همه', 'piazhen'); ?>
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+    </div>
 
     <div class="newest-products-swiper-wrapper position-relative">
         <div class="swiper newest-products-swiper">
@@ -29,10 +40,10 @@ if (!$products_query->have_posts()) {
             </div>
         </div>
 
-        <button class="newest-prev swiper-nav-btn swiper-nav-btn--prev">
+        <button class="newest-prev swiper-nav-btn swiper-nav-btn--prev" aria-label="<?php _e('قبلی', 'piazhen'); ?>">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
-        <button class="newest-next swiper-nav-btn swiper-nav-btn--next">
+        <button class="newest-next swiper-nav-btn swiper-nav-btn--next" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
     </div>

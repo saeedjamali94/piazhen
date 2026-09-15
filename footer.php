@@ -7,6 +7,18 @@ if (!defined('ABSPATH')) {
 
 <footer class="siteFooter">
     <div class="container">
+        <!-- Newsletter Bar -->
+        <div class="footer-newsletter">
+            <div class="footer-newsletter__text">
+                <h4><?php _e('از تخفیف‌ها و جشنواره‌های پی‌آژن باخبر شوید', 'piazhen'); ?></h4>
+                <p><?php _e('با عضویت در خبرنامه، اولین نفری باشید که از جدیدترین محصولات و تخفیف‌ها مطلع می‌شود.', 'piazhen'); ?></p>
+            </div>
+            <form class="footer-newsletter__form" action="#" method="post">
+                <input type="email" placeholder="<?php _e('آدرس ایمیل خود را وارد کنید', 'piazhen'); ?>" required>
+                <button type="submit" class="mainBtn mainBtn--yellow"><?php _e('عضویت', 'piazhen'); ?></button>
+            </form>
+        </div>
+
         <div class="footer-grid">
             <!-- Column 1: About -->
             <div class="footer-col footer-col--about">

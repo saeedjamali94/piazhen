@@ -1,41 +1,22 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Site Header (new design)
+// Site Header (Figma design)
+// Row 1: menu toggle + logo + inline search + icons
+// Row 2: navigation
 // ============================================================================
 
 .siteHeader {
     background: $white;
-    font-size: 18px;
+    font-size: 16px;
 
-    // Top Bar (links row)
-    .top {
-        padding: 24px 0;
-        border-bottom: 1px solid rgba($black, 0.05);
-
-        &__links {
-            display: flex;
-            gap: 32px;
-
-            a {
-                color: $textColor;
-                transition: color $transition-fast;
-
-                &:hover { color: $siteOrange; }
-            }
-        }
-    }
-
-    // Main Row (logo + nav + icons)
-    .bottom {
-        padding: 28px 0;
-
-        &__inner {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
+    // Main Row (logo + search + icons)
+    .siteHeader__main {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        padding: 20px 0;
     }
 
     .logo {
@@ -53,16 +34,197 @@
 
     .navBar {
         font-weight: 700;
+        padding-bottom: 14px;
+
+        .main-menu {
+            justify-content: center;
+        }
     }
 
     .icons {
-        flex: 0 1 167px;
+        flex: 0 1 auto;
         direction: ltr;
         display: flex;
         align-items: center;
         gap: 20px;
         color: $siteYellow;
     }
+}
+
+// ============================================================================
+// Inline AJAX Search (desktop, center of header row)
+// ============================================================================
+
+.search-wrapper {
+    position: relative;
+    flex: 1 1 auto;
+    max-width: 560px;
+
+    .pzh_search_box {
+        width: 100%;
+
+        input[type="search"] {
+            width: 100%;
+            padding: 11px 22px 11px 46px;
+            border: 1px solid $gray-200;
+            border-radius: 50px;
+            font-size: 14px;
+            font-family: $fontFamily;
+            background: $gray-100;
+            transition: all $transition-fast;
+            direction: rtl;
+
+            &:focus {
+                border-color: $siteYellow;
+                background: $white;
+                box-shadow: 0 0 0 4px rgba($siteYellow, 0.18);
+                outline: none;
+            }
+
+            &::placeholder {
+                color: $gray-500;
+            }
+        }
+
+        button {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: $lightText;
+        }
+    }
+
+    // AJAX results dropdown (absolute under the inline input)
+    .search-results {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        right: 0;
+        direction: rtl;
+    }
+}
+
+// ============================================================================
+// AJAX Search Results Dropdown
+// ============================================================================
+
+.search-results {
+    background: $white;
+    border-radius: 12px;
+    box-shadow: $shadow-lg;
+    z-index: 100;
+    display: none;
+    overflow: hidden;
+    margin-top: 8px;
+
+    &.active {
+        display: block;
+    }
+
+    &.loading:before {
+        content: "";
+        display: block;
+        height: 3px;
+        background: linear-gradient(90deg, $siteYellow, $siteYellowDark, $siteYellow);
+        background-size: 200% 100%;
+        animation: searchLoading 1.5s linear infinite;
+    }
+
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    &__item {
+        border-bottom: 1px solid $gray-200;
+
+        &:last-child { border-bottom: 0; }
+
+        a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            transition: background $transition-fast;
+
+            &:hover {
+                background: $gray-100;
+            }
+
+            img {
+                width: 48px;
+                height: 48px;
+                border-radius: 6px;
+                object-fit: cover;
+                background: $gray-200;
+            }
+        }
+    }
+
+    &__info {
+        flex: 1;
+    }
+
+    &__name {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: $textColor;
+        line-height: 1.4;
+    }
+
+    &__price {
+        font-size: 12px;
+        font-weight: 700;
+        color: $siteYellowDark;
+
+        del {
+            color: $gray-500;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        ins {
+            text-decoration: none;
+        }
+    }
+
+    &__all {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        background: $gray-100;
+        font-size: 13px;
+        font-weight: 600;
+        color: $lightText;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: $gray-200;
+        }
+    }
+
+    &__empty {
+        padding: 20px;
+        text-align: center;
+        color: $gray-600;
+        font-size: 13px;
+    }
+}
+
+@keyframes searchLoading {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
 }
 
 // ============================================================================
@@ -227,215 +389,6 @@
     opacity: 1;
     visibility: visible;
     transform: translateX(50%) translateY(0);
-}
-
-// ============================================================================
-// Search Toggle + AJAX Search
-// ============================================================================
-
-.search-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-
-    .searchToggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 6px;
-        font-size: 24px;
-        color: $siteYellow;
-        transition: color $transition-fast;
-
-        &:hover {
-            color: $siteYellowDark;
-        }
-    }
-
-    .search-panel {
-        position: absolute;
-        top: calc(100% + 14px);
-        left: 0;
-        width: 320px;
-        background: $white;
-        border-radius: 12px;
-        box-shadow: $shadow-xl;
-        padding: 14px;
-        z-index: 100;
-        display: none;
-        direction: rtl;
-
-        .pzh_search_box {
-            width: 100%;
-        }
-
-        .search-results {
-            box-shadow: none;
-            margin-top: 8px;
-        }
-    }
-
-    &.open .search-panel {
-        display: block;
-    }
-}
-
-.pzh_search_box {
-    position: relative;
-    width: 260px;
-
-    input[type="search"] {
-        width: 100%;
-        padding: 8px 40px 8px 16px;
-        border: 1px solid $gray-300;
-        border-radius: 24px;
-        font-size: 13px;
-        font-family: $fontFamily;
-        background: $gray-100;
-        transition: all $transition-fast;
-        direction: rtl;
-
-        &:focus {
-            border-color: $siteYellow;
-            background: $white;
-            box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
-            outline: none;
-        }
-
-        &::placeholder {
-            color: $gray-500;
-        }
-    }
-
-    button {
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        padding: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: $lightText;
-    }
-}
-
-// AJAX Search Results Dropdown
-.search-results {
-    background: $white;
-    border-radius: 10px;
-    box-shadow: $shadow-lg;
-    z-index: 100;
-    display: none;
-    overflow: hidden;
-    margin-top: 8px;
-
-    &.active {
-        display: block;
-    }
-
-    &.loading:before {
-        content: "";
-        display: block;
-        height: 3px;
-        background: linear-gradient(90deg, $siteYellow, $siteYellowDark, $siteYellow);
-        background-size: 200% 100%;
-        animation: searchLoading 1.5s linear infinite;
-    }
-
-    &__list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    &__item {
-        border-bottom: 1px solid $gray-200;
-
-        &:last-child { border-bottom: 0; }
-
-        a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            transition: background $transition-fast;
-
-            &:hover {
-                background: $gray-100;
-            }
-
-            img {
-                width: 48px;
-                height: 48px;
-                border-radius: 6px;
-                object-fit: cover;
-                background: $gray-200;
-            }
-        }
-    }
-
-    &__info {
-        flex: 1;
-    }
-
-    &__name {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: $textColor;
-        line-height: 1.4;
-    }
-
-    &__price {
-        font-size: 12px;
-        font-weight: 700;
-        color: $siteYellowDark;
-
-        del {
-            color: $gray-500;
-            font-weight: 400;
-            margin-left: 4px;
-        }
-        ins {
-            text-decoration: none;
-        }
-    }
-
-    &__all {
-        display: block;
-        text-align: center;
-        padding: 10px;
-        background: $gray-100;
-        font-size: 13px;
-        font-weight: 600;
-        color: $lightText;
-        transition: background $transition-fast;
-
-        &:hover {
-            background: $gray-200;
-        }
-    }
-
-    &__empty {
-        padding: 20px;
-        text-align: center;
-        color: $gray-600;
-        font-size: 13px;
-    }
-}
-
-@keyframes searchLoading {
-    0% { background-position: 0% 0; }
-    100% { background-position: 200% 0; }
 }
 
 // ============================================================================
@@ -695,6 +648,41 @@
 
     .pzh_search_box {
         width: 100%;
+
+        input[type="search"] {
+            width: 100%;
+            padding: 9px 16px 9px 44px;
+            border: 1px solid $gray-200;
+            border-radius: 50px;
+            font-size: 13px;
+            font-family: $fontFamily;
+            background: $gray-100;
+            direction: rtl;
+
+            &:focus {
+                border-color: $siteYellow;
+                background: $white;
+                outline: none;
+            }
+        }
+
+        button {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            color: $lightText;
+        }
+    }
+
+    .search-results {
+        position: static;
+        margin-top: 6px;
     }
 }
 
@@ -706,16 +694,9 @@
     .siteHeader {
         font-size: 16px;
 
-        .top {
+        .siteHeader__main {
             padding: 14px 0;
-
-            &__links {
-                gap: 20px;
-            }
-        }
-
-        .bottom {
-            padding: 16px 0;
+            gap: 12px;
         }
 
         .logo {
@@ -727,13 +708,8 @@
         }
 
         .icons {
-            flex: 0 1 auto;
             gap: 14px;
         }
-    }
-
-    .search-wrapper {
-        display: none !important;
     }
 
     .cart-dropdown {
@@ -758,6 +734,13 @@
         position: static !important;
         box-shadow: none !important;
         padding: 0 12px !important;
+    }
+}
+
+// Inline search only on md+; below md the mobile search block takes over
+@media (max-width: $bp-md - 1px) {
+    .search-wrapper {
+        display: none !important;
     }
 }
 

@@ -106,7 +106,7 @@ function pzh_get_product_card_html($product_id) {
                 <?php echo $product->get_image('pzh_product_card'); ?>
             </a>
             <?php if ($product->is_on_sale()): ?>
-                <span class="product-card__badge product-card__badge--sale"><?php _e('حراج', 'piazhen'); ?></span>
+                <span class="product-card__badge product-card__badge--sale">٪<?php echo pzh_get_discount_percentage($product); ?></span>
             <?php endif; ?>
             <button class="product-card__favorite <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
                     data-product-id="<?php echo esc_attr($product_id); ?>"
@@ -127,12 +127,18 @@ function pzh_get_product_card_html($product_id) {
                 <button class="product-card__add-to-cart mainBtn small product-card__add-to-cart--variable"
                         data-product-id="<?php echo esc_attr($product_id); ?>"
                         data-has-variations="1">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
                     <?php _e('انتخاب و خرید', 'piazhen'); ?>
                 </button>
             <?php else: ?>
                 <button class="product-card__add-to-cart mainBtn small"
                         data-product-id="<?php echo esc_attr($product_id); ?>">
-                    <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <?php _e('افزودن به سبد', 'piazhen'); ?>
                 </button>
             <?php endif; ?>
         </div>
@@ -208,27 +214,71 @@ function pzh_get_category_price_range($category_id = 0) {
 }
 
 /**
+ * Get the "برند ها" product category (brands are stored as its children)
+ */
+function pzh_get_brands_category() {
+    $cat = get_term_by('name', 'برند ها', 'product_cat');
+    if (!$cat) {
+        $cat = get_term_by('slug', 'brands', 'product_cat');
+    }
+    return $cat ?: null;
+}
+
+/**
+ * Get brand terms. Prefers the product_brand taxonomy; falls back to the
+ * children of the "برند ها" product category (how this site stores brands).
+ */
+function pzh_get_brand_terms($hide_empty = true) {
+    if (taxonomy_exists('product_brand')) {
+        $terms = get_terms(array('taxonomy' => 'product_brand', 'hide_empty' => $hide_empty));
+        if (!empty($terms) && !is_wp_error($terms)) return $terms;
+    }
+
+    $brands_cat = pzh_get_brands_category();
+    if ($brands_cat) {
+        $terms = get_terms(array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => $hide_empty,
+            'parent'     => $brands_cat->term_id,
+        ));
+        if (!empty($terms) && !is_wp_error($terms)) return $terms;
+    }
+
+    return array();
+}
+
+/**
+ * Get the taxonomy brand terms belong to: 'product_brand' if populated,
+ * otherwise 'product_cat' (برند ها children).
+ */
+function pzh_get_brand_taxonomy() {
+    if (taxonomy_exists('product_brand')) {
+        $terms = get_terms(array('taxonomy' => 'product_brand', 'hide_empty' => true, 'number' => 1));
+        if (!empty($terms) && !is_wp_error($terms)) return 'product_brand';
+    }
+    return 'product_cat';
+}
+
+/**
  * Get site brand logos
  */
 function pzh_get_brands() {
-    // Try to get brands from a product_brand taxonomy (common WooCommerce brands plugin)
     $brands = array();
-    if (taxonomy_exists('product_brand')) {
-        $terms = get_terms(array('taxonomy' => 'product_brand', 'hide_empty' => false, 'number' => 8));
-        foreach ($terms as $term) {
-            $thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
-            $brands[] = array(
-                'name' => $term->name,
-                'image' => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : '',
-                'link'  => get_term_link($term),
-            );
-        }
+    foreach (pzh_get_brand_terms() as $term) {
+        $thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
+        $brands[] = array(
+            'name'  => $term->name,
+            'image' => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : '',
+            'link'  => get_term_link($term),
+        );
+        if (count($brands) >= 8) break;
     }
     return $brands;
 }
 
 /**
  * Hero banners data (title / image / link)
+ * Grid: one large banner (col-md-8) + two stacked cards (col-md-4).
  * Editable via the 'pzh_hero_banners' filter.
  */
 function pzh_hero_banners() {
@@ -237,22 +287,17 @@ function pzh_hero_banners() {
     $banners = array(
         // Large panel (right side)
         'main' => array(
-            'title'    => __('اصلاحی سریع، دقیق و بی نقص', 'piazhen'),
-            'subtitle' => __('ظاهر جذاب، تیپی تازه همراه همیشگی آقایان خوش‌تیپ', 'piazhen'),
+            'badge'    => __('جشنواره پاییزی پی‌آژن', 'piazhen'),
+            'title'    => __('عطر و ادکلن اورجینال', 'piazhen'),
+            'subtitle' => __('با ضمانت اصالت کالا و ارسال سریع به سراسر کشور', 'piazhen'),
             'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
             'link'     => $shop_url,
-            'cta'      => __('مشاهده محصولات', 'piazhen'),
+            'cta'      => __('خرید کنید', 'piazhen'),
         ),
-        // Two cards on top-left
+        // Two cards on the left column
         'side_cards' => array(
-            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
-            array('title' => __('اپیلاتور', 'piazhen'),       'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
-        ),
-        // Three cards on the bottom row
-        'bottom_cards' => array(
-            array('title' => __('ماشین اصلاح', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
-            array('title' => __('ریش تراش', 'piazhen'),    'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
-            array('title' => __('لوازم اصلاح', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card3.png', 'link' => $shop_url),
+            array('title' => __('لوازم آرایشی اورجینال', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
+            array('title' => __('جشنواره تخفیف‌های ویژه', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
         ),
     );
 
@@ -311,6 +356,423 @@ function pzh_get_on_sale_products($limit = 8) {
         ),
     );
     return new WP_Query($args);
+}
+
+// ============================================================================
+// Archive Filters (custom AJAX, no plugins)
+// ============================================================================
+
+/**
+ * Convert latin digits to Persian digits
+ */
+function pzh_fa_num($num) {
+    return strtr((string) $num, array(
+        '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴',
+        '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹',
+    ));
+}
+
+/**
+ * Read filter params from $_GET (deep links) or $_POST (AJAX)
+ * Returns a normalized params array.
+ */
+function pzh_get_filter_params_from_request($source = null) {
+    $source = $source ?: $_GET;
+
+    $attributes = array();
+    foreach ($source as $key => $val) {
+        if (strpos($key, 'attr_') === 0 && is_array($val)) {
+            $tax = substr($key, 5);
+            if (taxonomy_exists($tax) && !empty($val)) {
+                $attributes[$tax] = array_map('sanitize_title', (array) $val);
+            }
+        }
+    }
+
+    return array(
+        'brands'     => isset($source['brands']) && is_array($source['brands']) ? array_map('intval', $source['brands']) : array(),
+        'categories' => isset($source['categories']) && is_array($source['categories']) ? array_map('intval', $source['categories']) : array(),
+        'attributes' => $attributes,
+        'min_price'  => isset($source['min_price']) && $source['min_price'] !== '' ? floatval($source['min_price']) : 0,
+        'max_price'  => isset($source['max_price']) && $source['max_price'] !== '' ? floatval($source['max_price']) : 0,
+        'in_stock'   => !empty($source['in_stock']),
+        'sort'       => isset($source['sort']) ? sanitize_key($source['sort']) : 'popularity',
+    );
+}
+
+/**
+ * Build WP_Query args additions for a filter params array.
+ * $base_tax_query / $base_meta_query preserve the queried term's own clauses.
+ */
+function pzh_get_product_filter_args($params, $base_tax_query = array(), $base_meta_query = array()) {
+    $out = array();
+
+    // --- Taxonomies (all AND-combined; terms inside a taxonomy are OR) ---
+    $clauses = array();
+    if (!empty($base_tax_query)) {
+        foreach ($base_tax_query as $k => $v) {
+            if ($k === 'relation') continue;
+            $clauses[] = $v;
+        }
+    }
+
+    if (!empty($params['brands'])) {
+        $clauses[] = array(
+            'taxonomy' => pzh_get_brand_taxonomy(),
+            'field'    => 'term_id',
+            'terms'    => $params['brands'],
+            'operator' => 'IN',
+        );
+    }
+    if (!empty($params['categories'])) {
+        $clauses[] = array(
+            'taxonomy' => 'product_cat',
+            'field'    => 'term_id',
+            'terms'    => $params['categories'],
+            'operator' => 'IN',
+        );
+    }
+    if (!empty($params['attributes'])) {
+        foreach ($params['attributes'] as $tax => $slugs) {
+            if (!taxonomy_exists($tax) || empty($slugs)) continue;
+            $clauses[] = array(
+                'taxonomy' => $tax,
+                'field'    => 'slug',
+                'terms'    => $slugs,
+                'operator' => 'IN',
+            );
+        }
+    }
+
+    if (count($clauses) > 1) {
+        $out['tax_query'] = array_merge(array('relation' => 'AND'), $clauses);
+    } elseif (!empty($clauses)) {
+        // Always wrap clauses in an array — a bare clause is dropped by WP_Tax_Query
+        $out['tax_query'] = $clauses;
+    }
+
+    // --- Meta (price range, in-stock only) ---
+    $meta_clauses = array();
+    if (!empty($base_meta_query)) {
+        foreach ($base_meta_query as $k => $v) {
+            if ($k === 'relation') continue;
+            $meta_clauses[] = $v;
+        }
+    }
+
+    if ($params['min_price'] > 0 || $params['max_price'] > 0) {
+        $meta_clauses[] = array(
+            'key'     => '_price',
+            'value'   => array($params['min_price'] ?: 0, $params['max_price'] ?: 999999999999),
+            'compare' => 'BETWEEN',
+            'type'    => 'NUMERIC',
+        );
+    }
+    if ($params['in_stock']) {
+        $meta_clauses[] = array(
+            'key'   => '_stock_status',
+            'value' => 'instock',
+        );
+    }
+
+    if (count($meta_clauses) > 1) {
+        $out['meta_query'] = array_merge(array('relation' => 'AND'), $meta_clauses);
+    } elseif (!empty($meta_clauses)) {
+        $out['meta_query'] = $meta_clauses;
+    }
+
+    // --- Sort ---
+    switch ($params['sort']) {
+        case 'price-asc':
+            $out['orderby']  = 'meta_value_num';
+            $out['meta_key'] = '_price';
+            $out['order']    = 'ASC';
+            break;
+        case 'price-desc':
+            $out['orderby']  = 'meta_value_num';
+            $out['meta_key'] = '_price';
+            $out['order']    = 'DESC';
+            break;
+        case 'newest':
+            $out['orderby'] = 'date';
+            $out['order']   = 'DESC';
+            break;
+        case 'discount':
+            // Sorted by discount percentage via the pzh_discount_order_clauses filter
+            $out['orderby'] = 'pzh_discount';
+            $out['order']   = 'DESC';
+            break;
+        default: // popularity (most sells)
+            $out['meta_key'] = 'total_sales';
+            $out['orderby']  = array('meta_value_num' => 'DESC', 'date' => 'DESC');
+            $out['order']    = 'DESC';
+    }
+
+    return $out;
+}
+
+/**
+ * Apply archive filter params from the request to the main product query
+ * (server-side render / deep links with ?brands[]=...&min_price=... etc.)
+ */
+function pzh_product_archive_query($query) {
+    if (is_admin() || !$query->is_main_query()) return;
+    if (!(is_shop() || is_product_taxonomy())) return;
+
+    $params = pzh_get_filter_params_from_request($_GET);
+    $args   = pzh_get_product_filter_args($params, $query->get('tax_query'), $query->get('meta_query'));
+
+    foreach ($args as $key => $value) {
+        $query->set($key, $value);
+    }
+}
+add_action('pre_get_posts', 'pzh_product_archive_query', 20);
+
+/**
+ * Order products by discount percentage (regular - sale) / regular, DESC
+ */
+function pzh_discount_order_clauses($clauses, $query) {
+    if ($query->get('orderby') !== 'pzh_discount') return $clauses;
+
+    global $wpdb;
+    $clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS pzh_reg ON ({$wpdb->posts}.ID = pzh_reg.post_id AND pzh_reg.meta_key = '_regular_price')";
+    $clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS pzh_sale ON ({$wpdb->posts}.ID = pzh_sale.post_id AND pzh_sale.meta_key = '_sale_price')";
+    $clauses['orderby'] = "( ( CAST(COALESCE(pzh_reg.meta_value,'0') AS DECIMAL(14,2)) - CAST(COALESCE(pzh_sale.meta_value,'0') AS DECIMAL(14,2)) ) / NULLIF(CAST(COALESCE(pzh_reg.meta_value,'0') AS DECIMAL(14,2)),0) ) DESC, {$wpdb->posts}.post_date DESC";
+
+    return $clauses;
+}
+add_filter('posts_clauses', 'pzh_discount_order_clauses', 10, 2);
+
+/**
+ * Render the archive pagination (prev / numbers / next)
+ */
+function pzh_render_pagination($page, $total_pages) {
+    if ($total_pages <= 1) return;
+
+    $page = max(1, intval($page));
+    echo '<nav class="products-pagination" aria-label="' . esc_attr__('صفحه‌بندی', 'piazhen') . '">';
+
+    // Prev
+    if ($page > 1) {
+        echo '<button class="products-pagination__btn products-pagination__btn--arrow" data-page="' . ($page - 1) . '" aria-label="' . esc_attr__('صفحه قبل', 'piazhen') . '"><i class="fa-solid fa-angle-right"></i></button>';
+    } else {
+        echo '<span class="products-pagination__btn products-pagination__btn--arrow disabled" aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>';
+    }
+
+    // Numbers with ellipsis
+    $last_printed = 0;
+    for ($i = 1; $i <= $total_pages; $i++) {
+        if ($i === 1 || $i === $total_pages || abs($i - $page) <= 2) {
+            $active = ($i === $page) ? ' active' : '';
+            echo '<button class="products-pagination__btn' . $active . '" data-page="' . $i . '">' . pzh_fa_num($i) . '</button>';
+            $last_printed = $i;
+        } elseif ($last_printed !== $i - 1 && $last_printed !== -1) {
+            echo '<span class="products-pagination__dots">…</span>';
+            $last_printed = -1;
+        }
+    }
+
+    // Next
+    if ($page < $total_pages) {
+        echo '<button class="products-pagination__btn products-pagination__btn--arrow" data-page="' . ($page + 1) . '" aria-label="' . esc_attr__('صفحه بعد', 'piazhen') . '"><i class="fa-solid fa-angle-left"></i></button>';
+    } else {
+        echo '<span class="products-pagination__btn products-pagination__btn--arrow disabled" aria-hidden="true"><i class="fa-solid fa-angle-left"></i></span>';
+    }
+
+    echo '</nav>';
+}
+
+/**
+ * Render the products grid + pagination for a query.
+ * Shared by the initial server render and the AJAX filter handler.
+ */
+function pzh_render_products_grid($query, $page, $per_page) {
+    $total       = intval($query->found_posts);
+    $total_pages = $per_page ? intval(ceil($total / $per_page)) : 0;
+
+    ob_start();
+
+    if ($query->have_posts()) {
+        echo '<div class="products-grid">';
+        while ($query->have_posts()) {
+            $query->the_post();
+            echo pzh_get_product_card_html(get_the_ID());
+        }
+        echo '</div>';
+
+        pzh_render_pagination($page, $total_pages);
+    } else {
+        echo '<div class="products-grid__empty">';
+        echo '<p>' . __('محصولی با این مشخصات پیدا نشد.', 'piazhen') . '</p>';
+        echo '<button type="button" class="reset-filters-btn mainBtn mainBtn--yellow small">' . __('حذف فیلترها', 'piazhen') . '</button>';
+        echo '</div>';
+    }
+
+    return ob_get_clean();
+}
+
+/**
+ * Get filter data for the archive sidebar, scoped to a category context:
+ * brands, dynamic attributes (with per-context counts), price range, category tree.
+ */
+function pzh_get_archive_filter_data($category_id = 0) {
+    // Product IDs inside the current archive context (used for term counts)
+    $product_args = array(
+        'post_type'      => 'product',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    );
+    if ($category_id) {
+        $product_args['tax_query'] = array(
+            array(
+                'taxonomy'         => 'product_cat',
+                'field'            => 'term_id',
+                'terms'            => $category_id,
+                'include_children' => true,
+            ),
+        );
+    }
+    $product_ids = get_posts($product_args);
+
+    // Fetch used terms of the brand taxonomy + all attribute taxonomies in ONE query
+    $taxonomies = array(pzh_get_brand_taxonomy());
+    foreach (wc_get_attribute_taxonomies() as $attribute) {
+        $tax = wc_attribute_taxonomy_name($attribute->attribute_name);
+        if (taxonomy_exists($tax)) $taxonomies[] = $tax;
+    }
+
+    $counts_by_tax = array();
+    if (!empty($product_ids) && !empty($taxonomies)) {
+        $object_terms = wp_get_object_terms($product_ids, array_unique($taxonomies), array('fields' => 'all_with_object_id'));
+        if (!is_wp_error($object_terms)) {
+            foreach ($object_terms as $t) {
+                if (!isset($counts_by_tax[$t->taxonomy])) $counts_by_tax[$t->taxonomy] = array();
+                if (!isset($counts_by_tax[$t->taxonomy][$t->term_id])) {
+                    $counts_by_tax[$t->taxonomy][$t->term_id] = array('name' => $t->name, 'slug' => $t->slug, 'count' => 0);
+                }
+                $counts_by_tax[$t->taxonomy][$t->term_id]['count']++;
+            }
+        }
+    }
+
+    // Brands (the brand taxonomy terms actually used in this context)
+    $brands = array();
+    $brand_tax = pzh_get_brand_taxonomy();
+    foreach (pzh_get_brand_terms() as $term) {
+        if (empty($counts_by_tax[$brand_tax][$term->term_id])) continue;
+        $brands[] = array(
+            'id'    => $term->term_id,
+            'name'  => $term->name,
+            'slug'  => $term->slug,
+            'count' => $counts_by_tax[$brand_tax][$term->term_id]['count'],
+        );
+    }
+    usort($brands, function ($a, $b) { return strcmp($a['name'], $b['name']); });
+
+    // Dynamic attributes (only those with terms used in this context)
+    $attributes = array();
+    foreach (wc_get_attribute_taxonomies() as $attribute) {
+        $tax = wc_attribute_taxonomy_name($attribute->attribute_name);
+        if (!isset($counts_by_tax[$tax]) || empty($counts_by_tax[$tax])) continue;
+
+        $terms = array();
+        foreach ($counts_by_tax[$tax] as $term_id => $data) {
+            $terms[] = array(
+                'id'    => $term_id,
+                'name'  => $data['name'],
+                'slug'  => $data['slug'],
+                'count' => $data['count'],
+            );
+        }
+        usort($terms, function ($a, $b) { return strcmp($a['name'], $b['name']); });
+
+        $attributes[] = array(
+            'taxonomy' => $tax,
+            'label'    => wc_attribute_label($tax),
+            'terms'    => $terms,
+        );
+    }
+
+    return array(
+        'brands'     => $brands,
+        'attributes' => $attributes,
+        'price_range' => pzh_get_category_price_range($category_id),
+        'tree'       => pzh_get_sidebar_category_tree($category_id),
+    );
+}
+
+/**
+ * Category tree for the sidebar filter (links with counts, expandable children)
+ */
+function pzh_get_sidebar_category_tree($category_id = 0) {
+    $current  = null;
+    $show_children_for = 0;
+    $brands_cat = pzh_get_brands_category();
+    $brands_cat_id = $brands_cat ? intval($brands_cat->term_id) : 0;
+
+    if ($category_id) {
+        $current = get_term($category_id, 'product_cat');
+        if (is_wp_error($current) || !$current) {
+            $current = null;
+            $category_id = 0;
+        } else {
+            $show_children_for = $current->term_id;
+        }
+    }
+
+    if ($current && $current->parent) {
+        // Category page: show the siblings level (parent's children)
+        $level_cats = get_terms(array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => true,
+            'parent'     => $current->parent,
+        ));
+    } elseif ($current) {
+        // Top-level category page: show just the current top-level category
+        $level_cats = array($current);
+    } else {
+        // Shop root: show all top-level categories
+        $level_cats = get_terms(array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => true,
+            'parent'     => 0,
+        ));
+    }
+
+    if (is_wp_error($level_cats)) $level_cats = array();
+
+    $tree = array();
+    foreach ($level_cats as $cat) {
+        // Skip the "برند ها" container category (brands have their own filter group)
+        if ($brands_cat_id && intval($cat->term_id) === $brands_cat_id) continue;
+
+        $children = get_terms(array(
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => true,
+            'parent'     => $cat->term_id,
+        ));
+        if (is_wp_error($children)) $children = array();
+
+        $tree[] = array(
+            'id'      => $cat->term_id,
+            'name'    => $cat->name,
+            'link'    => get_term_link($cat),
+            'count'   => $cat->count,
+            'current' => ($current && $current->term_id === $cat->term_id),
+            'children' => array_map(function ($child) use ($current) {
+                return array(
+                    'id'      => $child->term_id,
+                    'name'    => $child->name,
+                    'link'    => get_term_link($child),
+                    'count'   => $child->count,
+                    'current' => ($current && $current->term_id === $child->term_id),
+                );
+            }, $children),
+        );
+    }
+
+    return array('items' => $tree, 'show_children_for' => $show_children_for);
 }
 
 // ============================================================================
@@ -611,11 +1073,15 @@ function pzh_get_variation_match() {
             ? __('موجود در انبار', 'piazhen')
             : __('ناموجود', 'piazhen');
 
+        // Variation image (falls back to the parent image)
+        $image = $variation->get_image_id() ? wp_get_attachment_image_url($variation->get_image_id(), 'woocommerce_single') : '';
+
         wp_send_json_success(array(
             'variation_id' => $variation_id,
             'price_html'   => $variation->get_price_html(),
             'availability' => $availability,
             'in_stock'     => $variation->is_in_stock(),
+            'image'        => $image,
         ));
     } else {
         wp_send_json_error(array('message' => __('ترکیب انتخاب شده موجود نیست.', 'piazhen')));
@@ -623,6 +1089,166 @@ function pzh_get_variation_match() {
 }
 add_action('wp_ajax_pzh_get_variation_match', 'pzh_get_variation_match');
 add_action('wp_ajax_nopriv_pzh_get_variation_match', 'pzh_get_variation_match');
+
+// ============================================================================
+// Single Product Helpers
+// ============================================================================
+
+/**
+ * Stars HTML for a rating value (0-5)
+ */
+function pzh_stars_html($rating) {
+    $rating = max(0, min(5, floatval($rating)));
+    $full = intval(floor($rating));
+    $half = ($rating - $full) >= 0.5;
+
+    $html = '<span class="pzh-stars">';
+    for ($i = 1; $i <= 5; $i++) {
+        if ($i <= $full) {
+            $html .= '<i class="fa-solid fa-star"></i>';
+        } elseif ($half && $i === $full + 1) {
+            $html .= '<i class="fa-solid fa-star-half-stroke"></i>';
+        } else {
+            $html .= '<i class="fa-regular fa-star"></i>';
+        }
+    }
+    $html .= '</span>';
+    return $html;
+}
+
+/**
+ * Per-star review count breakdown for a product
+ */
+function pzh_get_review_breakdown($product_id) {
+    global $wpdb;
+    $counts = array(5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0);
+
+    $rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT cm.meta_value AS rating, COUNT(*) AS c
+         FROM {$wpdb->commentmeta} cm
+         INNER JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
+         WHERE c.comment_post_ID = %d AND c.comment_approved = '1' AND cm.meta_key = 'rating'
+         GROUP BY cm.meta_value",
+        $product_id
+    ));
+
+    if (!empty($rows)) {
+        foreach ($rows as $row) {
+            $rating = intval($row->rating);
+            if (isset($counts[$rating])) {
+                $counts[$rating] = intval($row->c);
+            }
+        }
+    }
+    return $counts;
+}
+
+/**
+ * Map a Persian color name to a hex value (fallback when no color meta is stored).
+ * No plugin — a self-contained map, longest key matched first.
+ */
+function pzh_color_hex($name) {
+    static $map = null;
+    if ($map === null) {
+        $map = array(
+            'آبی فیروزه ای' => '#40e0d0',
+            'آبی کاربنی'    => '#27355e',
+            'آبی آسمانی'    => '#87ceeb',
+            'آبی روشن'      => '#9cc3ff',
+            'سبز روشن'      => '#8fd694',
+            'سبز تیره'      => '#1e5e2e',
+            'نارنجی پررنگ'  => '#e0691b',
+            'قرمز جگری'     => '#8c2f39',
+            'مغز پسته‌ای'   => '#a7d28d',
+            'بنفش روشن'     => '#c9a7eb',
+            'مشکی'          => '#1a1a1a',
+            'سیاه'          => '#1a1a1a',
+            'سفید'          => '#ffffff',
+            'سرمه‌ای'       => '#1f2a44',
+            'سورمه ای'      => '#1f2a44',
+            'قرمز'          => '#dc3545',
+            'زرشکی'         => '#8b0000',
+            'شرابی'         => '#722f37',
+            'صورتی'         => '#ff8fab',
+            'آبی'           => '#4a7fd4',
+            'لاجوردی'       => '#2e5cb8',
+            'فیروزه‌ای'     => '#40e0d0',
+            'سبز'           => '#3a9d4b',
+            'یشمی'          => '#00a86b',
+            'زرد'           => '#f6c944',
+            'طلایی'         => '#d4af37',
+            'نارنجی'        => '#f28c28',
+            'بنفش'          => '#8e5bb5',
+            'بادمجانی'      => '#5a2d50',
+            'یاسی'          => '#b39ddb',
+            'شکلاتی'        => '#5d3a1a',
+            'قهوه ای'       => '#8b5a2b',
+            'کرم'           => '#f5e6c8',
+            'بژ'            => '#e8d5b7',
+            'نود'           => '#e6cfb5',
+            'خاکستری'       => '#9e9e9e',
+            'طوسی'          => '#9e9e9e',
+            'نقره ای'       => '#cfd4da',
+            'دودی'          => '#6e7480',
+            'رزگلد'         => '#d8a49b',
+            'مسی'           => '#b87333',
+            'برنزی'         => '#a97142',
+        );
+        uksort($map, function ($a, $b) { return mb_strlen($b) - mb_strlen($a); });
+    }
+
+    $name = trim(mb_strtolower($name));
+    foreach ($map as $key => $hex) {
+        if ($name === $key || mb_strpos($name, $key) !== false) {
+            return $hex;
+        }
+    }
+    return '';
+}
+
+/**
+ * Variation picker data: attributes as chips (text) or swatches (colors),
+ * resolved from WooCommerce data only — no plugins.
+ */
+function pzh_get_variation_picker_data($product) {
+    if (!$product->is_type('variable')) return array();
+
+    $data = array();
+    foreach ($product->get_variation_attributes() as $name => $options) {
+        $tax      = sanitize_title($name);
+        $is_tax   = taxonomy_exists($tax);
+        $label    = wc_attribute_label($name, $product);
+        $is_color = (stripos($label, 'رنگ') !== false || stripos($name, 'color') !== false);
+
+        $items = array();
+        foreach ($options as $option) {
+            $term  = $is_tax ? get_term_by('slug', $option, $tax) : null;
+            $color = '';
+            if ($is_color && $term) {
+                $color = get_term_meta($term->term_id, 'product_attribute_color', true);
+                if (!$color) {
+                    $color = pzh_color_hex($term->name);
+                }
+            }
+            $items[] = array(
+                'slug'  => (string) $option,
+                'label' => $term ? $term->name : $option,
+                'color' => $color ?: '',
+            );
+        }
+
+        if (empty($items)) continue;
+
+        $data[] = array(
+            'name'     => $name,
+            'label'    => $label,
+            'taxonomy' => $tax,
+            'type'     => $is_color ? 'swatch' : 'chip',
+            'items'    => $items,
+        );
+    }
+    return $data;
+}
 
 /**
  * AJAX Remove from Cart
@@ -694,121 +1320,49 @@ add_action('wp_ajax_pzh_toggle_favorite', 'pzh_toggle_favorite');
 add_action('wp_ajax_nopriv_pzh_toggle_favorite', 'pzh_toggle_favorite');
 
 /**
- * AJAX Filter Products
+ * AJAX Filter Products (custom, no plugins)
  */
 function pzh_filter_products() {
     check_ajax_referer('pzh_ajax_nonce', 'nonce');
 
-    $page     = isset($_POST['page']) ? intval($_POST['page']) : 1;
-    $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 12;
-    $orderby  = isset($_POST['orderby']) ? sanitize_text_field($_POST['orderby']) : 'date';
-    $order    = isset($_POST['order']) ? sanitize_text_field($_POST['order']) : 'DESC';
-    $brands   = isset($_POST['brands']) ? array_map('intval', $_POST['brands']) : array();
-    $min_price = isset($_POST['min_price']) ? floatval($_POST['min_price']) : 0;
-    $max_price = isset($_POST['max_price']) ? floatval($_POST['max_price']) : 0;
-    $category  = isset($_POST['category']) ? ($_POST['category']) : '';
+    $page        = max(1, isset($_POST['page']) ? intval($_POST['page']) : 1);
+    $per_page    = isset($_POST['per_page']) ? intval($_POST['per_page']) : 12;
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
 
-    // Build query args
+    $params = pzh_get_filter_params_from_request($_POST);
+
     $args = array(
         'post_type'      => 'product',
+        'post_status'    => 'publish',
         'posts_per_page' => $per_page,
         'paged'          => $page,
-        'post_status'    => 'publish',
     );
 
-    // Category filter
-    if ($category) {
-        $args['tax_query'][] = array(
-            'taxonomy' => 'product_cat',
-            'field'    => 'slug',
-            'terms'    => $category,
+    // Base context: the current category page (if any)
+    $base_tax_query = array();
+    if ($category_id && term_exists($category_id, 'product_cat')) {
+        $base_tax_query = array(
+            array(
+                'taxonomy'         => 'product_cat',
+                'field'            => 'term_id',
+                'terms'            => $category_id,
+                'include_children' => true,
+            ),
         );
     }
 
-    // Brand filter
-    if (!empty($brands)) {
-        $args['tax_query'][] = array(
-            'taxonomy' => 'product_brand',
-            'field'    => 'term_id',
-            'terms'    => $brands,
-        );
-    }
-
-    // Price filter
-    if ($min_price > 0 || $max_price > 0) {
-        $args['meta_query'][] = array(
-            'key'     => '_price',
-            'value'   => array($min_price, $max_price),
-            'compare' => 'BETWEEN',
-            'type'    => 'NUMERIC',
-        );
-    }
-
-    // Sort
-    switch ($orderby) {
-        case 'price':
-            $args['orderby']  = 'meta_value_num';
-            $args['meta_key'] = '_price';
-            $args['order']    = $order;
-            break;
-        case 'popularity':
-            $args['orderby']  = 'meta_value_num';
-            $args['meta_key'] = 'total_sales';
-            $args['order']    = 'DESC';
-            break;
-        case 'date':
-            $args['orderby'] = 'date';
-            $args['order']   = $order;
-            break;
-        case 'discount':
-            $args['orderby']  = 'meta_value_num';
-            $args['meta_key'] = '_sale_price';
-            $args['order']    = 'DESC';
-            $args['meta_query'][] = array(
-                'key'     => '_sale_price',
-                'value'   => '',
-                'compare' => '!=',
-            );
-            break;
-        default:
-            $args['orderby'] = 'date';
-            $args['order']   = 'DESC';
-    }
+    $filter_args = pzh_get_product_filter_args($params, $base_tax_query);
+    $args = array_merge($args, $filter_args);
 
     $query = new WP_Query($args);
-    $total = $query->found_posts;
-
-    ob_start();
-    if ($query->have_posts()) {
-        echo '<div class="products-grid">';
-        while ($query->have_posts()) {
-            $query->the_post();
-            echo pzh_get_product_card_html(get_the_ID());
-        }
-        echo '</div>';
-
-        // Pagination
-        $total_pages = ceil($total / $per_page);
-        if ($total_pages > 1) {
-            echo '<div class="products-pagination">';
-            for ($i = 1; $i <= $total_pages; $i++) {
-                $active = ($i === $page) ? ' active' : '';
-                echo '<button class="products-pagination__btn' . $active . '" data-page="' . $i . '">' . $i . '</button>';
-            }
-            echo '</div>';
-        }
-    } else {
-        echo '<p class="products-grid__empty">' . __('محصولی یافت نشد.', 'piazhen') . '</p>';
-    }
-
+    $html  = pzh_render_products_grid($query, $page, $per_page);
     wp_reset_postdata();
-    $html = ob_get_clean();
 
     wp_send_json_success(array(
-        'html'       => $html,
-        'total'      => $total,
-        'page'       => $page,
-        'total_pages' => ceil($total / $per_page),
+        'html'        => $html,
+        'total'       => intval($query->found_posts),
+        'page'        => $page,
+        'total_pages' => $per_page ? intval(ceil($query->found_posts / $per_page)) : 0,
     ));
 }
 add_action('wp_ajax_pzh_filter_products', 'pzh_filter_products');
@@ -871,6 +1425,231 @@ function pzh_get_mini_cart() {
 }
 add_action('wp_ajax_pzh_get_mini_cart', 'pzh_get_mini_cart');
 add_action('wp_ajax_nopriv_pzh_get_mini_cart', 'pzh_get_mini_cart');
+
+// ============================================================================
+// Cart Page (custom AJAX: qty, remove, coupons — no plugins)
+// ============================================================================
+
+/**
+ * Render cart items list (shared by the cart page and the AJAX handler)
+ */
+function pzh_cart_items_html() {
+    ob_start();
+    foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
+        $_product  = $cart_item['data'];
+        $permalink = $_product->get_permalink($cart_item);
+        $price     = apply_filters('woocommerce_cart_item_price', WC()->cart->get_product_price($_product), $cart_item, $cart_item_key);
+        $subtotal  = apply_filters('woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal($_product, $cart_item['quantity']), $cart_item, $cart_item_key);
+        $max_qty   = $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 99;
+        ?>
+        <div class="cart-item" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
+            <div class="cart-item__image">
+                <a href="<?php echo esc_url($permalink); ?>">
+                    <?php echo $_product->get_image('pzh_product_thumb'); ?>
+                </a>
+            </div>
+            <div class="cart-item__info">
+                <a class="cart-item__name" href="<?php echo esc_url($permalink); ?>">
+                    <?php echo esc_html($_product->get_name()); ?>
+                </a>
+                <?php echo wc_get_formatted_cart_item_data($cart_item); ?>
+            </div>
+            <div class="cart-item__price" data-label="<?php esc_attr_e('قیمت واحد', 'piazhen'); ?>">
+                <?php echo $price; ?>
+            </div>
+            <div class="cart-item__qty" data-label="<?php esc_attr_e('تعداد', 'piazhen'); ?>">
+                <div class="cart-qty d-inline-flex align-items-center">
+                    <button type="button" class="cart-qty__btn cart-qty__btn--minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" aria-label="<?php esc_attr_e('کمتر', 'piazhen'); ?>">-</button>
+                    <input type="number" class="cart-qty__input" value="<?php echo esc_attr($cart_item['quantity']); ?>"
+                           min="1" max="<?php echo esc_attr($max_qty); ?>" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
+                    <button type="button" class="cart-qty__btn cart-qty__btn--plus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" aria-label="<?php esc_attr_e('بیشتر', 'piazhen'); ?>">+</button>
+                </div>
+            </div>
+            <div class="cart-item__subtotal" data-label="<?php esc_attr_e('جمع', 'piazhen'); ?>">
+                <?php echo $subtotal; ?>
+            </div>
+            <button type="button" class="cart-item__remove" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" aria-label="<?php esc_attr_e('حذف از سبد', 'piazhen'); ?>">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+        </div>
+        <?php
+    }
+    return ob_get_clean();
+}
+
+/**
+ * Render the cart summary card (coupons + totals + buttons)
+ */
+function pzh_cart_totals_html() {
+    ob_start();
+    $coupons = WC()->cart->get_coupons();
+    ?>
+    <div class="cart-summary-card">
+        <!-- Coupon -->
+        <form class="coupon-form" method="post">
+            <label class="coupon-form__label"><?php _e('کد تخفیف', 'piazhen'); ?></label>
+            <div class="coupon-form__row d-flex gap-2">
+                <input type="text" name="coupon_code" class="coupon-form__input"
+                       placeholder="<?php _e('کد تخفیف خود را وارد کنید', 'piazhen'); ?>" autocomplete="off">
+                <button type="submit" class="coupon-form__btn mainBtn small"><?php _e('اعمال', 'piazhen'); ?></button>
+            </div>
+        </form>
+
+        <?php if (!empty($coupons)): ?>
+            <div class="applied-coupons">
+                <?php foreach ($coupons as $code => $coupon): ?>
+                    <span class="applied-coupon">
+                        <i class="fa-solid fa-tag"></i>
+                        <?php echo esc_html($code); ?>
+                        <button type="button" class="applied-coupon__remove" data-code="<?php echo esc_attr($code); ?>" aria-label="<?php esc_attr_e('حذف کد', 'piazhen'); ?>">&times;</button>
+                    </span>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Totals -->
+        <div class="cart-totals-rows">
+            <div class="cart-total-row">
+                <span><?php _e('مبلغ کل کالاها', 'piazhen'); ?></span>
+                <span><?php wc_cart_totals_subtotal_html(); ?></span>
+            </div>
+
+            <?php foreach ($coupons as $code => $coupon): ?>
+                <div class="cart-total-row cart-total-row--discount">
+                    <span><?php _e('تخفیف', 'piazhen'); ?></span>
+                    <span><?php wc_cart_totals_coupon_html($coupon); ?></span>
+                </div>
+            <?php endforeach; ?>
+
+            <?php if (WC()->cart->needs_shipping()): ?>
+                <div class="cart-total-row">
+                    <span><?php _e('هزینه ارسال', 'piazhen'); ?></span>
+                    <span class="cart-shipping-note"><?php _e('در مرحله بعد محاسبه می‌شود', 'piazhen'); ?></span>
+                </div>
+            <?php endif; ?>
+
+            <div class="cart-total-row cart-total-row--total">
+                <span><?php _e('مبلغ قابل پرداخت', 'piazhen'); ?></span>
+                <span><?php wc_cart_totals_order_total_html(); ?></span>
+            </div>
+        </div>
+
+        <a href="<?php echo esc_url(wc_get_checkout_url()); ?>" class="cart-checkout-btn mainBtn mainBtn--yellow w-100">
+            <?php _e('ادامه فرایند خرید', 'piazhen'); ?>
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <a href="<?php echo esc_url(get_permalink(wc_get_page_id('shop'))); ?>" class="cart-continue-link">
+            <?php _e('ادامه خرید', 'piazhen'); ?>
+        </a>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+/**
+ * Cart page empty state
+ */
+function pzh_cart_empty_html() {
+    ob_start();
+    ?>
+    <div class="cart-empty">
+        <div class="cart-empty__icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <h3 class="cart-empty__title"><?php _e('سبد خرید شما خالی است', 'piazhen'); ?></h3>
+        <p class="cart-empty__text"><?php _e('محصولات مورد علاقه خود را به سبد خرید اضافه کنید.', 'piazhen'); ?></p>
+        <a href="<?php echo esc_url(get_permalink(wc_get_page_id('shop'))); ?>" class="mainBtn mainBtn--yellow"><?php _e('بازگشت به فروشگاه', 'piazhen'); ?></a>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+/**
+ * AJAX Cart Actions (qty update, remove, apply/remove coupon)
+ */
+function pzh_cart_ajax() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $cart_action = isset($_POST['cart_action']) ? sanitize_key($_POST['cart_action']) : '';
+    $cart_key    = isset($_POST['cart_key']) ? sanitize_text_field(wp_unslash($_POST['cart_key'])) : '';
+    $message     = '';
+
+    switch ($cart_action) {
+        case 'set_qty':
+            $qty = isset($_POST['qty']) ? intval($_POST['qty']) : 1;
+            if ($cart_key && $qty > 0) {
+                WC()->cart->set_quantity($cart_key, $qty);
+            }
+            break;
+
+        case 'remove':
+            if ($cart_key) {
+                WC()->cart->remove_cart_item($cart_key);
+                $message = __('محصول از سبد خرید حذف شد.', 'piazhen');
+            }
+            break;
+
+        case 'coupon':
+            $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+            if ($code) {
+                WC()->cart->apply_coupon($code);
+                if (!WC()->cart->has_discount($code)) {
+                    wp_send_json_error(array('message' => __('کد تخفیف معتبر نیست.', 'piazhen')));
+                }
+                $message = __('کد تخفیف با موفقیت اعمال شد.', 'piazhen');
+            }
+            break;
+
+        case 'remove_coupon':
+            $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+            if ($code) {
+                WC()->cart->remove_coupon($code);
+                $message = __('کد تخفیف حذف شد.', 'piazhen');
+            }
+            break;
+    }
+
+    wp_send_json_success(array(
+        'message'    => $message,
+        'count'      => WC()->cart->get_cart_contents_count(),
+        'items_html' => pzh_cart_items_html(),
+        'totals_html' => pzh_cart_totals_html(),
+        'empty_html' => pzh_cart_empty_html(),
+        'is_empty'   => WC()->cart->is_empty(),
+    ));
+}
+add_action('wp_ajax_pzh_cart_ajax', 'pzh_cart_ajax');
+add_action('wp_ajax_nopriv_pzh_cart_ajax', 'pzh_cart_ajax');
+
+/**
+ * Add a live-updating shipping methods fragment to checkout AJAX updates
+ * (the shipping step lives in the form column, outside the default fragments)
+ */
+function pzh_checkout_shipping_fragment($fragments) {
+    ob_start();
+    wc_cart_totals_shipping_html();
+    $shipping_html = ob_get_clean();
+
+    if (!trim($shipping_html)) {
+        $shipping_html = '<p class="shipping-methods-note">' . esc_html__('برای مشاهده روش‌های ارسال، آدرس خود را تکمیل کنید.', 'piazhen') . '</p>';
+    }
+
+    $fragments['#pzh-shipping-methods'] = $shipping_html;
+    return $fragments;
+}
+add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
+
+/**
+ * The checkout design has a single address form, so the shop ships to the
+ * billing address only (set at runtime in case the option gets reset).
+ */
+function pzh_force_ship_to_billing_only() {
+    if (get_option('woocommerce_ship_to_destination') !== 'billing_only') {
+        update_option('woocommerce_ship_to_destination', 'billing_only');
+    }
+}
+add_action('init', 'pzh_force_ship_to_billing_only');
+add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
 
 // ============================================================================
 // WooCommerce Hooks

@@ -1,147 +1,175 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Homepage Hero Section (new design)
+// Homepage Hero Section (Figma design)
+// Grid: large banner (col-md-8) + two stacked cards (col-md-4)
 // ============================================================================
 
 .heroSection {
-    padding: 24px 0;
-
-    > .container {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    // Row 1: large banner + two side cards
-    .heroSection__main {
-        display: flex;
-        gap: 20px;
-    }
+    padding: 28px 0 4px;
 
     // Large banner (right side)
-    .right {
-        flex: 0 0 calc(60% - 10px);
-        height: 524px;
-        border-radius: $heroRadius;
-        padding: 50px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: flex-start;
-        background-color: $siteOrange;
-        background-size: cover;
-        background-position: center;
-        overflow: hidden;
-
-        h2 {
-            color: $white;
-            font-size: 40px;
-            font-weight: 800;
-            line-height: 1.5;
-            margin-bottom: 12px;
-            text-shadow: 0 2px 12px rgba($black, 0.45);
-        }
-
-        p {
-            color: rgba($white, 0.92);
-            font-size: 18px;
-            line-height: 1.8;
-            margin-bottom: 24px;
-            text-shadow: 0 2px 8px rgba($black, 0.4);
-        }
-    }
-
-    // Side cards column (left)
-    .left {
-        flex: 0 0 calc(40% - 10px);
-        display: flex;
-        flex-direction: column;
-
-        .card {
-            flex: 1;
-        }
-    }
-
-    // Bottom cards row
-    .bottom {
-        display: flex;
-        gap: 20px;
-        justify-content: space-between;
-
-        .card {
-            flex: 0 0 calc(33.33% - 20px);
-        }
-    }
-
-    // Card (shared)
-    .card {
-        height: 252px;
-        background-color: $gray-200;
-        background-size: cover;
-        background-position: center -37px;
-        border-radius: $heroRadius;
-        color: $white;
-        margin-bottom: 20px;
+    &__main-banner {
         position: relative;
         display: flex;
-        transition: transform $transition-base, box-shadow $transition-base;
+        align-items: stretch;
+        height: 100%;
+        min-height: 480px;
+        background: $heroCream;
+        border-radius: $heroRadius;
+        overflow: hidden;
 
-        h2 {
-            color: $white;
+        .heroSection__main-img {
             position: absolute;
-            bottom: 24px;
-            right: 43px;
-            left: 20px;
-            font-size: 40px;
-            font-weight: 800;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0;
-            line-height: 1.5;
-            text-shadow: 0 2px 12px rgba($black, 0.45);
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 52%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform $transition-slow;
+        }
 
-            i {
-                rotate: -45deg;
-                font-size: 28px;
-                transition: transform $transition-fast;
-            }
+        &:hover .heroSection__main-img {
+            transform: scale(1.03);
+        }
+
+        .heroSection__content {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 44px;
+        }
+    }
+
+    &__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: $siteYellow;
+        color: $textColor;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 50px;
+        margin-bottom: 16px;
+
+        svg {
+            width: 13px;
+            height: 13px;
+        }
+    }
+
+    &__title {
+        font-size: 36px;
+        font-weight: 800;
+        line-height: 1.7;
+        color: $textColor;
+        margin-bottom: 10px;
+    }
+
+    &__subtitle {
+        font-size: 15px;
+        color: rgba($textColor, 0.65);
+        line-height: 1.9;
+        margin-bottom: 24px;
+    }
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: $textColor;
+        color: $white;
+        padding: 13px 34px;
+        border-radius: 50px;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.5;
+        transition: all $transition-fast;
+
+        i {
+            font-size: 15px;
+            transition: transform $transition-fast;
         }
 
         &:hover {
-            transform: translateY(-4px);
-            box-shadow: $shadow-lg;
+            background: $siteYellowDark;
+            color: $textColor;
 
-            h2 i {
+            i {
                 transform: translateX(-4px);
             }
         }
     }
 
-    .bottom .card {
-        margin-bottom: 0;
-    }
-
-    // Hero CTA button
-    .button {
-        display: inline-block;
-        background-color: $siteOrange;
-        color: $white;
-        padding: 20px 44px;
+    // Side cards (left column, stacked)
+    &__side {
+        position: relative;
+        display: block;
+        flex: 1 1 0;
+        min-height: 226px;
         border-radius: $heroRadius;
-        font-size: 16px;
-        font-weight: 700;
-        transition: background-color $transition-fast;
+        overflow: hidden;
 
-        &:hover {
-            background-color: $black;
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform $transition-slow;
+        }
+
+        &:hover img {
+            transform: scale(1.05);
+        }
+
+        .heroSection__side-title {
+            position: absolute;
+            bottom: 18px;
+            right: 24px;
+            left: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.6;
+            color: $white;
+            text-shadow: 0 2px 10px rgba($black, 0.4);
+        }
+
+        .heroSection__side-arrow {
+            flex-shrink: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba($white, 0.95);
+            color: $textColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: $shadow-sm;
+            transition: all $transition-fast;
+        }
+
+        &:hover .heroSection__side-arrow {
+            background: $siteYellow;
+            transform: translateX(-4px);
         }
     }
 }
 
 // ============================================================================
-// Section Title (shared)
+// Section Title (centered, with optional "see all" link)
 // ============================================================================
 
 .section-title {
@@ -151,15 +179,17 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba($siteYellow, 0.15);
+        background: rgba($siteYellow, 0.18);
         color: $siteYellowDark;
         padding: 6px 16px;
         border-radius: 24px;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 12px;
 
         svg {
+            width: 13px;
+            height: 13px;
             fill: $siteYellowDark;
         }
     }
@@ -179,12 +209,118 @@
     }
 }
 
+// Title row: centered section title + "see all" link on the far end (desktop)
+.section-title-row {
+    position: relative;
+
+    .see-all-link {
+        position: absolute;
+        top: 18px;
+        left: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: $lightText;
+        transition: all $transition-fast;
+
+        i {
+            font-size: 13px;
+            transition: transform $transition-fast;
+        }
+
+        &:hover {
+            color: $siteYellowDark;
+
+            i {
+                transform: translateX(-4px);
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Section Head (two-column sections: icon + title right, link left)
+// ============================================================================
+
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+
+    &__right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    &__icon {
+        flex-shrink: 0;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba($siteYellow, 0.2);
+        color: $siteYellowDark;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            fill: $siteYellowDark;
+        }
+    }
+
+    &__badge {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: $siteYellowDark;
+        line-height: 1.6;
+    }
+
+    &__title {
+        font-size: 21px;
+        font-weight: 800;
+        line-height: 1.6;
+        color: $textColor;
+        margin: 0;
+    }
+
+    .see-all-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: $lightText;
+        white-space: nowrap;
+        transition: all $transition-fast;
+
+        i {
+            font-size: 12px;
+            transition: transform $transition-fast;
+        }
+
+        &:hover {
+            color: $siteYellowDark;
+
+            i {
+                transform: translateX(-4px);
+            }
+        }
+    }
+}
+
 // ============================================================================
 // Most Selling Products Section
 // ============================================================================
 
 .home_most_selling {
     background: $gray-100;
+    margin-top: 24px;
 }
 
 // ============================================================================
@@ -253,17 +389,18 @@
 
 .product-card {
     background: $white;
-    border-radius: $cardRadius;
+    border: 1px solid $gray-200;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: $shadow-sm;
     transition: all $transition-base;
     height: 100%;
     display: flex;
     flex-direction: column;
 
     &:hover {
+        border-color: $siteYellow;
         box-shadow: $shadow-md;
-        transform: translateY(-2px);
+        transform: translateY(-3px);
 
         .product-card__image img {
             transform: scale(1.08);
@@ -292,11 +429,11 @@
 
     &__badge {
         position: absolute;
-        top: 8px;
-        right: 8px;
+        top: 10px;
+        right: 10px;
         padding: 4px 10px;
         border-radius: 16px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 700;
         color: $white;
         z-index: 2;
@@ -308,8 +445,8 @@
 
     &__favorite {
         position: absolute;
-        top: 8px;
-        left: 8px;
+        top: 10px;
+        left: 10px;
         width: 34px;
         height: 34px;
         border-radius: 50%;
@@ -397,20 +534,31 @@
     &__add-to-cart {
         width: 100%;
         text-align: center;
-        padding: 8px 16px;
+        padding: 9px 16px !important;
         font-size: 13px;
         margin-top: auto;
         background: $siteYellow;
         color: $textColor;
-        border: 2px solid $siteYellow;
-        border-radius: $btnRadius;
+        border: 2px solid $siteYellow !important;
+        border-radius: 12px !important;
         font-weight: 700;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
         transition: all $transition-fast;
+
+        .icon {
+            width: 17px;
+            height: 17px;
+            fill: none;
+        }
 
         &:hover {
             background: $siteYellowDark;
-            border-color: $siteYellowDark;
+            border-color: $siteYellowDark !important;
+            transform: none;
         }
 
         &.loading {
@@ -426,8 +574,6 @@
                 border-radius: 50%;
                 animation: btnSpin 0.6s linear infinite;
                 display: inline-block;
-                margin-right: 6px;
-                vertical-align: middle;
             }
         }
     }
@@ -469,19 +615,27 @@
     padding: 24px;
     background: $white;
     border: 1px solid $gray-200;
-    border-radius: 12px;
+    border-radius: 16px;
     transition: all $transition-base;
-    min-height: 100px;
+    min-height: 110px;
 
     &:hover {
         border-color: $siteYellow;
         box-shadow: $shadow-md;
+
+        .brand-item__logo {
+            filter: none;
+            opacity: 1;
+        }
     }
 
     &__logo {
         max-width: 120px;
         max-height: 60px;
         object-fit: contain;
+        filter: grayscale(1);
+        opacity: 0.65;
+        transition: all $transition-base;
     }
 
     &__placeholder {
@@ -521,7 +675,7 @@
     padding: 24px 16px;
 
     &__icon {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
         transition: transform $transition-base;
     }
 
@@ -533,6 +687,7 @@
         font-size: 16px;
         font-weight: 700;
         color: $textColor;
+        margin: 0;
     }
 }
 
@@ -548,6 +703,10 @@
         box-shadow: $shadow-sm;
         height: 100%;
         border: 1px solid $gray-200;
+    }
+
+    .section-card > .section-title {
+        margin-bottom: 20px;
     }
 }
 
@@ -670,44 +829,42 @@
 
 @media (max-width: $bp-xl - 1px) {
     .heroSection {
-        .right {
-            padding: 40px;
+        &__main-banner {
+            min-height: 430px;
 
-            h2 { font-size: 32px; }
+            .heroSection__content {
+                padding: 36px;
+            }
         }
 
-        .card h2 {
+        &__title {
             font-size: 30px;
-            right: 28px;
+        }
+
+        &__side .heroSection__side-title {
+            font-size: 19px;
         }
     }
 }
 
 @media (max-width: $bp-lg - 1px) {
     .heroSection {
-        padding: 16px 0;
+        padding: 16px 0 0;
 
-        .heroSection__main {
-            flex-direction: column;
+        &__main-banner {
+            min-height: 400px;
         }
 
-        .right {
-            flex: 1 1 auto;
-            height: 420px;
+        &__side {
+            min-height: 190px;
         }
+    }
 
-        .left {
-            flex-direction: row;
-            gap: 20px;
-
-            .card {
-                flex: 1;
-                margin-bottom: 0;
-            }
-        }
-
-        .card h2 {
-            font-size: 24px;
+    .section-title-row {
+        .see-all-link {
+            position: static;
+            justify-content: center;
+            margin-bottom: 24px;
         }
     }
 
@@ -718,53 +875,49 @@
 
 @media (max-width: $bp-md - 1px) {
     .heroSection {
-        > .container {
-            gap: 16px;
-        }
+        &__main-banner {
+            min-height: 340px;
 
-        .right {
-            height: 360px;
-            padding: 28px;
-            border-radius: 28px;
+            .heroSection__content {
+                padding: 26px;
+            }
 
-            h2 { font-size: 26px; }
-            p { font-size: 15px; margin-bottom: 16px; }
-        }
-
-        .left {
-            flex-direction: column;
-
-            .card {
-                margin-bottom: 16px;
+            .heroSection__main-img {
+                width: 100%;
+                opacity: 0.35;
             }
         }
 
-        .bottom {
-            flex-direction: column;
-            gap: 16px;
-
-            .card {
-                flex: 1 1 auto;
-            }
+        &__title {
+            font-size: 24px;
         }
 
-        .card {
-            height: 200px;
-            border-radius: 28px;
-
-            h2 {
-                font-size: 22px;
-                right: 24px;
-                left: 16px;
-                bottom: 16px;
-
-                i { font-size: 20px; }
-            }
+        &__subtitle {
+            font-size: 13px;
+            margin-bottom: 16px;
         }
 
-        .button {
-            padding: 14px 32px;
+        &__btn {
+            padding: 11px 26px;
+            font-size: 13px;
+        }
+
+        &__side {
+            min-height: 150px;
             border-radius: 28px;
+
+            .heroSection__side-title {
+                font-size: 17px;
+                right: 18px;
+                left: 18px;
+                bottom: 14px;
+            }
+
+            .heroSection__side-arrow {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
         }
     }
 
@@ -779,10 +932,25 @@
         }
     }
 
+    .section-head {
+        &__icon {
+            width: 44px;
+            height: 44px;
+        }
+
+        &__title {
+            font-size: 18px;
+        }
+
+        &__badge {
+            font-size: 11px;
+        }
+    }
+
     .product-card {
         &__details { padding: 10px; }
         &__title { font-size: 12px; }
         &__price { font-size: 13px; }
-        &__add-to-cart { font-size: 11px; padding: 6px 12px; }
+        &__add-to-cart { font-size: 11px; padding: 7px 12px !important; }
     }
 }
