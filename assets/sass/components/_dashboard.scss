@@ -1,0 +1,850 @@
+@use "../global/variables" as *;
+
+// ============================================================================
+// Dashboard (My Account) — design tokens
+// sidebar #F69261 · brand #F26A26 · gold #FACA38 · atc green #80D388
+// success #33AB3F · error #FF3333 · gray btn #828282 · dark #121212
+// ============================================================================
+
+.pzh-dashboard {
+    padding: 28px 0 56px;
+    background: $gray-100;
+    min-height: 70vh;
+
+    &__layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 24px;
+        align-items: start;
+
+        @media (max-width: $bp-lg - 1px) {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+// ============================================================================
+// Sidebar (flat soft-orange, white pill active item)
+// ============================================================================
+
+.pzh-dash-sidebar {
+    background: #F69261;
+    border-radius: 0 28px 28px 0;
+    padding: 28px 18px 32px;
+    min-height: 480px;
+    position: sticky;
+    top: 20px;
+
+    @media (max-width: $bp-lg - 1px) {
+        position: static;
+        border-radius: 20px;
+        min-height: 0;
+        padding: 18px 12px;
+    }
+
+    &__user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 12px 22px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid rgba($white, 0.25);
+    }
+
+    &__avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: rgba($white, 0.25);
+        color: $white;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    &__name {
+        font-size: 15px;
+        font-weight: 800;
+        color: $white;
+        line-height: 1.6;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.pzh-dash-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    @media (max-width: $bp-lg - 1px) {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 16px;
+        border-radius: 50px;
+        color: $white;
+        font-size: 14px;
+        font-weight: 700;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: rgba($white, 0.14);
+        }
+
+        &.active {
+            background: $white;
+            color: #414141;
+
+            .pzh-dash-menu__icon {
+                color: #414141;
+            }
+        }
+
+        @media (max-width: $bp-lg - 1px) {
+            background: rgba($white, 0.12);
+            padding: 10px 14px;
+            font-size: 13px;
+
+            &.active {
+                background: $white;
+            }
+        }
+    }
+
+    &__icon {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    &__label {
+        line-height: 1.6;
+    }
+
+    &__logout {
+        margin-top: 10px;
+        opacity: 0.9;
+    }
+}
+
+// ============================================================================
+// Content area
+// ============================================================================
+
+.pzh-dash-content {
+    background: $white;
+    border: 1px solid $gray-200;
+    border-radius: 20px;
+    padding: 26px 24px 32px;
+    min-height: 520px;
+}
+
+// Section title: gold icon + dark bold text
+.dash-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+
+    svg {
+        width: 24px;
+        height: 24px;
+        color: $siteYellow;
+        flex-shrink: 0;
+    }
+
+    h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #121212;
+        margin: 0;
+    }
+}
+
+// ============================================================================
+// Dashboard tiles (gold borders + gold outline icons)
+// ============================================================================
+
+.dash-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+
+    @media (max-width: $bp-md - 1px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+.dash-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 34px 16px;
+    background: $white;
+    border: 1px solid $siteYellow;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: $shadow-md;
+    }
+
+    &__icon {
+        color: $siteYellow;
+
+        svg {
+            width: 34px;
+            height: 34px;
+        }
+    }
+
+    &__label {
+        font-size: 14px;
+        font-weight: 800;
+        color: #121212;
+    }
+}
+
+// ============================================================================
+// Row cards (orders / reviews / favorites)
+// ============================================================================
+
+.dash-row-card {
+    display: flex;
+    align-items: stretch;
+    gap: 18px;
+    border: 1px solid $gray-200;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: $white;
+    transition: all $transition-fast;
+
+    &:hover {
+        border-color: rgba($siteYellow, 0.8);
+    }
+
+    &__thumb {
+        width: 120px;
+        height: 120px;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #D9D9D9;
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        &--fav {
+            position: relative;
+        }
+    }
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #121212;
+        margin-bottom: 4px;
+        line-height: 1.7;
+    }
+
+    &__subtitle {
+        font-size: 12.5px;
+        color: #7F7F7F;
+        margin-bottom: 8px;
+    }
+
+    &__rule {
+        height: 1px;
+        background: $gray-200;
+        margin: 8px 0;
+    }
+
+    &__specs {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        flex-direction: column;
+
+        &__thumb {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/10;
+        }
+    }
+}
+
+.dash-spec {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+
+    &__label {
+        color: #7F7F7F;
+        flex-shrink: 0;
+    }
+
+    &__value {
+        color: #121212;
+        font-weight: 600;
+    }
+
+    &--status .dash-status {
+        color: $siteOrange;
+        font-weight: 800;
+    }
+}
+
+// ============================================================================
+// Forms (اطلاعات کاربری / آدرس)
+// ============================================================================
+
+.dash-form {
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 18px;
+
+        @media (max-width: $bp-sm) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 18px;
+    }
+
+    &[hidden] {
+        display: none !important;
+    }
+}
+
+.dash-field {
+    label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #121212;
+        margin-bottom: 7px;
+
+        .req {
+            color: $danger;
+        }
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        min-height: 46px;
+        padding: 10px 14px;
+        border: 1px solid #E3E3E3;
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: $fontFamily;
+        background: $white;
+        transition: all $transition-fast;
+
+        &:focus {
+            border-color: $siteOrange;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba($siteOrange, 0.12);
+        }
+    }
+
+    textarea {
+        resize: vertical;
+    }
+
+    &--full {
+        grid-column: 1 / -1;
+    }
+}
+
+// Pill submit button — gray by default, orange when dirty/enabled
+.dash-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 44px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all $transition-fast;
+    font-family: $fontFamily;
+    line-height: 1.6;
+
+    &--submit {
+        background: #828282;
+        color: $white;
+
+        &:hover {
+            background: $siteOrange;
+        }
+
+        // Enabled state (form has changes)
+        &.dirty {
+            background: $siteOrange;
+        }
+    }
+
+    &--atc {
+        background: #80D388;
+        color: #121212;
+        padding: 11px 34px;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    &.loading:after {
+        content: "";
+        width: 14px;
+        height: 14px;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+}
+
+// Orange text links (ویرایش آدرس / افزودن آدرس)
+.dash-link {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: $siteOrange;
+    cursor: pointer;
+    transition: opacity $transition-fast;
+
+    &:hover {
+        opacity: 0.8;
+    }
+}
+
+// ============================================================================
+// Addresses
+// ============================================================================
+
+.dash-address-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid $gray-200;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+
+    &__text {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 14px;
+    }
+
+    &__label {
+        color: #7F7F7F;
+        font-weight: 600;
+    }
+
+    &__value {
+        color: #909090;
+        line-height: 2;
+    }
+
+    .dash-address-edit {
+        flex-shrink: 0;
+    }
+}
+
+.dash-address-add {
+    margin-top: 6px;
+    display: inline-block;
+}
+
+.dash-address-form {
+    border: 1px dashed rgba($siteOrange, 0.5);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: rgba($siteOrange, 0.02);
+}
+
+// ============================================================================
+// Reviews
+// ============================================================================
+
+.dash-review-form {
+    margin-bottom: 20px;
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        @media (max-width: $bp-sm) {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+
+    .dash-review-input {
+        flex: 1;
+        min-height: 46px;
+        padding: 10px 16px;
+        border: 1px solid #E3E3E3;
+        border-radius: 50px;
+        font-size: 13.5px;
+        font-family: $fontFamily;
+        background: $white;
+
+        &:focus {
+            border-color: $siteOrange;
+            outline: none;
+        }
+    }
+}
+
+// ============================================================================
+// Orders
+// ============================================================================
+
+.dash-orders-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+
+    .dash-orders-tab {
+        padding: 9px 22px;
+        border-radius: 50px;
+        border: 1.5px solid $siteOrange;
+        background: $white;
+        color: $siteOrange;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all $transition-fast;
+        font-family: $fontFamily;
+
+        &:hover {
+            background: rgba($siteOrange, 0.06);
+        }
+
+        &.active {
+            background: $siteOrange;
+            color: $white;
+        }
+    }
+}
+
+// ============================================================================
+// Favorites
+// ============================================================================
+
+.dash-fav-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $siteYellow;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    box-shadow: $shadow-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+        transform: scale(1.08);
+    }
+}
+
+.dash-fav-actions {
+    display: flex;
+    margin-top: auto;
+}
+
+// ============================================================================
+// Wallet
+// ============================================================================
+
+.dash-wallet {
+    &__balance {
+        background: $siteYellow;
+        border-radius: 20px;
+        padding: 24px 28px;
+        text-align: center;
+        margin-bottom: 20px;
+
+        &-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(#121212, 0.7);
+            margin-bottom: 6px;
+        }
+
+        &-amount {
+            font-size: 26px;
+            font-weight: 800;
+            color: #121212;
+        }
+    }
+
+    &__tiles {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 20px;
+
+        @media (max-width: $bp-md - 1px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    &__rule {
+        height: 1px;
+        background: $gray-200;
+        margin: 18px 0;
+    }
+
+    &__transactions-title {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 800;
+        color: #121212;
+        margin-bottom: 16px;
+    }
+}
+
+.dash-transactions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dash-transaction {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid $gray-200;
+    border-radius: 12px;
+    padding: 14px 18px;
+
+    &__title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #121212;
+    }
+
+    &__desc {
+        font-size: 12px;
+        color: #909090;
+    }
+
+    &__side {
+        text-align: left;
+    }
+
+    &__amount {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #121212;
+    }
+
+    &__status {
+        font-size: 12px;
+        font-weight: 800;
+
+        &.failed {
+            color: #FF3333;
+        }
+
+        &.pending {
+            color: $siteOrange;
+        }
+
+        &:not(.failed):not(.pending) {
+            color: #33AB3F;
+        }
+    }
+}
+
+// ============================================================================
+// Add-address modal
+// ============================================================================
+
+.dash-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba($black, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.dash-modal {
+    background: $white;
+    border-radius: 18px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: $shadow-xl;
+    position: relative;
+    animation: modalSlideUp 0.25s ease;
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 22px;
+        border-bottom: 1px solid $gray-200;
+
+        h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #121212;
+            margin: 0;
+        }
+    }
+
+    &__close {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid $gray-200;
+        background: $white;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        color: $gray-600;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $gray-100;
+            color: #121212;
+        }
+    }
+
+    &__body {
+        padding: 20px 22px 24px;
+    }
+
+    .checkout-map {
+        height: 220px;
+    }
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+// Wallet charge quick amounts
+.dash-wallet-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+
+    &__btn {
+        padding: 10px 22px;
+        border-radius: 50px;
+        border: 1.5px solid $siteYellow;
+        background: $white;
+        color: #121212;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all $transition-fast;
+        font-family: $fontFamily;
+
+        &:hover {
+            background: rgba($siteYellow, 0.15);
+        }
+
+        &.selected {
+            background: $siteYellow;
+        }
+    }
+}
+
+.dash-form__actions .w-100 {
+    width: 100%;
+}
+
+// ============================================================================
+// Empty states
+// ============================================================================
+
+.dash-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7F7F7F;
+    font-size: 14px;
+    background: $gray-100;
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+// Content loading state
+.pzh-dash-content.loading {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

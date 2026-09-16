@@ -43,9 +43,56 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
             <!-- Icons: User + Cart -->
             <div class="icons">
                 <!-- Dashboard / Login -->
-                <a href="<?= pzhDashboardUrl(); ?>" class="user-icon" aria-label="<?php _e('حساب کاربری', 'piazhen'); ?>">
-                    <i class="fa-regular fa-user"></i>
-                </a>
+                <?php $current_user = wp_get_current_user(); ?>
+                <div class="user-icon-wrapper">
+                    <a href="<?= pzhDashboardUrl(); ?>" class="user-icon" aria-label="<?php _e('حساب کاربری', 'piazhen'); ?>">
+                        <i class="fa-regular fa-user"></i>
+                    </a>
+
+                    <?php if (is_user_logged_in()): ?>
+                        <div class="user-dropdown" data-user-dropdown="1">
+                            <div class="user-dropdown__head">
+                                <span class="user-dropdown__head-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F26A26" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+                                </span>
+                                <span class="user-dropdown__name"><?php echo esc_html($current_user->display_name ?: $current_user->user_login); ?></span>
+                            </div>
+
+                            <nav class="user-dropdown__menu">
+                                <a href="<?= pzhDashboardUrl(); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+                                    <span><?php _e('حساب کاربری', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                                <a href="<?= esc_url(add_query_arg('section', 'account', pzhDashboardUrl())); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    <span><?php _e('ویرایش مشخصات فردی', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                                <a href="<?= esc_url(add_query_arg('section', 'wallet', pzhDashboardUrl())); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 15h2"/></svg>
+                                    <span><?php _e('کیف پول', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                                <a href="<?= esc_url(add_query_arg('section', 'orders', pzhDashboardUrl())); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                    <span><?php _e('سفارش‌ها', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                                <a href="<?= esc_url(add_query_arg('section', 'favorites', pzhDashboardUrl())); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                    <span><?php _e('کالاهای مورد علاقه', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                                <a href="<?= esc_url(wp_logout_url(pzh_auth_page_url())); ?>">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+                                    <span><?php _e('خروج از حساب', 'piazhen'); ?></span>
+                                    <svg class="user-dropdown__chevron" width="6" height="12" viewBox="0 0 6 12" fill="none"><path d="M5 1L1 6L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </a>
+                            </nav>
+                        </div>
+                    <?php endif; ?>
+                </div>
 
                 <!-- Cart Icon with Count & Dropdown -->
                 <div class="cart-icon-wrapper">

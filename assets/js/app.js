@@ -23,6 +23,162 @@ function pzhDebounce(fn, delay) {
     };
 }
 
+/** Serialize a form into a flat object (arrays for repeated names) */
+$.fn.serializeObject = function () {
+    var obj = {};
+    var arr = this.serializeArray();
+    $.each(arr, function () {
+        if (obj[this.name] !== undefined) {
+            if (!obj[this.name].push) obj[this.name] = [obj[this.name]];
+            obj[this.name].push(this.value || '');
+        } else {
+            obj[this.name] = this.value || '';
+        }
+    });
+    return obj;
+};
+
+/**
+ * Address map (Neshan SDK with key / Leaflet + OSM fallback) with a pin and
+ * AJAX reverse geocoding that fills the address fields:
+ * opts: { containerId, barId, latId, lngId, addressFieldId, plaqueFieldId,
+ *         unitFieldId, cityFieldId, stateFieldId, districtFieldId }
+ */
+function pzhInitAddressMap(opts) {
+    var $mapEl = $('#' + opts.containerId);
+    if (!$mapEl.length || typeof L === 'undefined') return null;
+
+    var mapCenter = (window.pzh_options && pzh_options.map_center) || [35.7219, 51.3347];
+    var mapZoom   = (window.pzh_options && pzh_options.map_zoom) || 12;
+    var neshanKey = (window.pzh_options && pzh_options.neshan_key) || '';
+    var map;
+
+    if (neshanKey) {
+        map = new L.Map(opts.containerId, {
+            key: neshanKey,
+            maptype: 'dreamy',
+            poi: true,
+            traffic: false,
+            center: mapCenter,
+            zoom: mapZoom,
+            zoomControl: true,
+            scrollWheelZoom: false
+        });
+    } else {
+        map = L.map(opts.containerId, {
+            center: mapCenter,
+            zoom: mapZoom,
+            zoomControl: true,
+            attributionControl: false,
+            scrollWheelZoom: false
+        });
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 5 }).addTo(map);
+    }
+
+    var pinIcon = L.divIcon({
+        className: 'pzh-map-pin',
+        html: '<div class="pzh-map-pin__inner"><span class="pin-head"></span><span class="pin-dot"></span></div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 32]
+    });
+
+    var marker = null;
+    var $bar = $('#' + opts.barId);
+    var $lat = $('#' + opts.latId);
+    var $lng = $('#' + opts.lngId);
+
+    function placePin(latlng, animate) {
+        if (marker) {
+            marker.setLatLng(latlng);
+        } else {
+            marker = L.marker(latlng, { icon: pinIcon }).addTo(map);
+        }
+        if (animate) map.panTo(latlng);
+
+        $lat.val(latlng.lat.toFixed(6));
+        $lng.val(latlng.lng.toFixed(6));
+        $bar.html('<span class="muted-note">در حال دریافت آدرس...</span>');
+
+        $.ajax({
+            url: pzh_options.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pzh_reverse_geocode',
+                lat: latlng.lat,
+                lng: latlng.lng,
+                nonce: pzh_options.nonce
+            },
+            success: function (resp) {
+                if (resp && resp.success && resp.data.geocoded && resp.data.address) {
+                    $bar.html('<i class="fa-solid fa-location-dot" style="color:#F26A26"></i> ' + resp.data.address);
+
+                    // آدرس — main address text
+                    if (opts.addressFieldId) {
+                        var $addr = $('#' + opts.addressFieldId);
+                        if ($addr.length && !$addr.val()) $addr.val(resp.data.address);
+                    }
+
+                    // پلاک and واحد — filled separately when available
+                    if (opts.plaqueFieldId && resp.data.plaque) {
+                        var $plaque = $('#' + opts.plaqueFieldId);
+                        if ($plaque.length && !$plaque.val()) $plaque.val(resp.data.plaque);
+                    }
+                    if (opts.unitFieldId && resp.data.unit) {
+                        var $unit = $('#' + opts.unitFieldId);
+                        if ($unit.length && !$unit.val()) $unit.val(resp.data.unit);
+                    }
+
+                    // شهر — text input
+                    if (opts.cityFieldId && resp.data.city) {
+                        var $city = $('#' + opts.cityFieldId);
+                        if ($city.length && !$city.val()) $city.val(resp.data.city);
+                    }
+
+                    // استان — select, matched by option text (PWS uses numeric codes)
+                    if (opts.stateFieldId && resp.data.state) {
+                        var $state = $('#' + opts.stateFieldId);
+                        if ($state.length && $state.is('select') && !$state.val()) {
+                            var wanted = resp.data.state.trim();
+                            $state.find('option').each(function () {
+                                if ($(this).text().trim() === wanted) {
+                                    $state.val($(this).val());
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+
+                    // محله
+                    if (opts.districtFieldId && resp.data.district) {
+                        var $dist = $('#' + opts.districtFieldId);
+                        if ($dist.length && !$dist.val()) $dist.val(resp.data.district);
+                    }
+                } else {
+                    $bar.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+                }
+            },
+            error: function () {
+                $bar.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+            }
+        });
+    }
+
+    map.on('click', function (e) {
+        placePin(e.latlng, false);
+    });
+
+    if ($lat.val() && $lng.val()) {
+        placePin(L.latLng(parseFloat($lat.val()), parseFloat($lng.val())), false);
+    }
+
+    return {
+        map: map,
+        refresh: function () { map.invalidateSize(); },
+        place: placePin
+    };
+}
+
 /** Show a toast notification */
 function pzhToast(message, type) {
     type = type || 'success';
@@ -181,6 +337,28 @@ $(document).ready(function () {
             }
         });
     });
+
+    // ========================================================================
+    // User Dropdown (header) — hover on desktop, tap-toggle on mobile
+    // ========================================================================
+    var $userWrapper = $('.user-icon-wrapper');
+
+    if ($userWrapper.length) {
+        $userWrapper.on('click', function (e) {
+            // Only when a dropdown exists (logged-in users)
+            if ($(this).find('[data-user-dropdown]').length && $(window).width() < 992) {
+                e.preventDefault();
+                $(this).toggleClass('open');
+            }
+        });
+
+        // Close on outside click
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('.user-icon-wrapper').length) {
+                $userWrapper.removeClass('open');
+            }
+        });
+    }
 
     // ========================================================================
     // Add to Cart (delegated - product cards)
@@ -1164,100 +1342,16 @@ $(document).ready(function () {
     var $checkoutMap = $('#checkout-map');
 
     if ($checkoutMap.length && typeof L !== 'undefined') {
-        var mapCenter = (window.pzh_options && pzh_options.map_center) || [35.7219, 51.3347];
-        var mapZoom   = (window.pzh_options && pzh_options.map_zoom) || 12;
-        var neshanKey = (window.pzh_options && pzh_options.neshan_key) || '';
-        var map;
-
-        if (neshanKey) {
-            // Official Neshan SDK (Persian labels)
-            map = new L.Map('checkout-map', {
-                key: neshanKey,
-                maptype: 'dreamy',
-                poi: true,
-                traffic: false,
-                center: mapCenter,
-                zoom: mapZoom,
-                zoomControl: true,
-                scrollWheelZoom: false
-            });
-        } else {
-            map = L.map('checkout-map', {
-                center: mapCenter,
-                zoom: mapZoom,
-                zoomControl: true,
-                attributionControl: false,
-                scrollWheelZoom: false
-            });
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                minZoom: 5
-            }).addTo(map);
-        }
-
-        // Custom pin (matches the design)
-        var pinIcon = L.divIcon({
-            className: 'pzh-map-pin',
-            html: '<div class="pzh-map-pin__inner"><span class="pin-head"></span><span class="pin-dot"></span></div>',
-            iconSize: [34, 34],
-            iconAnchor: [17, 32]
+        pzhInitAddressMap({
+            containerId: 'checkout-map',
+            barId: 'checkout-map-address',
+            latId: 'billing-latitude',
+            lngId: 'billing-longitude',
+            addressFieldId: 'billing_address_1',
+            cityFieldId: 'billing_city',
+            stateFieldId: 'billing_state',
+            districtFieldId: 'billing_district'
         });
-
-        var marker = null;
-        var $mapAddress = $('#checkout-map-address');
-        var $latInput = $('#billing-latitude');
-        var $lngInput = $('#billing-longitude');
-
-        function placePin(latlng, animate) {
-            if (marker) {
-                marker.setLatLng(latlng);
-            } else {
-                marker = L.marker(latlng, { icon: pinIcon }).addTo(map);
-            }
-            if (animate) map.panTo(latlng);
-
-            $latInput.val(latlng.lat.toFixed(6));
-            $lngInput.val(latlng.lng.toFixed(6));
-            $mapAddress.html('<span class="muted-note">در حال دریافت آدرس...</span>');
-
-            $.ajax({
-                url: pzh_options.ajax_url,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'pzh_reverse_geocode',
-                    lat: latlng.lat,
-                    lng: latlng.lng,
-                    nonce: pzh_options.nonce
-                },
-                success: function (resp) {
-                    if (resp && resp.success && resp.data.geocoded && resp.data.address) {
-                        $mapAddress.html('<i class="fa-solid fa-location-dot" style="color:#F26A26"></i> ' + resp.data.address);
-                        // Pre-fill the address + district fields when empty
-                        var $addr = $('#billing_address_1');
-                        if ($addr.length && !$addr.val()) $addr.val(resp.data.address);
-                        if (resp.data.district) {
-                            var $dist = $('#billing_district');
-                            if ($dist.length && !$dist.val()) $dist.val(resp.data.district);
-                        }
-                    } else {
-                        $mapAddress.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
-                    }
-                },
-                error: function () {
-                    $mapAddress.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
-                }
-            });
-        }
-
-        map.on('click', function (e) {
-            placePin(e.latlng, false);
-        });
-
-        // Restore an existing pick (page reload with saved values)
-        if ($latInput.val() && $lngInput.val()) {
-            placePin(L.latLng(parseFloat($latInput.val()), parseFloat($lngInput.val())), false);
-        }
     }
 
     // ========================================================================
@@ -1527,6 +1621,377 @@ $(document).ready(function () {
                 window.location.href = redirect || '/';
             }, 1500);
         }
+    }
+
+    // ========================================================================
+    // Dashboard (My Account) — AJAX sections and actions
+    // ========================================================================
+    var $dash = $('[data-dashboard]');
+
+    if ($dash.length) {
+        var $dashContent = $('#pzh-dash-content');
+
+        function loadDashSection(section, params, pushUrl) {
+            $dashContent.addClass('loading');
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({ action: 'pzh_account_page', section: section, nonce: pzh_options.nonce }, params || {}),
+                success: function (resp) {
+                    $dashContent.removeClass('loading');
+                    if (resp && resp.success) {
+                        $dashContent.html(resp.data.html);
+                        $dash.find('.pzh-dash-menu__item').removeClass('active');
+                        $dash.find('.pzh-dash-menu__item[data-section="' + resp.data.section + '"]').addClass('active');
+                        if (pushUrl) {
+                            var url = window.location.pathname + '?section=' + resp.data.section;
+                            window.history.replaceState(null, '', url);
+                        }
+                        $('html, body').animate({ scrollTop: $dash.offset().top - 30 }, 200);
+                    }
+                },
+                error: function () {
+                    $dashContent.removeClass('loading');
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        }
+
+        // Sidebar + dashboard tile navigation
+        $dash.on('click', '[data-section]', function (e) {
+            e.preventDefault();
+            loadDashSection($(this).data('section'), {}, true);
+        });
+
+        // Orders filter tabs
+        $dash.on('click', '.dash-orders-tab', function () {
+            loadDashSection('orders', { status: $(this).data('status') }, true);
+        });
+
+        // Account form: dirty state → orange submit button (gray by default)
+        $dash.on('input change', '.dash-account-form input, .dash-account-form select, .dash-account-form textarea', function () {
+            $(this).closest('form').find('.dash-account-save').addClass('dirty');
+        });
+
+        // Account form submit (AJAX)
+        $dash.on('submit', '.dash-account-form', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $btn = $form.find('.dash-account-save').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({ action: 'pzh_account_save_info', nonce: pzh_options.nonce }, $form.serializeObject()),
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        loadDashSection('account', {}, false);
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره اطلاعات.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // Address edit toggle (inline form)
+        $dash.on('click', '.dash-address-edit', function () {
+            var type = $(this).data('address-type');
+            $dash.find('.dash-address-form[data-address-type="' + type + '"]').prop('hidden', false).slideDown(200);
+        });
+
+        // --- Add-address modal (fields + Neshan map + location→address) ---
+        var $addressModal = $('#dash-address-modal');
+        var dashAddressMap = null;
+
+        $dash.on('click', '.dash-address-add', function () {
+            var type = $(this).data('add-type');
+            if (!type) {
+                pzhToast('هر دو آدرس ثبت شده‌اند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.', 'error');
+                return;
+            }
+            $('#dash-modal-address-type').val(type);
+            $('#dash-address-modal-form')[0].reset();
+            $('#dash-modal-lat, #dash-modal-lng').val('');
+            $('#dash-address-map-bar').text('روی نقشه کلیک کنید تا آدرس از موقعیت انتخاب‌شده پر شود.');
+            $addressModal.show();
+
+            if (!dashAddressMap) {
+                dashAddressMap = pzhInitAddressMap({
+                    containerId: 'dash-address-map',
+                    barId: 'dash-address-map-bar',
+                    latId: 'dash-modal-lat',
+                    lngId: 'dash-modal-lng',
+                    addressFieldId: 'dash-modal-address-1',
+                    plaqueFieldId: 'dash-modal-plaque',
+                    unitFieldId: 'dash-modal-unit',
+                    cityFieldId: 'dash-modal-city',
+                    stateFieldId: 'dash-modal-state',
+                    districtFieldId: null
+                });
+            } else {
+                dashAddressMap.refresh();
+            }
+        });
+
+        $('#dash-address-modal-close').on('click', function () {
+            $addressModal.hide();
+        });
+
+        $addressModal.on('click', function (e) {
+            if (e.target === this) $addressModal.hide();
+        });
+
+        // Modal submit (AJAX)
+        $('#dash-address-modal-form').on('submit', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({ action: 'pzh_account_save_address', nonce: pzh_options.nonce }, $form.serializeObject()),
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        $addressModal.hide();
+                        loadDashSection('addresses', {}, false);
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره آدرس.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // Address form submit (AJAX)
+        $dash.on('submit', '.dash-address-form', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({ action: 'pzh_account_save_address', address_type: $form.data('address-type'), nonce: pzh_options.nonce }, $form.serializeObject()),
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        $dashContent.html(resp.data.html);
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره آدرس.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // Review submit (AJAX)
+        $dash.on('submit', '.dash-review-form', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_account_add_review',
+                    product_id: $form.data('product-id'),
+                    comment: $form.find('input[name="comment"]').val(),
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        $dashContent.html(resp.data.html);
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت نظر.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // Favorite removal (reuses the toggle endpoint, then refreshes the list)
+        $dash.on('click', '.dash-fav-badge', function () {
+            var $btn = $(this);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'pzh_toggle_favorite', product_id: $btn.data('product-id'), nonce: pzh_options.nonce },
+                success: function (resp) {
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        loadDashSection('favorites', {}, false);
+                    }
+                }
+            });
+        });
+
+        // Wishlist add-to-cart (reuses the existing AJAX endpoint)
+        $dash.on('click', '.dashboard-add-to-cart', function () {
+            var $btn = $(this);
+            var productId = $btn.data('product-id');
+            $btn.addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'pzh_add_to_cart', product_id: productId, quantity: 1, nonce: pzh_options.nonce },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhUpdateCartBadge(resp.data.cart_count);
+                        pzhToast(resp.data.message);
+                        if ($('.cart-dropdown').hasClass('active')) pzhRefreshMiniCart();
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در افزودن به سبد.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // --- Wallet ---
+        var $walletModal = $('#dash-wallet-modal');
+        var $withdrawModal = $('#dash-withdraw-modal');
+
+        $dash.on('click', '.wallet-tile', function () {
+            var action = $(this).data('action') || '';
+            if (action === 'charge') {
+                $('#dash-wallet-amount').val('');
+                $('#dash-wallet-form').find('.dash-wallet-quick__btn').removeClass('selected');
+                $walletModal.show();
+                return;
+            }
+            if (action === 'transfer') {
+                var balance = parseInt($(this).data('balance'), 10) || 0;
+                if (balance < 10000) {
+                    pzhToast('موجودی کیف پول برای انتقال کافی نیست.', 'error');
+                    return;
+                }
+                $('#dash-withdraw-form')[0].reset();
+                $('#dash-withdraw-amount').attr('max', balance);
+                $('#dash-withdraw-balance').text(Number(balance).toLocaleString('fa-IR'));
+                $withdrawModal.show();
+                return;
+            }
+            pzhToast('این قابلیت به‌زودی فعال می‌شود.');
+        });
+
+        // "انتقال کل موجودی" fills the max amount
+        $('#dash-withdraw-all').on('click', function () {
+            $('#dash-withdraw-amount').val($('#dash-withdraw-amount').attr('max'));
+        });
+
+        // Withdraw modal close
+        $('#dash-withdraw-modal-close').on('click', function () { $withdrawModal.hide(); });
+        $withdrawModal.on('click', function (e) { if (e.target === this) $withdrawModal.hide(); });
+
+        // Withdraw submit → hold amount + queue the request for the admin
+        $('#dash-withdraw-form').on('submit', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var amount = parseInt($('#dash-withdraw-amount').val(), 10);
+            if (!amount || amount < 10000) {
+                pzhToast('مبلغ انتقال را وارد کنید. (حداقل ۱۰٬۰۰۰ تومان)', 'error');
+                return;
+            }
+            var $btn = $form.find('button[type="submit"]').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({ action: 'pzh_wallet_withdraw', nonce: pzh_options.nonce }, $form.serializeObject()),
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        $withdrawModal.hide();
+                        loadDashSection('wallet', {}, false);
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت درخواست برداشت.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+
+        // Quick amount buttons
+        $('#dash-wallet-form').on('click', '.dash-wallet-quick__btn', function () {
+            $('#dash-wallet-form').find('.dash-wallet-quick__btn').removeClass('selected');
+            $(this).addClass('selected');
+            $('#dash-wallet-amount').val($(this).data('amount'));
+        });
+
+        // Clear the quick selection when typing a custom amount
+        $('#dash-wallet-amount').on('input', function () {
+            var typed = parseInt($(this).val(), 10);
+            $('#dash-wallet-form').find('.dash-wallet-quick__btn').each(function () {
+                $(this).toggleClass('selected', parseInt($(this).data('amount'), 10) === typed);
+            });
+        });
+
+        // Close
+        $('#dash-wallet-modal-close').on('click', function () { $walletModal.hide(); });
+        $walletModal.on('click', function (e) { if (e.target === this) $walletModal.hide(); });
+
+        // Charge submit → create top-up order → redirect to the gateway
+        $('#dash-wallet-form').on('submit', function (e) {
+            e.preventDefault();
+            var amount = parseInt($('#dash-wallet-amount').val(), 10);
+            if (!amount || amount < 10000) {
+                pzhToast('مبلغ شارژ را وارد کنید. (حداقل ۱۰٬۰۰۰ تومان)', 'error');
+                return;
+            }
+            var $btn = $(this).find('button[type="submit"]').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'pzh_wallet_charge', amount: amount, nonce: pzh_options.nonce },
+                success: function (resp) {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    if (resp && resp.success && resp.data.redirect) {
+                        pzhToast(resp.data.message || 'در حال انتقال به درگاه پرداخت...');
+                        window.location.href = resp.data.redirect;
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در اتصال به درگاه پرداخت.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.removeClass('loading').prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
     }
 
     // --- Tabs Navigation: Smooth Scroll + Active State ---

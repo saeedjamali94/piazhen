@@ -624,6 +624,106 @@
 }
 
 // ============================================================================
+// User Dropdown (hover for logged-in users — per the auth-popup design)
+// ============================================================================
+
+.user-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 0;
+    width: 384px;
+    background: $white;
+    border: 1px solid #F0F0F0;
+    border-radius: 18px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all $transition-base;
+    direction: rtl;
+    padding: 14px 10px 16px;
+
+    // Header strip: person icon at the left end, orange name at the right
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 16px 18px;
+
+        .user-dropdown__head-icon {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dropdown__name {
+            font-size: 19px;
+            font-weight: 700;
+            color: #F58851;
+        }
+    }
+
+    &__menu {
+        display: flex;
+        flex-direction: column;
+
+        a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 16px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #414141;
+            line-height: 1.6;
+            border-radius: 12px;
+            transition: background $transition-fast;
+
+            svg:not(.user-dropdown__chevron) {
+                width: 22px;
+                height: 22px;
+                color: #000;
+                flex-shrink: 0;
+            }
+
+            .user-dropdown__chevron {
+                margin-inline-start: auto;
+                color: #2F2F2F;
+                flex-shrink: 0;
+            }
+
+            &:hover {
+                background: #F8F8F8;
+            }
+        }
+    }
+}
+
+// Show on hover (desktop)
+@media (min-width: $bp-lg) {
+    .user-icon-wrapper:hover .user-dropdown,
+    .user-icon-wrapper:focus-within .user-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+}
+
+// Click-to-toggle on smaller screens (hover isn't available)
+@media (max-width: $bp-lg - 1px) {
+    .user-icon-wrapper.open .user-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+}
+
+// ============================================================================
 // Mobile Navigation
 // ============================================================================
 

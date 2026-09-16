@@ -1727,14 +1727,39 @@ function pzh_reverse_geocode() {
     }
 
     $key = pzh_neshan_api_key();
+
+    // No Neshan key: fall back to Nominatim (OpenStreetMap, free, keyless)
     if (!$key) {
-        // No key: coordinates are still saved, address stays manual
+        $url  = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' . $lat . '&lon=' . $lng . '&accept-language=fa';
+        $resp = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array('User-Agent' => 'Piazhen-Theme/1.0 (localhost)'),
+        ));
+
+        if (is_wp_error($resp) || wp_remote_retrieve_response_code($resp) !== 200) {
+            wp_send_json_success(array(
+                'geocoded' => false,
+                'address'  => '',
+                'state'    => '',
+                'city'     => '',
+                'district' => '',
+            ));
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($resp), true);
+        if (empty($body) || empty($body['address'])) {
+            wp_send_json_success(array('geocoded' => false, 'address' => '', 'state' => '', 'city' => '', 'district' => ''));
+        }
+
+        $addr = $body['address'];
         wp_send_json_success(array(
-            'geocoded' => false,
-            'address'  => '',
-            'state'    => '',
-            'city'     => '',
-            'district' => '',
+            'geocoded' => true,
+            'address'  => isset($body['display_name']) ? $body['display_name'] : '',
+            'state'    => isset($addr['state']) ? $addr['state'] : '',
+            'city'     => isset($addr['city']) ? $addr['city'] : (isset($addr['town']) ? $addr['town'] : ''),
+            'district' => isset($addr['suburb']) ? $addr['suburb'] : (isset($addr['neighbourhood']) ? $addr['neighbourhood'] : ''),
+            'plaque'   => isset($addr['house_number']) ? $addr['house_number'] : '',
+            'unit'     => '',
         ));
     }
 
@@ -1759,6 +1784,8 @@ function pzh_reverse_geocode() {
         'state'    => isset($body['state']) ? $body['state'] : '',
         'city'     => isset($body['city']) ? $body['city'] : '',
         'district' => isset($body['neighbourhood']) ? $body['neighbourhood'] : (isset($body['neighborhood']) ? $body['neighborhood'] : (isset($body['district']) ? $body['district'] : '')),
+        'plaque'   => isset($body['plaque']) ? $body['plaque'] : (isset($body['plak']) ? $body['plak'] : ''),
+        'unit'     => isset($body['unit']) ? $body['unit'] : (isset($body['vahed']) ? $body['vahed'] : ''),
     ));
 }
 add_action('wp_ajax_pzh_reverse_geocode', 'pzh_reverse_geocode');
@@ -2050,6 +2077,1020 @@ function pzh_auth_register() {
 }
 add_action('wp_ajax_pzh_auth_register', 'pzh_auth_register');
 add_action('wp_ajax_nopriv_pzh_auth_register', 'pzh_auth_register');
+
+// ============================================================================
+// Dashboard (My Account) — custom AJAX sections, no plugins
+// ============================================================================
+
+/**
+ * Sidebar menu definition (section slug, Persian label, icon SVG)
+ */
+function pzh_dashboard_menu() {
+    return array(
+        'dashboard'  => array('label' => __('داشبورد', 'piazhen'),           'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>'),
+        'account'    => array('label' => __('اطلاعات کاربری', 'piazhen'),     'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>'),
+        'addresses'  => array('label' => __('آدرس‌های من', 'piazhen'),        'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>'),
+        'reviews'    => array('label' => __('نظرات', 'piazhen'),              'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.5A8 8 0 1 1 21 12z"/></svg>'),
+        'orders'     => array('label' => __('سفارش‌ها', 'piazhen'),           'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'),
+        'favorites'  => array('label' => __('کالاهای مورد علاقه', 'piazhen'), 'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'),
+        'wallet'     => array('label' => __('کیف پول', 'piazhen'),           'icon' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 15h2"/></svg>'),
+    );
+}
+
+/**
+ * Wallet helpers (lightweight custom wallet stored in user meta)
+ */
+function pzh_wallet_balance($user_id = 0) {
+    $uid = $user_id ?: get_current_user_id();
+    return intval(get_user_meta($uid, 'pzh_wallet_balance', true));
+}
+
+function pzh_wallet_transactions($user_id = 0, $limit = 20) {
+    $uid = $user_id ?: get_current_user_id();
+    $tx  = get_user_meta($uid, 'pzh_wallet_transactions', true);
+    if (!is_array($tx)) return array();
+    return array_slice(array_reverse($tx), 0, $limit);
+}
+
+/**
+ * Order status groups for the orders filter tabs
+ */
+function pzh_order_status_groups() {
+    return array(
+        'jari'      => array('pending', 'processing', 'on-hold'),
+        'delivered' => array('completed'),
+        'canceled'  => array('cancelled', 'failed'),
+        'refunded'  => array('refunded'),
+    );
+}
+
+/**
+ * Map a WC order status to a Persian label
+ */
+function pzh_order_status_label($status) {
+    $labels = array(
+        'pending'    => __('در انتظار پرداخت', 'piazhen'),
+        'processing' => __('در حال پردازش', 'piazhen'),
+        'on-hold'    => __('در انتظار بررسی', 'piazhen'),
+        'completed'  => __('تحویل شده', 'piazhen'),
+        'cancelled'  => __('لغو شده', 'piazhen'),
+        'failed'     => __('ناموفق', 'piazhen'),
+        'refunded'   => __('مرجوع شده', 'piazhen'),
+    );
+    return isset($labels[$status]) ? $labels[$status] : $status;
+}
+
+/**
+ * Has the user already reviewed this product?
+ */
+function pzh_user_reviewed($user_id, $product_id) {
+    $count = get_comments(array(
+        'user_id' => $user_id,
+        'post_id' => $product_id,
+        'count'   => true,
+    ));
+    return $count > 0;
+}
+
+/**
+ * Products from the user's delivered orders that are still reviewable
+ */
+function pzh_get_reviewable_items($user_id, $limit = 10) {
+    $orders = wc_get_orders(array(
+        'customer_id' => $user_id,
+        'status'      => 'completed',
+        'limit'       => 20,
+        'orderby'     => 'date',
+        'order'       => 'DESC',
+    ));
+
+    $items = array();
+    foreach ($orders as $order) {
+        foreach ($order->get_items() as $item) {
+            $product_id = $item->get_product_id();
+            if (!$product_id || isset($items[$product_id])) continue;
+            if (pzh_user_reviewed($user_id, $product_id)) continue;
+            $product = wc_get_product($product_id);
+            if (!$product) continue;
+            $items[$product_id] = array('product' => $product, 'order' => $order, 'item' => $item);
+            if (count($items) >= $limit) break 2;
+        }
+    }
+    return $items;
+}
+
+/**
+ * The order/product row card shared by the reviews and orders sections
+ */
+function pzh_render_order_row($args) {
+    $product     = $args['product'];
+    $order       = $args['order'];
+    $product_id  = $product->get_id();
+    $thumb       = $product->get_image('pzh_product_thumb');
+    $subtitle    = $product->get_short_description() ? wp_strip_all_tags($product->get_short_description()) : $product->get_sku();
+    $order_total = isset($args['total_html']) ? $args['total_html'] : $order->get_formatted_order_total();
+    ?>
+    <div class="dash-row-card">
+        <div class="dash-row-card__thumb">
+            <?php echo $thumb; ?>
+        </div>
+        <div class="dash-row-card__main">
+            <div class="dash-row-card__title"><?php echo esc_html($product->get_name()); ?></div>
+            <?php if ($subtitle): ?>
+                <div class="dash-row-card__subtitle"><?php echo esc_html($subtitle); ?></div>
+            <?php endif; ?>
+            <div class="dash-row-card__rule"></div>
+            <div class="dash-row-card__specs">
+                <div class="dash-spec">
+                    <span class="dash-spec__label"><?php _e('تاریخ ثبت', 'piazhen'); ?></span>
+                    <span class="dash-spec__value"><?php echo get_the_date('Y/m/d', $order->get_id()); ?></span>
+                </div>
+                <div class="dash-spec">
+                    <span class="dash-spec__label"><?php _e('شماره سفارش', 'piazhen'); ?></span>
+                    <span class="dash-spec__value"><?php echo pzh_fa_num($order->get_order_number()); ?></span>
+                </div>
+                <div class="dash-spec">
+                    <span class="dash-spec__label"><?php _e('قیمت', 'piazhen'); ?></span>
+                    <span class="dash-spec__value"><?php echo wp_kses_post($order_total); ?></span>
+                </div>
+            </div>
+            <div class="dash-row-card__rule"></div>
+            <div class="dash-spec dash-spec--status">
+                <span class="dash-spec__label"><?php _e('وضعیت', 'piazhen'); ?></span>
+                <span class="dash-spec__value dash-status"><?php echo esc_html($args['status_label']); ?></span>
+            </div>
+        </div>
+        <?php if (!empty($args['after'])): ?>
+            <div class="dash-row-card__after">
+                <?php echo $args['after']; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Render a dashboard section (shared by the page template and the AJAX handler)
+ */
+function pzh_render_account_section($section, $params = array()) {
+    $user = wp_get_current_user();
+    $uid  = get_current_user_id();
+
+    $title_icon = '';
+    $title_text = '';
+    $menu = pzh_dashboard_menu();
+    if (isset($menu[$section])) {
+        $title_icon = $menu[$section]['icon'];
+        $title_text = $menu[$section]['label'];
+    }
+
+    ob_start();
+
+    echo '<header class="dash-section-title">' . $title_icon . '<h2>' . esc_html($title_text) . '</h2></header>';
+
+    switch ($section) {
+
+        // ------------------------------------------------------------ dashboard
+        case 'dashboard':
+            $tiles = array('favorites', 'orders', 'account', 'wallet', 'reviews', 'addresses');
+            echo '<div class="dash-tiles">';
+            foreach ($tiles as $slug) {
+                echo '<button type="button" class="dash-tile" data-section="' . esc_attr($slug) . '">';
+                echo '<span class="dash-tile__icon">' . $menu[$slug]['icon'] . '</span>';
+                echo '<span class="dash-tile__label">' . esc_html($menu[$slug]['label']) . '</span>';
+                echo '</button>';
+            }
+            echo '</div>';
+            break;
+
+        // ------------------------------------------------------------ account
+        case 'account':
+            $states = function_exists('WC') ? WC()->countries->get_states('IR') : array();
+            ?>
+            <form class="dash-form dash-account-form" data-form="account">
+                <div class="dash-form__grid">
+                    <div class="dash-field">
+                        <label><?php _e('نام', 'piazhen'); ?> <span class="req">*</span></label>
+                        <input type="text" name="first_name" value="<?php echo esc_attr(get_user_meta($uid, 'billing_first_name', true) ?: $user->first_name); ?>" placeholder="<?php _e('نام', 'piazhen'); ?>">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('نام خانوادگی', 'piazhen'); ?> <span class="req">*</span></label>
+                        <input type="text" name="last_name" value="<?php echo esc_attr(get_user_meta($uid, 'billing_last_name', true) ?: $user->last_name); ?>" placeholder="<?php _e('نام خانوادگی', 'piazhen'); ?>">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('نام شرکت', 'piazhen'); ?></label>
+                        <input type="text" name="company" value="<?php echo esc_attr(get_user_meta($uid, 'billing_company', true)); ?>" placeholder="<?php _e('نام شرکت', 'piazhen'); ?>">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('شماره تماس', 'piazhen'); ?> <span class="req">*</span></label>
+                        <input type="tel" name="phone" value="<?php echo esc_attr(get_user_meta($uid, 'billing_phone', true)); ?>" placeholder="0912 345 6789" dir="ltr">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('ایمیل', 'piazhen'); ?></label>
+                        <input type="email" name="email" value="<?php echo esc_attr($user->user_email); ?>" placeholder="example@mail.com" dir="ltr">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('کد پستی', 'piazhen'); ?> <span class="req">*</span></label>
+                        <input type="text" name="postcode" value="<?php echo esc_attr(get_user_meta($uid, 'billing_postcode', true)); ?>" placeholder="1234567890" dir="ltr">
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('استان', 'piazhen'); ?> <span class="req">*</span></label>
+                        <select name="state">
+                            <option value=""><?php _e('انتخاب کنید', 'piazhen'); ?></option>
+                            <?php foreach ($states as $code => $name): ?>
+                                <option value="<?php echo esc_attr($code); ?>" <?php selected(get_user_meta($uid, 'billing_state', true), $code); ?>><?php echo esc_html($name); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="dash-field">
+                        <label><?php _e('شهر', 'piazhen'); ?> <span class="req">*</span></label>
+                        <input type="text" name="city" value="<?php echo esc_attr(get_user_meta($uid, 'billing_city', true)); ?>" placeholder="<?php _e('شهر', 'piazhen'); ?>">
+                    </div>
+                    <div class="dash-field dash-field--full">
+                        <label><?php _e('آدرس', 'piazhen'); ?> <span class="req">*</span></label>
+                        <textarea name="address_1" rows="4" placeholder="<?php _e('خیابان،کوچه، پلاک، واحد…', 'piazhen'); ?>"><?php echo esc_textarea(get_user_meta($uid, 'billing_address_1', true)); ?></textarea>
+                    </div>
+                </div>
+                <div class="dash-form__actions">
+                    <button type="submit" class="dash-btn dash-btn--submit dash-account-save"><?php _e('ثبت تغییرات', 'piazhen'); ?></button>
+                </div>
+            </form>
+            <?php
+            break;
+
+        // ------------------------------------------------------------ addresses
+        case 'addresses':
+            $addresses = array(
+                'billing'  => __('آدرس صورتحساب', 'piazhen'),
+                'shipping' => __('آدرس ارسال', 'piazhen'),
+            );
+            $states = WC()->countries->get_states('IR');
+            $has_any = false;
+            $empty_slot = '';
+            foreach ($addresses as $type => $label) {
+                $address = array(
+                    'first_name' => get_user_meta($uid, $type . '_first_name', true),
+                    'last_name'  => get_user_meta($uid, $type . '_last_name', true),
+                    'state'      => get_user_meta($uid, $type . '_state', true),
+                    'city'       => get_user_meta($uid, $type . '_city', true),
+                    'address_1'  => get_user_meta($uid, $type . '_address_1', true),
+                    'address_2'  => get_user_meta($uid, $type . '_address_2', true),
+                    'postcode'   => get_user_meta($uid, $type . '_postcode', true),
+                    'phone'      => get_user_meta($uid, $type . '_phone', true),
+                );
+
+                // Resolve numeric state/city codes (PWS) to names for display
+                $state_name = isset($states[$address['state']]) ? $states[$address['state']] : $address['state'];
+                $city_name  = $address['city'];
+                if (is_numeric($address['city']) && function_exists('PWS') && method_exists(PWS(), 'get_city')) {
+                    $resolved = PWS()->get_city($address['city']);
+                    if ($resolved) $city_name = $resolved;
+                }
+
+                $formatted = trim(implode('، ', array_filter(array($state_name, $city_name, $address['address_1'], $address['address_2']))));
+                if (!$formatted) {
+                    if (!$empty_slot) $empty_slot = $type;
+                    continue;
+                }
+                $has_any = true;
+                ?>
+                <div class="dash-address-card" data-address-type="<?php echo esc_attr($type); ?>">
+                    <div class="dash-address-card__text">
+                        <span class="dash-address-card__label"><?php echo esc_html($label); ?>:</span>
+                        <span class="dash-address-card__value"><?php echo esc_html($formatted); ?></span>
+                    </div>
+                    <button type="button" class="dash-link dash-address-edit" data-address-type="<?php echo esc_attr($type); ?>">
+                        <?php _e('ویرایش آدرس', 'piazhen'); ?>
+                    </button>
+                </div>
+                <form class="dash-form dash-address-form" data-address-type="<?php echo esc_attr($type); ?>" hidden>
+                    <div class="dash-form__grid">
+                        <div class="dash-field">
+                            <label><?php _e('استان', 'piazhen'); ?></label>
+                            <select name="state">
+                                <option value=""><?php _e('انتخاب کنید', 'piazhen'); ?></option>
+                                <?php
+                                $states = WC()->countries->get_states('IR');
+                                foreach ($states as $code => $name): ?>
+                                    <option value="<?php echo esc_attr($code); ?>" <?php selected($address['state'], $code); ?>><?php echo esc_html($name); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="dash-field">
+                            <label><?php _e('شهر', 'piazhen'); ?></label>
+                            <input type="text" name="city" value="<?php echo esc_attr($address['city']); ?>">
+                        </div>
+                        <div class="dash-field dash-field--full">
+                            <label><?php _e('آدرس', 'piazhen'); ?></label>
+                            <textarea name="address_1" rows="2"><?php echo esc_textarea($address['address_1']); ?></textarea>
+                        </div>
+                        <div class="dash-field">
+                            <label><?php _e('پلاک', 'piazhen'); ?></label>
+                            <input type="text" name="plaque" value="<?php echo esc_attr(get_user_meta($uid, $type . '_plaque', true)); ?>" placeholder="<?php _e('پلاک ۱۲', 'piazhen'); ?>">
+                        </div>
+                        <div class="dash-field">
+                            <label><?php _e('واحد', 'piazhen'); ?></label>
+                            <input type="text" name="unit" value="<?php echo esc_attr(get_user_meta($uid, $type . '_unit', true)); ?>" placeholder="<?php _e('واحد ۳', 'piazhen'); ?>">
+                        </div>
+                        <div class="dash-field">
+                            <label><?php _e('کد پستی', 'piazhen'); ?></label>
+                            <input type="text" name="postcode" value="<?php echo esc_attr($address['postcode']); ?>" dir="ltr">
+                        </div>
+                        <div class="dash-field">
+                            <label><?php _e('تلفن', 'piazhen'); ?></label>
+                            <input type="tel" name="phone" value="<?php echo esc_attr($address['phone']); ?>" dir="ltr">
+                        </div>
+                    </div>
+                    <div class="dash-form__actions">
+                        <button type="submit" class="dash-btn dash-btn--submit"><?php _e('ذخیره آدرس', 'piazhen'); ?></button>
+                    </div>
+                </form>
+                <?php
+            }
+            if (!$has_any) {
+                echo '<div class="dash-empty"><p>' . __('هنوز آدرسی ثبت نکرده‌اید.', 'piazhen') . '</p></div>';
+            }
+            echo '<button type="button" class="dash-link dash-address-add" data-add-type="' . esc_attr($empty_slot) . '">' . __('افزودن آدرس', 'piazhen') . '</button>';
+            break;
+
+        // ------------------------------------------------------------ reviews
+        case 'reviews':
+            $items = pzh_get_reviewable_items($uid, 10);
+            if (empty($items)) {
+                echo '<div class="dash-empty"><p>' . __('محصولی برای ثبت نظر وجود ندارد.', 'piazhen') . '</p></div>';
+            }
+            foreach ($items as $product_id => $data) {
+                pzh_render_order_row(array(
+                    'product'      => $data['product'],
+                    'order'        => $data['order'],
+                    'total_html'   => $data['order']->get_formatted_line_subtotal($data['item']),
+                    'status_label' => __('تحویل شده', 'piazhen'),
+                ));
+                ?>
+                <form class="dash-review-form" data-product-id="<?php echo intval($product_id); ?>">
+                    <div class="dash-review-form__row">
+                        <input type="text" name="comment" class="dash-review-input" placeholder="<?php _e('بنویسید...', 'piazhen'); ?>">
+                        <button type="submit" class="dash-btn dash-btn--submit"><?php _e('ثبت نظر', 'piazhen'); ?></button>
+                    </div>
+                </form>
+                <?php
+            }
+            break;
+
+        // ------------------------------------------------------------ orders
+        case 'orders':
+            $groups = array(
+                'jari'      => __('جاری', 'piazhen'),
+                'delivered' => __('تحویل شده', 'piazhen'),
+                'canceled'  => __('لغو شده', 'piazhen'),
+                'refunded'  => __('مرجوعی', 'piazhen'),
+            );
+            $current = isset($params['status']) && isset($groups[$params['status']]) ? $params['status'] : 'jari';
+
+            echo '<div class="dash-orders-tabs">';
+            foreach ($groups as $key => $label) {
+                $count = count(wc_get_orders(array(
+                    'customer_id' => $uid,
+                    'status'      => pzh_order_status_groups()[$key],
+                    'limit'       => -1,
+                    'return'      => 'ids',
+                    'meta_query'  => pzh_wallet_topup_meta_query(),
+                )));
+                $active = ($key === $current) ? ' active' : '';
+                echo '<button type="button" class="dash-orders-tab' . $active . '" data-status="' . esc_attr($key) . '">';
+                echo esc_html($label) . ' (' . pzh_fa_num($count) . ')';
+                echo '</button>';
+            }
+            echo '</div>';
+
+            $orders = wc_get_orders(array(
+                'customer_id' => $uid,
+                'status'      => pzh_order_status_groups()[$current],
+                'limit'       => 10,
+                'orderby'     => 'date',
+                'order'       => 'DESC',
+                'meta_query'  => pzh_wallet_topup_meta_query(),
+            ));
+
+            if (empty($orders)) {
+                echo '<div class="dash-empty"><p>' . __('سفارشی در این بخش وجود ندارد.', 'piazhen') . '</p></div>';
+            }
+            foreach ($orders as $order) {
+                $first_item = null;
+                foreach ($order->get_items() as $item) { $first_item = $item; break; }
+                if (!$first_item) continue;
+                $product = $first_item->get_product();
+                if (!$product) continue;
+                pzh_render_order_row(array(
+                    'product'      => $product,
+                    'order'        => $order,
+                    'status_label' => pzh_order_status_label($order->get_status()),
+                ));
+            }
+            break;
+
+        // ------------------------------------------------------------ favorites
+        case 'favorites':
+            $favorites = get_user_meta($uid, 'pzh_favorites', true);
+            if (!is_array($favorites)) $favorites = array();
+            if (empty($favorites)) {
+                echo '<div class="dash-empty"><p>' . __('هنوز کالایی به علاقه‌مندی‌ها اضافه نکرده‌اید.', 'piazhen') . '</p></div>';
+            }
+            foreach (array_reverse($favorites) as $product_id) {
+                $product = wc_get_product($product_id);
+                if (!$product) continue;
+                $attributes = $product->get_attributes();
+                ?>
+                <div class="dash-row-card dash-row-card--favorite" data-fav-id="<?php echo intval($product_id); ?>">
+                    <div class="dash-row-card__thumb dash-row-card__thumb--fav">
+                        <?php echo $product->get_image('pzh_product_thumb'); ?>
+                        <button type="button" class="dash-fav-badge active" data-product-id="<?php echo intval($product_id); ?>" aria-label="<?php esc_attr_e('حذف از علاقه‌مندی‌ها', 'piazhen'); ?>">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
+                    </div>
+                    <div class="dash-row-card__main">
+                        <div class="dash-row-card__title"><?php echo esc_html($product->get_name()); ?></div>
+                        <?php $sub = $product->get_short_description() ? wp_strip_all_tags($product->get_short_description()) : $product->get_sku(); ?>
+                        <?php if ($sub): ?><div class="dash-row-card__subtitle"><?php echo esc_html($sub); ?></div><?php endif; ?>
+                        <div class="dash-row-card__rule"></div>
+                        <div class="dash-row-card__specs">
+                            <?php $i = 0; foreach ($attributes as $attribute):
+                                if ($attribute->get_variation()) continue;
+                                if ($i++ >= 2) break;
+                                $value = $attribute->is_taxonomy()
+                                    ? implode('، ', wc_get_product_terms($product_id, $attribute->get_name(), array('fields' => 'names')))
+                                    : implode('، ', $attribute->get_options());
+                                if (!$value) continue;
+                                ?>
+                                <div class="dash-spec">
+                                    <span class="dash-spec__label"><?php echo esc_html(wc_attribute_label($attribute->get_name())); ?></span>
+                                    <span class="dash-spec__value"><?php echo esc_html($value); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                            <div class="dash-spec">
+                                <span class="dash-spec__label"><?php _e('قیمت', 'piazhen'); ?></span>
+                                <span class="dash-spec__value"><?php echo wp_kses_post($product->get_price_html()); ?></span>
+                            </div>
+                        </div>
+                        <div class="dash-row-card__rule"></div>
+                        <div class="dash-fav-actions">
+                            <?php if ($product->is_type('variable')): ?>
+                                <!-- Variable products open the variation popup (same flow as the archive) -->
+                                <button type="button" class="dash-btn dash-btn--atc product-card__add-to-cart--variable"
+                                        data-product-id="<?php echo intval($product_id); ?>">
+                                    <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+                                </button>
+                            <?php else: ?>
+                                <button type="button" class="dash-btn dash-btn--atc dashboard-add-to-cart"
+                                        data-product-id="<?php echo intval($product_id); ?>">
+                                    <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php
+            }
+            break;
+
+        // ------------------------------------------------------------ wallet
+        case 'wallet':
+            $balance = pzh_wallet_balance($uid);
+            ?>
+            <div class="dash-wallet">
+                <div class="dash-wallet__balance">
+                    <span class="dash-wallet__balance-label"><?php _e('موجودی شما', 'piazhen'); ?></span>
+                    <span class="dash-wallet__balance-amount"><?php echo pzh_fa_num(number_format($balance)) . ' ' . __('تومان', 'piazhen'); ?></span>
+                </div>
+
+                <div class="dash-wallet__tiles">
+                    <button type="button" class="dash-tile wallet-tile" data-action="charge">
+                        <span class="dash-tile__icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 15h2"/></svg></span>
+                        <span class="dash-tile__label"><?php _e('شارژ کیف پول', 'piazhen'); ?></span>
+                    </button>
+                    <button type="button" class="dash-tile wallet-tile" data-action="scan">
+                        <span class="dash-tile__icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 9h3M7 15h3M14 9h3M14 15h3"/></svg></span>
+                        <span class="dash-tile__label"><?php _e('اسکن', 'piazhen'); ?></span>
+                    </button>
+                    <button type="button" class="dash-tile wallet-tile" data-action="qr">
+                        <span class="dash-tile__icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span>
+                        <span class="dash-tile__label"><?php _e('کد QR', 'piazhen'); ?></span>
+                    </button>
+                    <button type="button" class="dash-tile wallet-tile" data-action="transfer" data-balance="<?php echo intval($balance); ?>">
+                        <span class="dash-tile__icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 14h1v1h-1zM18 14h1v1h-1zM15 17h1v1h-1zM18 17h1v1h-1zM16 16h2v2h-2z"/></svg></span>
+                        <span class="dash-tile__label"><?php _e('انتقال وجه', 'piazhen'); ?></span>
+                    </button>
+                </div>
+
+                <div class="dash-wallet__rule"></div>
+                <h3 class="dash-wallet__transactions-title"><?php _e('آخرین تراکنش‌ها', 'piazhen'); ?></h3>
+
+                <?php $transactions = pzh_wallet_transactions($uid, 10); ?>
+                <?php if (empty($transactions)): ?>
+                    <div class="dash-empty"><p><?php _e('تراکنشی ثبت نشده است.', 'piazhen'); ?></p></div>
+                <?php else: ?>
+                    <div class="dash-transactions">
+                        <?php foreach ($transactions as $tx): ?>
+                            <div class="dash-transaction">
+                                <div class="dash-transaction__main">
+                                    <div class="dash-transaction__title"><?php echo esc_html($tx['title'] ?? ''); ?></div>
+                                    <div class="dash-transaction__desc"><?php echo esc_html($tx['desc'] ?? ''); ?></div>
+                                </div>
+                                <div class="dash-transaction__side">
+                                    <div class="dash-transaction__amount"><?php echo pzh_fa_num(number_format(intval($tx['amount'] ?? 0))); ?> <?php _e('تومان', 'piazhen'); ?></div>
+                                    <div class="dash-transaction__status <?php echo esc_attr($tx['status'] ?? 'success'); ?>">
+                                        <?php
+                                        $tx_status = $tx['status'] ?? 'success';
+                                        if ($tx_status === 'failed') {
+                                            _e('ناموفق', 'piazhen');
+                                        } elseif ($tx_status === 'pending') {
+                                            _e('در انتظار', 'piazhen');
+                                        } else {
+                                            _e('موفق', 'piazhen');
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <?php
+            break;
+    }
+
+    return ob_get_clean();
+}
+
+/**
+ * AJAX: charge the wallet — creates a top-up order and redirects to the
+ * payment gateway (zarinpal / WC_ZPal).
+ */
+function pzh_wallet_charge() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $amount = isset($_POST['amount']) ? intval($_POST['amount']) : 0;
+    if ($amount < 10000 || $amount > 100000000) {
+        wp_send_json_error(array('message' => __('مبلغ شارژ نامعتبر است. (حداقل ۱۰٬۰۰۰ تومان)', 'piazhen')));
+    }
+
+    $uid   = get_current_user_id();
+    $order = wc_create_order();
+    $order->set_customer_id($uid);
+    $order->set_payment_method('WC_ZPal');
+    $order->set_status('pending');
+
+    $fee = new WC_Order_Item_Fee();
+    $fee->set_name(__('شارژ کیف پول', 'piazhen'));
+    $fee->set_total($amount);
+    $order->add_item($fee);
+
+    $order->update_meta_data('_pzh_wallet_topup', '1');
+    $order->calculate_totals();
+    $order->save();
+
+    wc_maybe_define_constant('WOOCOMMERCE_CHECKOUT', true);
+
+    $gateways = WC()->payment_gateways()->get_available_payment_gateways();
+    $gateway  = isset($gateways['WC_ZPal']) ? $gateways['WC_ZPal'] : null;
+
+    if (!$gateway) {
+        $order->delete(true);
+        wp_send_json_error(array('message' => __('درگاه پرداخت در دسترس نیست.', 'piazhen')));
+    }
+
+    try {
+        $result = $gateway->process_payment($order->get_id());
+    } catch (Exception $e) {
+        $order->delete(true);
+        wp_send_json_error(array('message' => $e->getMessage()));
+    }
+
+    if (!empty($result['result']) && $result['result'] === 'success' && !empty($result['redirect'])) {
+        wp_send_json_success(array(
+            'message'  => __('در حال انتقال به درگاه پرداخت...', 'piazhen'),
+            'redirect' => $result['redirect'],
+        ));
+    }
+
+    $order->delete(true);
+    wp_send_json_error(array(
+        'message' => !empty($result['messages']) ? wp_strip_all_tags($result['messages']) : __('خطا در اتصال به درگاه پرداخت.', 'piazhen'),
+    ));
+}
+add_action('wp_ajax_pzh_wallet_charge', 'pzh_wallet_charge');
+
+/**
+ * Credit the wallet when a top-up order gets paid (runs once per order)
+ */
+function pzh_wallet_credit_topup($order_id) {
+    $order = wc_get_order($order_id);
+    if (!$order || !$order->get_meta('_pzh_wallet_topup')) return;
+    if ($order->get_meta('_pzh_wallet_credited')) return;
+
+    $uid = intval($order->get_customer_id());
+    if (!$uid) return;
+
+    $amount  = intval(round($order->get_total()));
+    $balance = pzh_wallet_balance($uid);
+    update_user_meta($uid, 'pzh_wallet_balance', $balance + $amount);
+
+    $tx = get_user_meta($uid, 'pzh_wallet_transactions', true);
+    if (!is_array($tx)) $tx = array();
+    $tx[] = array(
+        'title'  => __('شارژ کیف پول', 'piazhen'),
+        'desc'   => __('درگاه پرداخت اینترنتی', 'piazhen'),
+        'amount' => $amount,
+        'status' => 'success',
+        'date'   => current_time('mysql'),
+    );
+    update_user_meta($uid, 'pzh_wallet_transactions', $tx);
+
+    $order->update_meta_data('_pzh_wallet_credited', '1');
+    $order->add_order_note(sprintf(__('کیف پول کاربر به مبلغ %s تومان شارژ شد.', 'piazhen'), number_format($amount)));
+    $order->save();
+}
+add_action('woocommerce_order_status_completed', 'pzh_wallet_credit_topup');
+add_action('woocommerce_order_status_processing', 'pzh_wallet_credit_topup');
+
+/**
+ * Exclude wallet top-up orders from the customer's order lists
+ */
+function pzh_wallet_topup_meta_query($meta_query = array()) {
+    $meta_query[] = array(
+        'relation' => 'OR',
+        array('key' => '_pzh_wallet_topup', 'compare' => 'NOT EXISTS'),
+        array('key' => '_pzh_wallet_topup', 'value' => '1', 'compare' => '!='),
+    );
+    return $meta_query;
+}
+
+/**
+ * AJAX: wallet withdrawal request — holds the amount and queues it for admin
+ */
+function pzh_wallet_withdraw() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $uid    = get_current_user_id();
+    $amount = isset($_POST['amount']) ? intval($_POST['amount']) : 0;
+    $balance = pzh_wallet_balance($uid);
+
+    if ($amount < 10000) {
+        wp_send_json_error(array('message' => __('مبلغ انتقال نامعتبر است. (حداقل ۱۰٬۰۰۰ تومان)', 'piazhen')));
+    }
+    if ($amount > $balance) {
+        wp_send_json_error(array('message' => __('موجودی کیف پول کافی نیست.', 'piazhen')));
+    }
+
+    $bank_name    = isset($_POST['bank_name']) ? sanitize_text_field(wp_unslash($_POST['bank_name'])) : '';
+    $account_name = isset($_POST['account_name']) ? sanitize_text_field(wp_unslash($_POST['account_name'])) : '';
+    $card_number  = isset($_POST['card_number']) ? sanitize_text_field(wp_unslash($_POST['card_number'])) : '';
+    $account_number = isset($_POST['account_number']) ? sanitize_text_field(wp_unslash($_POST['account_number'])) : '';
+    $iban         = isset($_POST['iban']) ? sanitize_text_field(wp_unslash($_POST['iban'])) : '';
+
+    // Normalize Persian digits in numeric fields
+    $fa_to_en = array('۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9');
+    $card_number   = strtr($card_number, $fa_to_en);
+    $account_number = strtr($account_number, $fa_to_en);
+    $iban          = strtr(strtoupper($iban), $fa_to_en);
+
+    if (!$bank_name || !$account_name) {
+        wp_send_json_error(array('message' => __('نام بانک و نام صاحب حساب الزامی است.', 'piazhen')));
+    }
+    if ($card_number === '' && $account_number === '' && $iban === '') {
+        wp_send_json_error(array('message' => __('شماره کارت، شماره حساب یا شبا را وارد کنید.', 'piazhen')));
+    }
+
+    // Hold the amount
+    update_user_meta($uid, 'pzh_wallet_balance', $balance - $amount);
+
+    $tx = get_user_meta($uid, 'pzh_wallet_transactions', true);
+    if (!is_array($tx)) $tx = array();
+    $tx[] = array(
+        'title'  => __('برداشت از کیف پول', 'piazhen'),
+        'desc'   => __('انتقال به کارت — در انتظار بررسی', 'piazhen'),
+        'amount' => $amount,
+        'status' => 'pending',
+        'date'   => current_time('mysql'),
+    );
+    update_user_meta($uid, 'pzh_wallet_transactions', $tx);
+
+    // Queue the request for the admin
+    $requests = get_option('pzh_wallet_withdrawals', array());
+    if (!is_array($requests)) $requests = array();
+    $requests[] = array(
+        'id'             => uniqid('wd_'),
+        'user_id'        => $uid,
+        'user_login'     => wp_get_current_user()->user_login,
+        'amount'         => $amount,
+        'bank_name'      => $bank_name,
+        'account_name'   => $account_name,
+        'card_number'    => $card_number,
+        'account_number' => $account_number,
+        'iban'           => $iban,
+        'status'         => 'pending',
+        'date'           => current_time('mysql'),
+    );
+    update_option('pzh_wallet_withdrawals', $requests);
+
+    wp_send_json_success(array(
+        'message' => __('درخواست برداشت ثبت شد و پس از بررسی مدیریت پرداخت می‌شود.', 'piazhen'),
+        'html'    => pzh_render_account_section('wallet', array()),
+    ));
+}
+add_action('wp_ajax_pzh_wallet_withdraw', 'pzh_wallet_withdraw');
+
+/**
+ * Admin page: wallet withdrawal requests (approve / reject + refund)
+ */
+function pzh_admin_withdrawals_menu() {
+    add_menu_page(
+        __('برداشت‌های کیف پول', 'piazhen'),
+        __('برداشت کیف پول', 'piazhen'),
+        'manage_options',
+        'pzh-wallet-withdrawals',
+        'pzh_admin_withdrawals_render',
+        'dashicons-money-alt',
+        58
+    );
+}
+add_action('admin_menu', 'pzh_admin_withdrawals_menu');
+
+function pzh_admin_withdrawals_render() {
+    // Handle approve/reject actions
+    if (isset($_GET['pzh_action'], $_GET['req_id']) && check_admin_referer('pzh_withdrawal_action')) {
+        $action = sanitize_key($_GET['pzh_action']);
+        $req_id = sanitize_text_field(wp_unslash($_GET['req_id']));
+
+        $requests = get_option('pzh_wallet_withdrawals', array());
+        foreach ($requests as &$req) {
+            if ($req['id'] !== $req_id || $req['status'] !== 'pending') continue;
+
+            if ($action === 'done') {
+                $req['status'] = 'done';
+            } elseif ($action === 'reject') {
+                $req['status'] = 'rejected';
+                // Refund the user
+                $uid  = intval($req['user_id']);
+                $balance = pzh_wallet_balance($uid);
+                update_user_meta($uid, 'pzh_wallet_balance', $balance + intval($req['amount']));
+                $tx = get_user_meta($uid, 'pzh_wallet_transactions', true);
+                if (!is_array($tx)) $tx = array();
+                $tx[] = array(
+                    'title'  => __('برگشت برداشت', 'piazhen'),
+                    'desc'   => __('رد درخواست برداشت', 'piazhen'),
+                    'amount' => intval($req['amount']),
+                    'status' => 'success',
+                    'date'   => current_time('mysql'),
+                );
+                update_user_meta($uid, 'pzh_wallet_transactions', $tx);
+            }
+            unset($req);
+            break;
+        }
+        update_option('pzh_wallet_withdrawals', $requests);
+    }
+
+    $requests = get_option('pzh_wallet_withdrawals', array());
+    $labels = array('pending' => __('در انتظار', 'piazhen'), 'done' => __('پرداخت شده', 'piazhen'), 'rejected' => __('رد شده', 'piazhen'));
+    ?>
+    <div class="wrap">
+        <h1><?php _e('درخواست‌های برداشت از کیف پول', 'piazhen'); ?></h1>
+        <?php if (empty($requests)): ?>
+            <p><?php _e('درخواستی ثبت نشده است.', 'piazhen'); ?></p>
+        <?php else: ?>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('کاربر', 'piazhen'); ?></th>
+                        <th><?php _e('مبلغ', 'piazhen'); ?></th>
+                        <th><?php _e('بانک', 'piazhen'); ?></th>
+                        <th><?php _e('صاحب حساب', 'piazhen'); ?></th>
+                        <th><?php _e('کارت / حساب / شبا', 'piazhen'); ?></th>
+                        <th><?php _e('تاریخ', 'piazhen'); ?></th>
+                        <th><?php _e('وضعیت', 'piazhen'); ?></th>
+                        <th><?php _e('عملیات', 'piazhen'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach (array_reverse($requests) as $req): ?>
+                        <tr>
+                            <td><?php echo esc_html($req['user_login']); ?> (<?php echo intval($req['user_id']); ?>)</td>
+                            <td><?php echo esc_html(number_format(intval($req['amount']))); ?></td>
+                            <td><?php echo esc_html($req['bank_name']); ?></td>
+                            <td><?php echo esc_html($req['account_name']); ?></td>
+                            <td dir="ltr">
+                                <?php echo esc_html(implode(' / ', array_filter(array($req['card_number'] ?? '', $req['account_number'] ?? '', $req['iban'] ?? '')))); ?>
+                            </td>
+                            <td><?php echo esc_html($req['date']); ?></td>
+                            <td><?php echo esc_html($labels[$req['status']] ?? $req['status']); ?></td>
+                            <td>
+                                <?php if ($req['status'] === 'pending'): ?>
+                                    <a class="button button-primary" href="<?php echo esc_url(wp_nonce_url(add_query_arg(array('pzh_action' => 'done', 'req_id' => $req['id'])), 'pzh_withdrawal_action')); ?>">
+                                        <?php _e('پرداخت شد', 'piazhen'); ?>
+                                    </a>
+                                    <a class="button" href="<?php echo esc_url(wp_nonce_url(add_query_arg(array('pzh_action' => 'reject', 'req_id' => $req['id'])), 'pzh_withdrawal_action')); ?>">
+                                        <?php _e('رد و بازگشت وجه', 'piazhen'); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * AJAX: render a dashboard section
+ */
+function pzh_account_page() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $section = isset($_POST['section']) ? sanitize_key($_POST['section']) : 'dashboard';
+    $allowed = array_keys(pzh_dashboard_menu());
+    if (!in_array($section, $allowed, true)) $section = 'dashboard';
+
+    wp_send_json_success(array(
+        'html'    => pzh_render_account_section($section, $_POST),
+        'section' => $section,
+    ));
+}
+add_action('wp_ajax_pzh_account_page', 'pzh_account_page');
+
+/**
+ * AJAX: save account info (اطلاعات کاربری)
+ */
+function pzh_account_save_info() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $uid        = get_current_user_id();
+    $first_name = sanitize_text_field(isset($_POST['first_name']) ? $_POST['first_name'] : '');
+    $last_name  = sanitize_text_field(isset($_POST['last_name']) ? $_POST['last_name'] : '');
+    $email      = sanitize_email(isset($_POST['email']) ? $_POST['email'] : '');
+
+    if (!$first_name || !$last_name) {
+        wp_send_json_error(array('message' => __('نام و نام خانوادگی الزامی است.', 'piazhen')));
+    }
+    if ($email && !is_email($email)) {
+        wp_send_json_error(array('message' => __('ایمیل وارد شده معتبر نیست.', 'piazhen')));
+    }
+
+    $user = wp_get_current_user();
+    wp_update_user(array(
+        'ID'           => $uid,
+        'first_name'   => $first_name,
+        'last_name'    => $last_name,
+        'display_name' => trim($first_name . ' ' . $last_name),
+    ));
+    if ($email && $email !== $user->user_email) {
+        $result = wp_update_user(array('ID' => $uid, 'user_email' => $email));
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        }
+    }
+
+    $fields = array(
+        'company'   => 'billing_company',
+        'phone'     => 'billing_phone',
+        'postcode'  => 'billing_postcode',
+        'state'     => 'billing_state',
+        'city'      => 'billing_city',
+        'address_1' => 'billing_address_1',
+    );
+    foreach ($fields as $input => $meta) {
+        $value = isset($_POST[$input]) ? sanitize_text_field(wp_unslash($_POST[$input])) : '';
+        update_user_meta($uid, $meta, $value);
+        update_user_meta($uid, str_replace('billing_', 'shipping_', $meta), $value);
+    }
+    update_user_meta($uid, 'billing_first_name', $first_name);
+    update_user_meta($uid, 'billing_last_name', $last_name);
+    update_user_meta($uid, 'shipping_first_name', $first_name);
+    update_user_meta($uid, 'shipping_last_name', $last_name);
+
+    wp_send_json_success(array('message' => __('اطلاعات با موفقیت ذخیره شد.', 'piazhen')));
+}
+add_action('wp_ajax_pzh_account_save_info', 'pzh_account_save_info');
+
+/**
+ * AJAX: save an address (billing or shipping)
+ */
+function pzh_account_save_address() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $type = isset($_POST['address_type']) ? sanitize_key($_POST['address_type']) : '';
+    if (!in_array($type, array('billing', 'shipping'), true)) {
+        wp_send_json_error(array('message' => __('نوع آدرس نامعتبر است.', 'piazhen')));
+    }
+
+    $uid = get_current_user_id();
+
+    // پلاک و واحد → combined address_2 ("پلاک ۱۲، واحد ۳")
+    $plaque = isset($_POST['plaque']) ? sanitize_text_field(wp_unslash($_POST['plaque'])) : '';
+    $unit   = isset($_POST['unit']) ? sanitize_text_field(wp_unslash($_POST['unit'])) : '';
+    if ($plaque !== '' || $unit !== '') {
+        $address_2 = trim('پلاک ' . $plaque);
+        if ($unit !== '') $address_2 .= '، واحد ' . $unit;
+        $_POST['address_2'] = $address_2;
+    }
+
+    $fields = array(
+        'state'      => $type . '_state',
+        'city'       => $type . '_city',
+        'address_1'  => $type . '_address_1',
+        'address_2'  => $type . '_address_2',
+        'postcode'   => $type . '_postcode',
+        'phone'      => $type . '_phone',
+        'latitude'   => $type . '_latitude',
+        'longitude'  => $type . '_longitude',
+    );
+    foreach ($fields as $input => $meta) {
+        $value = isset($_POST[$input]) ? sanitize_text_field(wp_unslash($_POST[$input])) : '';
+        update_user_meta($uid, $meta, $value);
+    }
+
+    // Keep plaque/unit as separate meta too (for the edit form prefills)
+    update_user_meta($uid, $type . '_plaque', $plaque);
+    update_user_meta($uid, $type . '_unit', $unit);
+
+    wp_send_json_success(array(
+        'message' => __('آدرس با موفقیت ذخیره شد.', 'piazhen'),
+        'html'    => pzh_render_account_section('addresses', array()),
+    ));
+}
+add_action('wp_ajax_pzh_account_save_address', 'pzh_account_save_address');
+
+/**
+ * AJAX: submit a product review from the dashboard
+ */
+function pzh_account_add_review() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => __('لطفاً وارد حساب کاربری شوید.', 'piazhen')));
+    }
+
+    $uid        = get_current_user_id();
+    $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    $comment    = isset($_POST['comment']) ? sanitize_textarea_field(wp_unslash($_POST['comment'])) : '';
+
+    if (!$product_id || trim($comment) === '') {
+        wp_send_json_error(array('message' => __('متن نظر را وارد کنید.', 'piazhen')));
+    }
+    if (!wc_customer_bought_product('', $uid, $product_id)) {
+        wp_send_json_error(array('message' => __('برای ثبت نظر باید این محصول را خریداری کرده باشید.', 'piazhen')));
+    }
+
+    $user = wp_get_current_user();
+    $approved = (get_option('comment_moderation') === '1') ? 0 : 1;
+
+    $comment_id = wp_insert_comment(array(
+        'comment_post_ID'      => $product_id,
+        'comment_author'       => $user->display_name,
+        'comment_author_email' => $user->user_email,
+        'user_id'              => $uid,
+        'comment_content'      => $comment,
+        'comment_type'         => 'review',
+        'comment_approved'     => $approved,
+    ));
+
+    if (!$comment_id) {
+        wp_send_json_error(array('message' => __('خطا در ثبت نظر.', 'piazhen')));
+    }
+
+    if (wc_review_ratings_enabled()) {
+        add_comment_meta($comment_id, 'rating', 5);
+    }
+
+    wp_send_json_success(array(
+        'message' => __('نظر شما با موفقیت ثبت شد.', 'piazhen'),
+        'html'    => pzh_render_account_section('reviews', array()),
+    ));
+}
+add_action('wp_ajax_pzh_account_add_review', 'pzh_account_add_review');
 
 // ============================================================================
 // WooCommerce Hooks
