@@ -108,7 +108,8 @@ function pzhDashboardUrl() {
 }
 
 /**
- * Get product card HTML
+ * Get product card HTML (per the Row.png design: rounded gray image block +
+ * heart button + centered title + green price pill — no card container)
  */
 function pzh_get_product_card_html($product_id) {
     $product = wc_get_product($product_id);
@@ -121,42 +122,21 @@ function pzh_get_product_card_html($product_id) {
             <a href="<?php echo get_permalink($product_id); ?>">
                 <?php echo $product->get_image('pzh_product_card'); ?>
             </a>
-            <?php if ($product->is_on_sale()): ?>
-                <span class="product-card__badge product-card__badge--sale">٪<?php echo pzh_get_discount_percentage($product); ?></span>
-            <?php endif; ?>
             <button class="product-card__favorite <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
                     data-product-id="<?php echo esc_attr($product_id); ?>"
                     aria-label="<?php _e('افزودن به علاقه‌مندی', 'piazhen'); ?>">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="20" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
             </button>
         </div>
-        <div class="product-card__details">
-            <h3 class="product-card__title">
-                <a href="<?php echo get_permalink($product_id); ?>"><?php echo $product->get_name(); ?></a>
-            </h3>
-            <div class="product-card__price">
-                <?php echo $product->get_price_html(); ?>
-            </div>
-            <?php if ($product->is_type('variable')): ?>
-                <button class="product-card__add-to-cart mainBtn small product-card__add-to-cart--variable"
-                        data-product-id="<?php echo esc_attr($product_id); ?>"
-                        data-has-variations="1">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-                    </svg>
-                    <?php _e('انتخاب و خرید', 'piazhen'); ?>
-                </button>
-            <?php else: ?>
-                <button class="product-card__add-to-cart mainBtn small"
-                        data-product-id="<?php echo esc_attr($product_id); ?>">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-                    </svg>
-                    <?php _e('افزودن به سبد', 'piazhen'); ?>
-                </button>
-            <?php endif; ?>
+
+        <h3 class="product-card__title">
+            <a href="<?php echo get_permalink($product_id); ?>"><?php echo $product->get_name(); ?></a>
+        </h3>
+
+        <div class="product-card__price">
+            <?php echo wc_price($product->get_price()); ?>
         </div>
     </div>
     <?php
@@ -3091,6 +3071,162 @@ function pzh_account_add_review() {
     ));
 }
 add_action('wp_ajax_pzh_account_add_review', 'pzh_account_add_review');
+
+// ============================================================================
+// Magazine (Blog) — carousel + AJAX filters/search, no plugins
+// ============================================================================
+
+/**
+ * Estimated reading time in minutes (Persian text ≈ 150 words/min)
+ */
+function pzh_post_reading_time($post_id = 0) {
+    $content = get_post_field('post_content', $post_id ?: get_the_ID());
+    $words   = preg_match_all('/\S+/u', wp_strip_all_tags($content));
+    $minutes = max(1, intval(ceil($words / 150)));
+    return $minutes;
+}
+
+/**
+ * Blog categories with post counts
+ */
+function pzh_get_blog_categories() {
+    return get_categories(array('hide_empty' => true, 'orderby' => 'name', 'order' => 'ASC'));
+}
+
+/**
+ * A single magazine post card
+ */
+function pzh_render_post_card($post_id) {
+    $post_id = intval($post_id);
+    $categories = get_the_category($post_id);
+    $cat_name   = !empty($categories) ? $categories[0]->name : '';
+    $thumb      = get_the_post_thumbnail_url($post_id, 'medium_large') ?: wc_placeholder_img_src('medium_large');
+    ?>
+    <article class="mag-card">
+        <a href="<?php echo esc_url(get_permalink($post_id)); ?>" class="mag-card__image">
+            <img src="<?php echo esc_url($thumb); ?>" alt="<?php echo esc_attr(get_the_title($post_id)); ?>" loading="lazy">
+        </a>
+        <div class="mag-card__body">
+            <?php if ($cat_name): ?>
+                <span class="mag-card__category"><?php echo esc_html($cat_name); ?></span>
+            <?php endif; ?>
+            <h3 class="mag-card__title">
+                <a href="<?php echo esc_url(get_permalink($post_id)); ?>"><?php echo esc_html(get_the_title($post_id)); ?></a>
+            </h3>
+            <p class="mag-card__excerpt">
+                <?php echo esc_html(wp_trim_words(wp_strip_all_tags(get_post_field('post_content', $post_id)), 18, '…')); ?>
+            </p>
+            <div class="mag-card__meta">
+                <span class="mag-card__date">
+                    <i class="fa-regular fa-calendar"></i>
+                    <?php echo get_the_date('Y/m/d', $post_id); ?>
+                </span>
+                <span class="mag-card__read-time">
+                    <i class="fa-regular fa-clock"></i>
+                    <?php printf(__('%s دقیقه مطالعه', 'piazhen'), pzh_fa_num(pzh_post_reading_time($post_id))); ?>
+                </span>
+            </div>
+            <a href="<?php echo esc_url(get_permalink($post_id)); ?>" class="mag-card__more">
+                <?php _e('ادامه مطلب', 'piazhen'); ?>
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+        </div>
+    </article>
+    <?php
+}
+
+/**
+ * Render the magazine grid + pagination for a query
+ */
+function pzh_render_magazine_grid($query, $page, $per_page) {
+    $total       = intval($query->found_posts);
+    $total_pages = $per_page ? intval(ceil($total / $per_page)) : 0;
+
+    ob_start();
+
+    if ($query->have_posts()) {
+        echo '<div class="mag-grid">';
+        while ($query->have_posts()) {
+            $query->the_post();
+            pzh_render_post_card(get_the_ID());
+        }
+        echo '</div>';
+        pzh_render_pagination($page, $total_pages);
+    } else {
+        echo '<div class="mag-empty">';
+        echo '<p>' . __('مقاله‌ای یافت نشد.', 'piazhen') . '</p>';
+        echo '</div>';
+    }
+
+    return ob_get_clean();
+}
+
+/**
+ * AJAX: newsletter subscription (stored in a site option — no plugin)
+ */
+function pzh_newsletter_subscribe() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    if (!$email || !is_email($email)) {
+        wp_send_json_error(array('message' => __('ایمیل وارد شده معتبر نیست.', 'piazhen')));
+    }
+
+    $emails = get_option('pzh_newsletter_emails', array());
+    if (!is_array($emails)) $emails = array();
+
+    if (in_array($email, $emails, true)) {
+        wp_send_json_success(array('message' => __('شما قبلاً عضو خبرنامه شده‌اید.', 'piazhen')));
+    }
+
+    $emails[] = $email;
+    update_option('pzh_newsletter_emails', $emails);
+
+    wp_send_json_success(array('message' => __('عضویت شما در خبرنامه با موفقیت ثبت شد.', 'piazhen')));
+}
+add_action('wp_ajax_pzh_newsletter_subscribe', 'pzh_newsletter_subscribe');
+add_action('wp_ajax_nopriv_pzh_newsletter_subscribe', 'pzh_newsletter_subscribe');
+
+/**
+ * AJAX: magazine filters / search / pagination
+ */
+function pzh_blog_ajax() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $page     = max(1, isset($_POST['page']) ? intval($_POST['page']) : 1);
+    $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 9;
+    $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
+    $search   = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+    $args = array(
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'posts_per_page' => $per_page,
+        'paged'          => $page,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    );
+
+    if ($category > 0) {
+        $args['cat'] = $category;
+    }
+    if ($search !== '') {
+        $args['s'] = $search;
+    }
+
+    $query = new WP_Query($args);
+    $html  = pzh_render_magazine_grid($query, $page, $per_page);
+    wp_reset_postdata();
+
+    wp_send_json_success(array(
+        'html'        => $html,
+        'total'       => intval($query->found_posts),
+        'page'        => $page,
+        'total_pages' => $per_page ? intval(ceil($query->found_posts / $per_page)) : 0,
+    ));
+}
+add_action('wp_ajax_pzh_blog_ajax', 'pzh_blog_ajax');
+add_action('wp_ajax_nopriv_pzh_blog_ajax', 'pzh_blog_ajax');
 
 // ============================================================================
 // WooCommerce Hooks

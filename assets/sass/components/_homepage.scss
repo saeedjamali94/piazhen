@@ -384,197 +384,128 @@
 }
 
 // ============================================================================
-// Product Card (shared between homepage and archive)
+// Product Card (per the Row.png design — no card container)
 // ============================================================================
 
 .product-card {
-    background: $white;
-    border: 1px solid $gray-200;
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all $transition-base;
-    height: 100%;
     display: flex;
     flex-direction: column;
-
-    &:hover {
-        border-color: $siteYellow;
-        box-shadow: $shadow-md;
-        transform: translateY(-3px);
-
-        .product-card__image img {
-            transform: scale(1.08);
-        }
-    }
+    height: 100%;
 
     &__image {
         position: relative;
         aspect-ratio: 1;
+        border-radius: 17%;
         overflow: hidden;
-        background: $gray-100;
+        background: #D9D9D9;
 
         a {
             display: block;
             width: 100%;
             height: 100%;
+            padding: 9%;
         }
 
         img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             transition: transform 0.4s ease;
         }
     }
 
-    &__badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: 12px;
-        font-weight: 700;
-        color: $white;
-        z-index: 2;
-
-        &--sale {
-            background: $saleBadge;
-        }
+    &:hover &__image img {
+        transform: scale(1.05);
     }
 
+    // Heart: gray circle, top-right (RTL start), white outline icon
     &__favorite {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        width: 34px;
-        height: 34px;
+        top: 17px;
+        right: 12px;
+        width: 39px;
+        height: 39px;
         border-radius: 50%;
-        background: $white;
+        background: #B2B2B2;
         border: none;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 2;
-        box-shadow: $shadow-sm;
+        color: #FBFBFB;
         transition: all $transition-fast;
 
-        .icon {
-            width: 18px;
+        svg {
+            width: 20px;
             height: 18px;
-            color: $gray-400;
-            transition: all $transition-fast;
+            stroke: currentColor;
         }
 
-        &:hover .icon {
+        &:hover {
+            transform: scale(1.08);
+        }
+
+        &.active {
+            background: #B2B2B2;
             color: $favoriteActive;
-        }
 
-        &.active .icon {
-            fill: $favoriteActive;
-            stroke: $favoriteActive;
-            color: $favoriteActive;
-            animation: heartPop 0.3s ease;
-        }
-    }
-
-    &__details {
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
-    &__title {
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        line-height: 1.5;
-        flex: 1;
-
-        a {
-            color: $textColor;
-            transition: color $transition-fast;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-
-            &:hover {
-                color: $siteYellowDark;
+            svg {
+                fill: $favoriteActive;
+                stroke: $favoriteActive;
+                animation: heartPop 0.3s ease;
             }
         }
     }
 
+    // Centered title, dark, wraps like the design
+    &__title {
+        text-align: center;
+        padding: 18px 14px 0;
+        margin: 0;
+        flex: 1;
+
+        a {
+            color: #121212;
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $siteOrange;
+            }
+        }
+    }
+
+    // Green stadium price pill, centered, dark text (current price only)
     &__price {
-        font-size: 15px;
-        font-weight: 700;
-        color: $textColor;
-        margin-bottom: 12px;
+        align-self: center;
+        margin-top: 12px;
+        background: #80D388;
+        color: #121212;
+        border-radius: 999px;
+        padding: 8px 26px;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.7;
 
         del {
-            font-size: 13px;
-            color: $gray-500;
-            font-weight: 400;
-            margin-right: 6px;
+            display: none;
         }
 
         ins {
             text-decoration: none;
-            color: $saleBadge;
         }
 
         .woocommerce-Price-currencySymbol {
-            font-size: 11px;
-            margin-right: 2px;
-        }
-    }
-
-    &__add-to-cart {
-        width: 100%;
-        text-align: center;
-        padding: 9px 16px !important;
-        font-size: 13px;
-        margin-top: auto;
-        background: $siteYellow;
-        color: $textColor;
-        border: 2px solid $siteYellow !important;
-        border-radius: 12px !important;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all $transition-fast;
-
-        .icon {
-            width: 17px;
-            height: 17px;
-            fill: none;
-        }
-
-        &:hover {
-            background: $siteYellowDark;
-            border-color: $siteYellowDark !important;
-            transform: none;
-        }
-
-        &.loading {
-            pointer-events: none;
-            opacity: 0.7;
-
-            &:after {
-                content: "";
-                width: 14px;
-                height: 14px;
-                border: 2px solid transparent;
-                border-top-color: currentColor;
-                border-radius: 50%;
-                animation: btnSpin 0.6s linear infinite;
-                display: inline-block;
-            }
+            font-size: 12px;
+            margin-right: 3px;
+            font-weight: 600;
         }
     }
 }
@@ -948,9 +879,8 @@
     }
 
     .product-card {
-        &__details { padding: 10px; }
-        &__title { font-size: 12px; }
-        &__price { font-size: 13px; }
-        &__add-to-cart { font-size: 11px; padding: 7px 12px !important; }
+        &__title a { font-size: 13px; }
+        &__price { font-size: 12px; padding: 6px 18px; }
+        &__favorite { width: 32px; height: 32px; top: 12px; right: 10px; }
     }
 }

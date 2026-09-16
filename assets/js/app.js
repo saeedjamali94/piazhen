@@ -1986,6 +1986,131 @@ $(document).ready(function () {
         });
     }
 
+    // ========================================================================
+    // Magazine (blog) — hero carousel + AJAX filters/search
+    // ========================================================================
+    var $magazine = $('[data-magazine]');
+
+    if ($magazine.length) {
+
+        // Hero carousel (no arrows per the design — dots only)
+        if (typeof Swiper !== 'undefined' && $magazine.find('.mag-hero-swiper').length) {
+            new Swiper('.mag-hero-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 0,
+                loop: true,
+                autoplay: { delay: 4500, disableOnInteraction: false },
+                pagination: {
+                    el: '.mag-hero-pagination',
+                    clickable: true
+                }
+            });
+        }
+
+        var $results = $('#mag-results');
+        var perPage = parseInt($results.data('per-page'), 10) || 9;
+        var currentCategory = parseInt($results.data('category'), 10) || 0;
+        var searchTimeout;
+
+        function loadMagazine(page, category, search, pushUrl, scrollToTop) {
+            $results.addClass('loading');
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_blog_ajax',
+                    page: page || 1,
+                    per_page: perPage,
+                    category: category || 0,
+                    search: search || '',
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $results.removeClass('loading');
+                    if (resp && resp.success) {
+                        $results.html(resp.data.html);
+                        if (pushUrl) {
+                            var params = new URLSearchParams();
+                            if (category) params.set('category', category);
+                            if (search) params.set('search', search);
+                            if (page && page > 1) params.set('page', page);
+                            var qs = params.toString();
+                            window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+                        }
+                        if (scrollToTop) {
+                            $('html, body').animate({ scrollTop: $results.offset().top - 40 }, 250);
+                        }
+                    }
+                },
+                error: function () {
+                    $results.removeClass('loading');
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        }
+
+        // Category pills
+        $magazine.on('click', '.mag-filter', function () {
+            currentCategory = parseInt($(this).data('category'), 10) || 0;
+            $magazine.find('.mag-filter').removeClass('active');
+            $(this).addClass('active');
+            loadMagazine(1, currentCategory, $('#mag-search').val().trim(), true, false);
+        });
+
+        // Search (debounced) + button
+        $('#mag-search').on('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function () {
+                loadMagazine(1, currentCategory, $('#mag-search').val().trim(), true, false);
+            }, 500);
+        });
+        $('#mag-search-btn').on('click', function () {
+            loadMagazine(1, currentCategory, $('#mag-search').val().trim(), true, false);
+        });
+
+        // Pagination
+        $(document).on('click', '.mag-results .products-pagination__btn', function () {
+            var page = $(this).data('page');
+            if (!page) return;
+            loadMagazine(page, currentCategory, $('#mag-search').val().trim(), true, true);
+        });
+
+        // Newsletter subscribe (sidebar — all magazine pages)
+        $(document).on('submit', '.mag-newsletter', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $input = $form.find('.mag-newsletter__input');
+            var email = $input.val().trim();
+            if (!email) return;
+
+            var $btn = $form.find('.mag-newsletter__btn').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_newsletter_subscribe',
+                    email: email,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    $btn.prop('disabled', false);
+                    if (resp && resp.success) {
+                        pzhToast(resp.data.message);
+                        $input.val('');
+                    } else {
+                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت عضویت.', 'error');
+                    }
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                }
+            });
+        });
+    }
+
     // --- Tabs Navigation: Smooth Scroll + Active State ---
     var $tabLinks = $('.tab-nav-link');
     var $tabSections = $('.single-product-section');

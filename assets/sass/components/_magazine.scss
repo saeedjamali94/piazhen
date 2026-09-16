@@ -1,0 +1,721 @@
+@use "../global/variables" as *;
+
+// ============================================================================
+// Magazine (blog) page — hero carousel + AJAX filters/search
+// ============================================================================
+
+.pzh-magazine {
+    padding-bottom: 56px;
+    background: $gray-100;
+
+    .container {
+        max-width: 1320px;
+    }
+}
+
+.mag-breadcrumb {
+    font-size: 13px;
+    color: $gray-600;
+
+    .breadcrumb-trail {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    a {
+        color: $gray-600;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $siteOrange;
+        }
+    }
+
+    .breadcrumb-delimiter {
+        color: $gray-400;
+        margin: 0 4px;
+    }
+}
+
+.mag-head {
+    margin-bottom: 22px;
+
+    &__title {
+        font-size: 26px;
+        font-weight: 800;
+        color: #121212;
+        margin-bottom: 6px;
+    }
+
+    &__subtitle {
+        font-size: 14px;
+        color: $gray-600;
+    }
+}
+
+// ============================================================================
+// Hero Carousel
+// ============================================================================
+
+.mag-hero {
+    position: relative;
+    margin-bottom: 28px;
+
+    .swiper {
+        padding: 4px;
+    }
+}
+
+// Full-bleed photo slide (per the Content.png design): centered white headline
+// directly on the photo + orange pill button; 1 slide per view, non-peeking.
+.mag-hero-slide {
+    position: relative;
+    aspect-ratio: 1.71 / 1;
+    border-radius: 28px;
+    overflow: hidden;
+    background-color: $gray-200;
+    background-size: cover;
+    background-position: center;
+
+    // Soft bottom gradient so the centered text stays readable on any photo
+    &__overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 26px;
+        padding: 24px 30px;
+        background: linear-gradient(180deg, rgba($black, 0.08) 0%, rgba($black, 0.22) 60%, rgba($black, 0.34) 100%);
+    }
+
+    &__title {
+        max-width: 92%;
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.6;
+        text-align: center;
+
+        a {
+            color: $white;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 14px rgba($black, 0.4);
+            transition: opacity $transition-fast;
+
+            &:hover {
+                opacity: 0.85;
+            }
+        }
+    }
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 13px 46px;
+        border-radius: 999px;
+        background: $siteOrange;
+        color: $white;
+        font-size: 14px;
+        font-weight: 700;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $siteOrangeDark;
+        }
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        border-radius: 20px;
+
+        &__title {
+            font-size: 20px;
+        }
+
+        &__btn {
+            padding: 11px 34px;
+            font-size: 13px;
+        }
+    }
+}
+
+// Pagination: white dots + one elongated white active pill (design), no arrows
+.mag-hero-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 10px;
+
+    .swiper-pagination-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba($white, 0.55);
+        opacity: 1;
+        transition: all $transition-fast;
+
+        &-active {
+            width: 24px;
+            border-radius: 5px;
+            background: $white;
+        }
+    }
+}
+
+// ============================================================================
+// Toolbar: category pills + search
+// ============================================================================
+
+.mag-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 24px;
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    &__search {
+        display: flex;
+        align-items: center;
+        background: $white;
+        border: 1px solid #F0F0F0;
+        border-radius: 50px;
+        overflow: hidden;
+        padding: 0 6px 0 14px;
+    }
+}
+
+.mag-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 22px;
+    border-radius: 50px;
+    border: 1.5px solid #F0F0F0;
+    background: $white;
+    color: #121212;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all $transition-fast;
+    font-family: $fontFamily;
+
+    &:hover {
+        border-color: #121212;
+    }
+
+    // Design: the active pill is DARK with white text
+    &.active {
+        background: #121212;
+        border-color: #121212;
+        color: $white;
+    }
+
+    &__count {
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba($black, 0.06);
+        border-radius: 20px;
+        padding: 1px 8px;
+
+        .mag-filter.active & {
+            background: rgba($white, 0.25);
+        }
+    }
+}
+
+// Search: a plain pill with an inline magnifier (per the design)
+.mag-search-input {
+    border: 0;
+    padding: 11px 12px;
+    font-size: 13.5px;
+    font-family: $fontFamily;
+    width: 220px;
+    background: transparent;
+
+    &:focus {
+        outline: none;
+    }
+
+    &::placeholder {
+        color: $gray-500;
+    }
+}
+
+.mag-search-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    color: $gray-600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all $transition-fast;
+
+    &:hover {
+        color: #121212;
+    }
+}
+
+// ============================================================================
+// Grid + cards
+// ============================================================================
+
+.mag-results {
+    min-height: 200px;
+    transition: opacity $transition-fast;
+
+    &.loading {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+}
+
+.mag-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+
+    @media (max-width: $bp-lg - 1px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mag-card {
+    background: $white;
+    border: 1px solid #F0F0F0;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all $transition-base;
+
+    &:hover {
+        box-shadow: $shadow-md;
+        transform: translateY(-3px);
+
+        .mag-card__image img {
+            transform: scale(1.05);
+        }
+    }
+
+    &__image {
+        display: block;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        background: $gray-200;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        padding: 16px 18px 18px;
+    }
+
+    &__category {
+        font-size: 12px;
+        font-weight: 700;
+        color: $siteOrange;
+        margin-bottom: 8px;
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.7;
+        margin-bottom: 8px;
+
+        a {
+            color: #121212;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $siteOrange;
+            }
+        }
+    }
+
+    &__excerpt {
+        font-size: 13px;
+        color: $gray-600;
+        line-height: 2;
+        margin-bottom: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 11.5px;
+        color: $gray-500;
+        margin-bottom: 12px;
+        margin-top: auto;
+
+        i {
+            margin-left: 4px;
+            color: $gray-400;
+        }
+    }
+
+    &__more {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: $siteOrange;
+        transition: gap $transition-fast;
+
+        i {
+            font-size: 12px;
+        }
+
+        &:hover {
+            gap: 10px;
+        }
+    }
+}
+
+.mag-empty {
+    text-align: center;
+    padding: 56px 20px;
+    background: $white;
+    border: 1px solid #F0F0F0;
+    border-radius: 16px;
+    color: $gray-600;
+    font-size: 15px;
+}
+
+// Pagination reuses .products-pagination styles from the archive
+.mag-results .products-pagination {
+    margin-top: 28px;
+}
+
+// ============================================================================
+// Layout: main content + sidebar (all magazine pages)
+// ============================================================================
+
+.mag-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 40px;
+
+    @media (max-width: $bp-lg - 1px) {
+        grid-template-columns: 1fr;
+    }
+
+    // With the sidebar present, the grid stays 3 columns but tighter
+    &__main {
+        min-width: 0;
+
+        .mag-grid {
+            @media (max-width: $bp-xl - 1px) {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Magazine Sidebar (per the magazine-side.svg design)
+// ============================================================================
+
+.mag-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+
+    @media (max-width: $bp-lg - 1px) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+// Gold card (#FBCA38, 24px radius, dark icon + text)
+.mag-side-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #FBCA38;
+    border-radius: 24px;
+    padding: 22px 24px;
+    min-height: 108px;
+    transition: all $transition-fast;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: $shadow-md;
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    &__text {
+        flex: 1;
+        font-size: 16px;
+        font-weight: 800;
+        color: #121212;
+        line-height: 1.6;
+    }
+
+    &__arrow {
+        flex-shrink: 0;
+        opacity: 0.7;
+    }
+
+    // Social card: 3 square buttons on the right
+    &--social {
+        justify-content: flex-start;
+
+        .mag-side-card__text {
+            text-align: right;
+        }
+    }
+
+    &__socials {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+}
+
+.mag-social-btn {
+    width: 34px;
+    height: 34px;
+    border: 2px solid #121212;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: #121212;
+
+        svg {
+            stroke: #FBCA38;
+        }
+    }
+}
+
+// Newsletter pill (outlined, paper-plane send)
+.mag-newsletter {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(#B5B5B5, 0.6);
+    border-radius: 32px;
+    padding: 4px 6px 4px 18px;
+    min-height: 63px;
+    background: $white;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+        border-color: rgba(#B5B5B5, 1);
+    }
+
+    &__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        font-size: 14px;
+        font-family: $fontFamily;
+        color: #828282;
+        background: transparent;
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: rgba(#828282, 0.7);
+        }
+    }
+
+    &__btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: rgba(#828282, 0.1);
+        }
+    }
+}
+
+// ============================================================================
+// Single post
+// ============================================================================
+
+.pzh-single-post {
+    padding-bottom: 56px;
+    background: $gray-100;
+
+    .container {
+        max-width: 1320px;
+    }
+}
+
+.post-article {
+    background: $white;
+    border: 1px solid #F0F0F0;
+    border-radius: 20px;
+    padding: 30px 34px;
+    min-width: 0;
+
+    &__header {
+        margin-bottom: 20px;
+    }
+
+    &__category {
+        display: inline-block;
+        background: $siteOrange;
+        color: $white;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 5px 16px;
+        border-radius: 50px;
+        margin-bottom: 14px;
+    }
+
+    &__title {
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1.7;
+        color: #121212;
+        margin-bottom: 12px;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+        font-size: 12.5px;
+        color: $gray-500;
+
+        i {
+            margin-left: 5px;
+            color: $gray-400;
+        }
+    }
+
+    &__thumb {
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 22px;
+
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    }
+
+    &__content {
+        font-size: 15px;
+        line-height: 2.3;
+        color: #3a3a3a;
+
+        h2, h3 {
+            font-size: 19px;
+            font-weight: 800;
+            color: #121212;
+            margin: 22px 0 10px;
+        }
+
+        p {
+            margin-bottom: 14px;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        ul, ol {
+            padding-right: 22px;
+            margin-bottom: 14px;
+
+            li {
+                margin-bottom: 6px;
+            }
+        }
+
+        a {
+            color: $siteOrange;
+            font-weight: 600;
+        }
+    }
+
+    &__footer {
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid #F0F0F0;
+    }
+
+    &__back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: $siteOrange;
+        transition: gap $transition-fast;
+
+        &:hover {
+            gap: 12px;
+        }
+    }
+}
