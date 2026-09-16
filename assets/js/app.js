@@ -946,18 +946,10 @@ $(document).ready(function () {
     // ========================================================================
     // Mega Menu Interactions
     // ========================================================================
-    var $megaMenuItems = $('.main-menu .mega-menu, .main-menu .menu-item-has-children');
+    // Desktop: pure CSS hover (see _header.scss). Mobile: click to toggle.
+    var $megaMenuItems = $('.main-menu .has-mega-menu, .main-menu .menu-item-has-children');
 
-    if ($(window).width() >= 992) {
-        // Desktop: hover to open mega menu
-        $megaMenuItems.on('mouseenter', function () {
-            $(this).find('.mega-menu, > .sub-menu').stop(true, true).slideDown(200);
-        });
-        $megaMenuItems.on('mouseleave', function () {
-            $(this).find('.mega-menu, > .sub-menu').stop(true, true).slideUp(150);
-        });
-    } else {
-        // Mobile: click to toggle
+    if ($(window).width() < 992) {
         $megaMenuItems.on('click', '> a', function (e) {
             e.preventDefault();
             $(this).siblings('.mega-menu, .sub-menu').slideToggle(200);

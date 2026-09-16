@@ -34,10 +34,14 @@
 
     .navBar {
         font-weight: 700;
-        padding-bottom: 14px;
+        padding-bottom: 0; // the underline sits at the header's bottom edge
 
         .main-menu {
             justify-content: center;
+
+            > li > a {
+                padding: 4px 0 16px;
+            }
         }
     }
 
@@ -303,92 +307,115 @@
 }
 
 // ============================================================================
-// Mega Menu
+// Mega Menu (design: container-wide white panel, 4 text columns)
 // ============================================================================
+
+.siteHeader {
+    position: relative;
+}
+
+// The trigger li has its own class — .mega-menu styles belong to the panel only
+.main-menu > li.has-mega-menu {
+    position: static !important;
+
+    // Orange active underline at the header bottom (per design)
+    > a {
+        position: relative;
+
+        &:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            background: $siteOrange;
+            opacity: 0;
+            transition: opacity $transition-fast;
+        }
+    }
+
+    &:hover > a:after {
+        opacity: 1;
+    }
+}
 
 .mega-menu {
     position: absolute;
     top: 100%;
-    right: 50%;
-    transform: translateX(50%) translateY(8px);
-    width: 90vw;
-    max-width: 1100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: min(1320px, calc(100vw - 120px));
     background: $white;
-    border-radius: 12px;
-    box-shadow: $shadow-xl;
-    z-index: 10;
+    border-top: 2px solid #F0F0F0;
+    border-radius: 0 0 20px 20px;
+    z-index: 90;
     opacity: 0;
     visibility: hidden;
     transition: all $transition-base;
-    padding: 24px;
+    direction: rtl;
+    padding: 34px 0 48px;
 
-    &__inner {
-        padding: 0;
+    // Columns: right-aligned, auto width, large gaps (per design)
+    &__cols {
+        display: flex;
+        justify-content: flex-start; // RTL → starts from the right edge
+        gap: 110px;
+        padding: 0 60px;
     }
 
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
+    &__col {
+        min-width: max-content;
     }
 
-    &__category {
-        &-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
-            border-bottom: 2px solid $siteYellow;
-            transition: color $transition-fast;
+    // Category header: bold dark
+    &__header {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        color: #121212;
+        line-height: 1.6;
+        margin-bottom: 14px;
+        transition: color $transition-fast;
 
-            &:hover {
-                color: $siteYellowDark;
-            }
+        &:hover {
+            color: $siteOrange;
         }
 
-        &-image {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: $gray-200;
-        }
-
-        &-title {
-            font-weight: 700;
-            font-size: 14px;
+        &:not(:first-child) {
+            margin-top: 28px;
         }
     }
 
-    &__subcategories {
+    // Sub links: regular gray
+    &__links {
         list-style: none;
         margin: 0;
         padding: 0;
 
-        li {
-            a {
-                display: block;
-                padding: 4px 0;
-                font-size: 13px;
-                font-weight: 500;
-                color: $gray-600;
-                transition: color $transition-fast, padding-right $transition-fast;
+        li a {
+            display: block;
+            font-size: 15px;
+            font-weight: 400;
+            color: #838383;
+            line-height: 1.6;
+            padding: 8px 0;
+            transition: color $transition-fast;
 
-                &:hover {
-                    color: $siteYellowDark;
-                    padding-right: 6px;
-                }
+            &:hover {
+                color: $siteOrange;
             }
         }
     }
 }
 
-// Show mega menu on hover
-.main-menu > li.mega-menu:hover .mega-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(50%) translateY(0);
+// Show mega menu on hover (desktop only)
+@media (min-width: $bp-lg) {
+    .main-menu > li.has-mega-menu:hover .mega-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 // ============================================================================
@@ -821,12 +848,20 @@
         position: static !important;
         transform: none !important;
         width: 100% !important;
-        box-shadow: none !important;
+        border-top: 0;
+        border-radius: 0;
         padding: 12px !important;
+        opacity: 1 !important;
+        visibility: visible !important;
 
-        &__grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 12px !important;
+        &__cols {
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+        }
+
+        &__header:not(:first-child) {
+            margin-top: 18px;
         }
     }
 

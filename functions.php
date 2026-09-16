@@ -3146,10 +3146,30 @@ function pzh_primary_menu_fallback() {
 
 class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
 
+    public $menu_id = 0;
+    public $skip_children = false;
+    public $skip_depth = 0;
+
     function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0) {
+        // Items inside a mega panel are already rendered there — skip them
+        if ($this->skip_children) {
+            return;
+        }
+
         $classes   = empty($item->classes) ? array() : (array) $item->classes;
-        $has_mega  = in_array('mega-menu', $classes);
         $has_children = in_array('menu-item-has-children', $classes);
+
+        if (!$this->menu_id) {
+            $this->menu_id = pzh_get_nav_menu_id_from_args($args);
+        }
+
+        // Mega trigger: a top-level item whose children are WooCommerce categories
+        $is_mega = ($depth === 0 && $has_children && $this->menu_id && pzh_menu_item_has_product_cat_children($item, $this->menu_id));
+        if ($is_mega) {
+            // Note: the li gets its OWN class — the .mega-menu class belongs
+            // to the panel only (its opacity/visibility rules must not hit the li)
+            $classes[] = 'has-mega-menu';
+        }
 
         $output .= '<li class="' . esc_attr(implode(' ', $classes)) . '">';
 
@@ -3161,17 +3181,17 @@ class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
         $item_output = $args->before;
         $item_output .= '<a' . $attributes . '>';
         $item_output .= $args->link_before . apply_filters('the_title', $item->title, $item->ID) . $args->link_after;
-        if ($has_children || $has_mega) {
+        // Arrow only for regular dropdowns — the design shows no chevron on the mega trigger
+        if ($has_children && !$is_mega) {
             $item_output .= ' <svg class="menu-arrow" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
         }
         $item_output .= '</a>';
 
-        // Mega menu: show WooCommerce product categories grid
-        if ($has_mega && $depth === 0) {
-            $item_output .= '<div class="mega-menu">';
-            $item_output .= '<div class="mega-menu__inner container">';
-            $item_output .= pzh_get_mega_menu_categories();
-            $item_output .= '</div></div>';
+        // Render the mega panel from the menu's own category hierarchy
+        if ($is_mega && $depth === 0) {
+            $item_output .= pzh_build_mega_menu_panel($item, $this->menu_id);
+            $this->skip_children = true;
+            $this->skip_depth    = $depth;
         }
 
         $item_output .= $args->after;
@@ -3180,56 +3200,145 @@ class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
     }
 
     function start_lvl(&$output, $depth = 0, $args = array()) {
+        if ($this->skip_children) {
+            return;
+        }
         $output .= '<ul class="sub-menu">';
+    }
+
+    function end_lvl(&$output, $depth = 0, $args = array()) {
+        if ($this->skip_children) {
+            if ($depth === $this->skip_depth) {
+                $this->skip_children = false;
+            }
+            return;
+        }
+        $output .= '</ul>';
+    }
+
+    function end_el(&$output, $item, $depth = 0, $args = array()) {
+        // Suppressed children (rendered inside the mega panel) must not emit
+        // their closing tags — orphan </li> tags break the browser's DOM.
+        if ($this->skip_children) {
+            return;
+        }
+        $output .= '</li>';
     }
 }
 
 /**
- * Get mega menu categories HTML
+ * Resolve the nav menu term id from walker args (object / id / slug / location)
  */
-function pzh_get_mega_menu_categories() {
-    ob_start();
-
-    $parent_categories = get_terms(array(
-        'taxonomy'   => 'product_cat',
-        'hide_empty' => false,
-        'parent'     => 0,
-        'number'     => 8,
-    ));
-
-    if (!empty($parent_categories) && !is_wp_error($parent_categories)) {
-        echo '<div class="mega-menu__grid">';
-        foreach ($parent_categories as $cat) {
-            $thumbnail_id = get_term_meta($cat->term_id, 'thumbnail_id', true);
-            $image        = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'thumbnail') : wc_placeholder_img_src('thumbnail');
-
-            // Get subcategories
-            $sub_cats = get_terms(array(
-                'taxonomy'   => 'product_cat',
-                'hide_empty' => false,
-                'parent'     => $cat->term_id,
-                'number'     => 6,
-            ));
-
-            echo '<div class="mega-menu__category">';
-            echo '<a href="' . get_term_link($cat) . '" class="mega-menu__category-header">';
-            echo '<img src="' . esc_url($image) . '" alt="' . esc_attr($cat->name) . '" class="mega-menu__category-image">';
-            echo '<span class="mega-menu__category-title">' . esc_html($cat->name) . '</span>';
-            echo '</a>';
-
-            if (!empty($sub_cats) && !is_wp_error($sub_cats)) {
-                echo '<ul class="mega-menu__subcategories">';
-                foreach ($sub_cats as $sub) {
-                    echo '<li><a href="' . get_term_link($sub) . '">' . esc_html($sub->name) . '</a></li>';
-                }
-                echo '</ul>';
-            }
-
-            echo '</div>';
+function pzh_get_nav_menu_id_from_args($args) {
+    if (!empty($args->menu)) {
+        if (is_object($args->menu) && isset($args->menu->term_id)) {
+            return intval($args->menu->term_id);
         }
-        echo '</div>';
+        if (is_numeric($args->menu)) {
+            return intval($args->menu);
+        }
+        if (is_string($args->menu)) {
+            $term = get_term_by('slug', $args->menu, 'nav_menu');
+            if (!$term) $term = get_term_by('name', $args->menu, 'nav_menu');
+            if ($term) return intval($term->term_id);
+        }
+    }
+    if (!empty($args->theme_location)) {
+        $locations = get_nav_menu_locations();
+        if (isset($locations[$args->theme_location])) {
+            return intval($locations[$args->theme_location]);
+        }
+    }
+    return 0;
+}
+
+/**
+ * Menu items grouped by parent (cached per menu)
+ */
+function pzh_get_menu_item_children_map($menu_id) {
+    static $cache = array();
+    if (isset($cache[$menu_id])) return $cache[$menu_id];
+
+    $items = wp_get_nav_menu_items($menu_id);
+    $map   = array();
+    if (!empty($items) && !is_wp_error($items)) {
+        foreach ($items as $it) {
+            $map[intval($it->menu_item_parent)][] = $it;
+        }
+    }
+    $cache[$menu_id] = $map;
+    return $map;
+}
+
+/**
+ * Does this menu item have WooCommerce category children?
+ */
+function pzh_menu_item_has_product_cat_children($item, $menu_id) {
+    $map = pzh_get_menu_item_children_map($menu_id);
+    $children = isset($map[intval($item->ID)]) ? $map[intval($item->ID)] : array();
+    foreach ($children as $child) {
+        if ($child->type === 'taxonomy' && $child->object === 'product_cat') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Build the mega menu panel from the nav menu hierarchy:
+ * 4 balanced, right-aligned text columns (bold headers + gray links).
+ */
+function pzh_build_mega_menu_panel($item, $menu_id) {
+    $map = pzh_get_menu_item_children_map($menu_id);
+    $children = isset($map[intval($item->ID)]) ? $map[intval($item->ID)] : array();
+
+    $categories = array();
+    foreach ($children as $child) {
+        $subs = isset($map[intval($child->ID)]) ? $map[intval($child->ID)] : array();
+        $categories[] = array('item' => $child, 'subs' => $subs);
     }
 
+    if (empty($categories)) {
+        return '';
+    }
+
+    // Distribute into 4 columns, balancing the row count per column
+    $columns = array(array(), array(), array(), array());
+    $weights = array(0, 0, 0, 0);
+    foreach ($categories as $cat) {
+        $weight = 1 + count($cat['subs']); // header + its links
+        $target = array_search(min($weights), $weights, true);
+        $columns[$target][] = $cat;
+        $weights[$target] += $weight;
+    }
+
+    ob_start();
+    ?>
+    <div class="mega-menu">
+        <div class="mega-menu__cols">
+            <?php foreach ($columns as $column):
+                if (empty($column)) continue;
+                ?>
+                <div class="mega-menu__col">
+                    <?php foreach ($column as $cat): ?>
+                        <a class="mega-menu__header" href="<?php echo esc_url($cat['item']->url); ?>">
+                            <?php echo esc_html($cat['item']->title); ?>
+                        </a>
+                        <?php if (!empty($cat['subs'])): ?>
+                            <ul class="mega-menu__links">
+                                <?php foreach ($cat['subs'] as $sub): ?>
+                                    <li>
+                                        <a href="<?php echo esc_url($sub->url); ?>"><?php echo esc_html($sub->title); ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
     return ob_get_clean();
 }
 
