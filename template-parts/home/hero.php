@@ -1,8 +1,8 @@
 <?php
 /**
- * Homepage Hero Section
- * Grid of banners: large banner (col-md-8, with badge/title/subtitle/buy button)
- * + two stacked cards (col-md-4, title + link).
+ * Homepage Hero Section (per hero.png)
+ * Row 1: large yellow-gradient hero (col-md-8, right) + two stacked photo tiles (col-md-4)
+ * Row 2: three photo tiles.
  * Banners data comes from pzh_hero_banners() in functions.php.
  */
 
@@ -12,48 +12,66 @@ $hero = pzh_hero_banners();
     <div class="container">
         <div class="row g-4 align-items-stretch">
 
-            <!-- Large Banner -->
+            <!-- Large Hero Carousel (RTL first = right side) -->
             <div class="col-md-8">
-                <a href="<?= esc_url($hero['main']['link']); ?>" class="heroSection__main-banner">
-                    <img src="<?= esc_url($hero['main']['image']); ?>"
-                         alt="<?= esc_attr($hero['main']['title']); ?>"
-                         class="heroSection__main-img">
-                    <div class="heroSection__content">
-                        <?php if (!empty($hero['main']['badge'])): ?>
-                            <span class="heroSection__badge">
-                                <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor">
-                                    <path d="M6.8 13.6C6.8 7.5 6.8 7.5 6.8 13.6C6.4 7.5 6.1 7.2 0 6.8C6.1 6.8 6.1 6.8 0 6.8C6.1 6.4 6.4 6.1 6.8 0C6.8 6.1 6.8 6.1 6.8 0C7.2 6.1 7.5 6.4 13.6 6.8C7.5 6.8 7.5 6.8 13.6 6.8C7.5 7.2 7.2 7.5 6.8 13.6Z"/>
-                                </svg>
-                                <?= esc_html($hero['main']['badge']); ?>
-                            </span>
-                        <?php endif; ?>
+                <div class="swiper hero-swiper" data-hero-swiper="1">
+                    <div class="swiper-wrapper">
+                        <?php foreach ($hero['slides'] as $slide): ?>
+                            <div class="swiper-slide">
+                                <a href="<?= esc_url($slide['link']); ?>" class="heroSection__main-banner">
+                                    <img src="<?= esc_url($slide['image']); ?>"
+                                         alt="<?= esc_attr($slide['title']); ?>"
+                                         class="heroSection__main-img">
 
-                        <h2 class="heroSection__title"><?= esc_html($hero['main']['title']); ?></h2>
-                        <p class="heroSection__subtitle"><?= esc_html($hero['main']['subtitle']); ?></p>
-
-                        <span class="heroSection__btn">
-                            <?= esc_html($hero['main']['cta']); ?>
-                            <i class="fa-solid fa-arrow-left"></i>
-                        </span>
+                                    <div class="heroSection__content">
+                                        <h2 class="heroSection__title"><?= esc_html($slide['title']); ?></h2>
+                                        <div class="heroSection__subtitle">
+                                            <?php foreach ((array) $slide['subtitle'] as $line): ?>
+                                                <p><?= esc_html($line); ?></p>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <span class="heroSection__btn"><?= esc_html($slide['cta']); ?></span>
+                                    </div>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                </a>
+
+                    <!-- Carousel dots (white, Swiper pagination) -->
+                    <div class="heroSection__dots"></div>
+                </div>
             </div>
 
-            <!-- Two Stacked Side Cards -->
+            <!-- Two Stacked Photo Tiles -->
             <div class="col-md-4">
-                <div class="d-flex flex-column gap-4 h-100">
+                <div class="d-flex flex-column gap-3 h-100">
                     <?php foreach ($hero['side_cards'] as $card): ?>
-                        <a class="heroSection__side"
-                           href="<?= esc_url($card['link']); ?>">
-                            <img src="<?= esc_url($card['image']); ?>"
-                                 alt="<?= esc_attr($card['title']); ?>">
-                            <h2 class="heroSection__side-title">
-                                <?= esc_html($card['title']); ?>
-                                <span class="heroSection__side-arrow">
-                                    <i class="fa-solid fa-arrow-left"></i>
-                                </span>
-                            </h2>
+                        <a class="heroSection__tile heroSection__tile--fill"
+                           href="<?= esc_url($card['link']); ?>"
+                           style="background-image: url('<?= esc_url($card['image']); ?>');">
+                            <span class="heroSection__tile-title"><?= esc_html($card['title']); ?></span>
+                            <span class="heroSection__tile-arrow">
+                                <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+                            </span>
                         </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Three Photo Tiles -->
+            <div class="col-12">
+                <div class="row g-4">
+                    <?php foreach ($hero['bottom_cards'] as $card): ?>
+                        <div class="col-md-4">
+                            <a class="heroSection__tile"
+                               href="<?= esc_url($card['link']); ?>"
+                               style="background-image: url('<?= esc_url($card['image']); ?>');">
+                                <span class="heroSection__tile-title"><?= esc_html($card['title']); ?></span>
+                                <span class="heroSection__tile-arrow">
+                                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+                                </span>
+                            </a>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             </div>

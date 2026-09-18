@@ -23,17 +23,59 @@ while (have_posts()): the_post();
         $gallery_ids
     )));
     $brand_name      = pzh_get_product_brand($product_id);
-    $brand_link      = pzh_get_product_brand_link($product_id);
-    $categories      = wc_get_product_category_list($product_id, ', ');
     $specs           = pzh_get_product_specs($product_id);
+
+    // Some products carry a specs <table> inside the short description.
+    // Extract its rows so they render as the mockup's spec panels (instead of
+    // the raw HTML table), leaving any surrounding text as the subtitle.
+    // Two table variants exist in the data: label-first rows (default) and
+    // value-first rows (dir="ltr" tables) — both are normalized to label/value.
+    $excerpt_html  = $product->get_short_description();
+    $excerpt_text  = '';
+    $excerpt_specs = array();
+    if ($excerpt_html) {
+        if (stripos($excerpt_html, '<table') !== false) {
+            $excerpt_text = trim(strip_tags(preg_replace('#<table[^>]*>.*?</table>#is', ' ', $excerpt_html)));
+            if (preg_match('#<table[^>]*>(.*?)</table>#is', $excerpt_html, $table_match)) {
+                $is_ltr      = (bool) preg_match('#dir\s*=\s*["\']\s*ltr#i', $table_match[0]);
+                $rows_source = $table_match[1];
+                if (preg_match('#<tbody[^>]*>(.*?)</tbody>#is', $table_match[1], $tbody_match)) {
+                    $rows_source = $tbody_match[1]; // skip <thead> header rows
+                }
+                preg_match_all('#<tr[^>]*>(.*?)</tr>#is', $rows_source, $row_matches);
+                foreach ($row_matches[1] as $row_html) {
+                    preg_match_all('#<t[dh][^>]*>(.*?)</t[dh]>#is', $row_html, $cell_matches);
+                    $cells = array();
+                    foreach ($cell_matches[1] as $cell_html) {
+                        $cell = trim(strip_tags($cell_html));
+                        if ($cell !== '') {
+                            $cells[] = $cell;
+                        }
+                    }
+                    if (count($cells) >= 2) {
+                        $label = $is_ltr ? $cells[1] : $cells[0];
+                        $value = $is_ltr ? $cells[0] : $cells[1];
+                        $excerpt_specs[$label] = $value;
+                    }
+                }
+            }
+        } else {
+            $excerpt_text = trim(strip_tags($excerpt_html));
+        }
+    }
     $faqs            = pzh_get_product_faqs($product_id);
     $related_ids     = pzh_get_related_products($product_id, 10);
     $whatsapp_url    = 'https://wa.me/?text=' . urlencode($product->get_name() . ' - ' . get_permalink($product_id));
     $is_variable     = $product->is_type('variable');
     $variation_picker = $is_variable ? pzh_get_variation_picker_data($product) : array();
-    $avg_rating      = $product->get_average_rating();
-    $rating_count    = $product->get_review_count();
-    $in_stock        = $product->is_in_stock();
+    $can_purchase    = pzh_variable_has_stock($product);
+
+    // Variable products show a single entry price (as in the mockup); the
+    // exact variation price replaces it via AJAX once options are selected.
+    $min_variation_price = $is_variable ? $product->get_variation_price('min') : '';
+    $display_price_html  = ($is_variable && $min_variation_price !== '')
+        ? wc_price($min_variation_price)
+        : $product->get_price_html();
 ?>
 <main class="woo-single-product">
     <div class="container">
@@ -48,235 +90,221 @@ while (have_posts()): the_post();
             )); ?>
         </nav>
 
-        <!-- Product Top: Gallery + Info -->
+        <!-- Product Top: Gallery + Info (mockup proportions: 5/12 gallery, 7/12 info) -->
         <div class="single-product-top row g-4">
-            <!-- Product Gallery (vertical thumbnails) -->
-            <div class="col-lg-6">
+            <!-- Product Gallery (per single-product-right.png) -->
+            <div class="col-lg-5">
                 <div class="product-gallery">
-                    <div class="product-gallery__layout">
-                        <!-- Vertical Thumbnails Strip -->
-                        <?php if (count($all_images) > 1): ?>
-                        <div class="product-gallery__thumbs-col">
-                            <button class="thumb-nav thumb-nav--up" type="button" aria-label="<?php _e('بالا', 'piazhen'); ?>">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 9L2 5L10 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </button>
-                            <div class="product-gallery__thumbs" id="product-thumbs">
-                                <?php foreach ($all_images as $idx => $img_id):
-                                    $full_url = wp_get_attachment_image_url($img_id, 'woocommerce_single');
-                                    $zoom_url = wp_get_attachment_image_url($img_id, 'full');
-                                ?>
-                                    <div class="product-gallery__thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
-                                         role="button" tabindex="0"
-                                         data-full="<?php echo esc_url($full_url); ?>"
-                                         data-zoom="<?php echo esc_url($zoom_url); ?>"
-                                         data-index="<?php echo $idx; ?>">
-                                        <?php echo wp_get_attachment_image($img_id, 'pzh_product_thumb', false, array('draggable' => 'false')); ?>
-                                    </div>
-                                <?php endforeach; ?>
+
+                    <!-- Main Image Card -->
+                    <div class="product-gallery__main">
+                        <?php if (!empty($all_images)): ?>
+                            <img id="main-product-image"
+                                 src="<?php echo wp_get_attachment_image_url($all_images[0], 'woocommerce_single'); ?>"
+                                 alt="<?php echo esc_attr($product->get_name()); ?>"
+                                 class="product-gallery__main-img"
+                                 data-zoom="<?php echo wp_get_attachment_image_url($all_images[0], 'full'); ?>">
+                        <?php else: ?>
+                            <div class="product-gallery__placeholder">
+                                <?php echo wc_placeholder_img('woocommerce_single'); ?>
                             </div>
-                            <button class="thumb-nav thumb-nav--down" type="button" aria-label="<?php _e('پایین', 'piazhen'); ?>">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 3L10 7L2 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </button>
-                        </div>
                         <?php endif; ?>
 
-                        <!-- Main Image -->
-                        <div class="product-gallery__main">
-                            <?php if (!empty($all_images)): ?>
-                                <img id="main-product-image"
-                                     src="<?php echo wp_get_attachment_image_url($all_images[0], 'woocommerce_single'); ?>"
-                                     alt="<?php echo esc_attr($product->get_name()); ?>"
-                                     class="product-gallery__main-img"
-                                     data-zoom="<?php echo wp_get_attachment_image_url($all_images[0], 'full'); ?>">
-                            <?php else: ?>
-                                <div class="product-gallery__placeholder">
-                                    <?php echo wc_placeholder_img('woocommerce_single'); ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <!-- Sale Badge -->
-                            <?php if ($product->is_on_sale()): ?>
-                                <span class="product-gallery__sale-badge">٪<?php echo pzh_get_discount_percentage($product); ?> <?php _e('تخفیف', 'piazhen'); ?></span>
-                            <?php endif; ?>
-
-                            <!-- Action Buttons (favorite / compare / whatsapp) -->
-                            <div class="product-gallery__actions">
-                                <button class="gallery-action-btn favorite-btn <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
-                                        data-product-id="<?php echo $product_id; ?>"
-                                        title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                                    </svg>
-                                </button>
-                                <button class="gallery-action-btn compare-btn"
-                                        data-product-id="<?php echo $product_id; ?>"
-                                        title="<?php _e('مقایسه', 'piazhen'); ?>">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/>
-                                        <circle cx="8" cy="8" r="2"/><circle cx="8" cy="16" r="2"/>
-                                        <circle cx="16" cy="11" r="2"/>
-                                    </svg>
-                                </button>
-                                <a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"
-                                   class="gallery-action-btn whatsapp-btn"
-                                   title="<?php _e('اشتراک‌گذاری در واتساپ', 'piazhen'); ?>">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
-                                    </svg>
-                                </a>
-                            </div>
+                        <!-- Action Buttons (favorite / compare / whatsapp) -->
+                        <div class="product-gallery__actions">
+                            <button class="gallery-action-btn favorite-btn <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
+                                    data-product-id="<?php echo $product_id; ?>"
+                                    title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                            </button>
+                            <button class="gallery-action-btn compare-btn"
+                                    data-product-id="<?php echo $product_id; ?>"
+                                    title="<?php _e('مقایسه', 'piazhen'); ?>">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2.5" y="2.5" width="6" height="6" rx="1"/>
+                                    <path d="M15.5 2.5l-6.5 6H14l1.5-6z"/>
+                                    <circle cx="5.5" cy="13.5" r="3"/>
+                                    <line x1="11.5" y1="12.5" x2="17.5" y2="12.5"/>
+                                    <line x1="11.5" y1="14.5" x2="17.5" y2="14.5"/>
+                                    <line x1="11.5" y1="16.5" x2="17.5" y2="16.5"/>
+                                </svg>
+                            </button>
+                            <a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"
+                               class="gallery-action-btn whatsapp-btn"
+                               title="<?php _e('اشتراک‌گذاری در واتساپ', 'piazhen'); ?>">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd">
+                                    <path d="M12.05 2C6.99 2 2.89 6.1 2.89 11.16c0 1.62.42 3.19 1.22 4.58L3 22l6.43-1.69a9.12 9.12 0 0 0 4.62 1.18h.01c5.05 0 9.16-4.1 9.16-9.16 0-2.44-.95-4.74-2.68-6.47A9.09 9.09 0 0 0 12.05 2zm5.42 13.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
+
+                    <!-- Horizontal Thumbnail Strip (active thumb is darkened, no ring) -->
+                    <?php if (count($all_images) > 1): ?>
+                    <div class="product-gallery__thumbs" id="product-thumbs">
+                        <?php foreach ($all_images as $idx => $img_id):
+                            $full_url = wp_get_attachment_image_url($img_id, 'woocommerce_single');
+                            $zoom_url = wp_get_attachment_image_url($img_id, 'full');
+                        ?>
+                            <div class="product-gallery__thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
+                                 role="button" tabindex="0"
+                                 data-full="<?php echo esc_url($full_url); ?>"
+                                 data-zoom="<?php echo esc_url($zoom_url); ?>"
+                                 data-index="<?php echo $idx; ?>">
+                                <?php echo wp_get_attachment_image($img_id, 'pzh_product_thumb', false, array('draggable' => 'false')); ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <!-- Product Info -->
-            <div class="col-lg-6">
+            <div class="col-lg-7">
                 <div class="product-info">
 
                     <!-- Title -->
                     <h1 class="product-info__title"><?php the_title(); ?></h1>
 
-                    <!-- Subtitle / Short Description -->
-                    <?php if ($product->get_short_description()): ?>
-                        <p class="product-info__subtitle"><?php echo $product->get_short_description(); ?></p>
+                    <!-- Subtitle / Short Description (table part, if any, becomes the spec panels below) -->
+                    <?php if ($excerpt_text !== ''): ?>
+                        <p class="product-info__subtitle"><?php echo esc_html($excerpt_text); ?></p>
                     <?php endif; ?>
 
-                    <!-- Rating -->
-                    <?php if ($rating_count > 0): ?>
-                        <a href="#section-comments" class="product-info__rating">
-                            <?php echo pzh_stars_html($avg_rating); ?>
-                            <span class="product-info__rating-count"><?php echo pzh_fa_num($rating_count); ?> <?php _e('دیدگاه', 'piazhen'); ?></span>
-                        </a>
-                    <?php endif; ?>
-
-                    <!-- Brand + Category -->
-                    <div class="product-info__meta">
-                        <?php if ($brand_name): ?>
-                            <span class="product-info__meta-item">
-                                <span class="meta-label"><?php _e('برند:', 'piazhen'); ?></span>
-                                <a href="<?php echo esc_url($brand_link); ?>"><?php echo esc_html($brand_name); ?></a>
-                            </span>
-                        <?php endif; ?>
-                        <?php if ($categories): ?>
-                            <span class="product-info__meta-item">
-                                <span class="meta-label"><?php _e('دسته:', 'piazhen'); ?></span>
-                                <?php echo $categories; ?>
-                            </span>
-                        <?php endif; ?>
-                        <?php if ($product->get_sku()): ?>
-                            <span class="product-info__meta-item">
-                                <span class="meta-label"><?php _e('کد محصول:', 'piazhen'); ?></span>
-                                <span><?php echo esc_html($product->get_sku()); ?></span>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Price -->
-                    <div class="product-info__price" id="product-price"
-                         data-base-price="<?php echo esc_attr($product->get_price_html()); ?>">
-                        <?php echo $product->get_price_html(); ?>
-                    </div>
-
-                    <!-- Availability -->
-                    <div class="product-info__availability <?php echo $in_stock ? 'in-stock' : 'out-of-stock'; ?>" id="product-availability">
-                        <?php if ($in_stock): ?>
-                            <i class="fa-solid fa-circle-check"></i> <?php _e('موجود در انبار', 'piazhen'); ?>
-                        <?php else: ?>
-                            <i class="fa-solid fa-circle-xmark"></i> <?php _e('ناموجود', 'piazhen'); ?>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Variations (custom AJAX picker — no plugin) -->
-                    <?php if ($is_variable && !empty($variation_picker)): ?>
-                        <div class="pzh-variation-picker" data-product-id="<?php echo $product_id; ?>">
-                            <?php foreach ($variation_picker as $attribute): ?>
-                                <div class="variation-group">
-                                    <label class="variation-group__label">
-                                        <?php echo esc_html($attribute['label']); ?>:
-                                        <span class="variation-group__selected"></span>
-                                    </label>
-                                    <div class="variation-group__options variation-group__options--<?php echo esc_attr($attribute['type']); ?>">
-                                        <?php foreach ($attribute['items'] as $item): ?>
-                                            <?php if ($attribute['type'] === 'swatch'): ?>
-                                                <button type="button"
-                                                        class="swatch-option <?php echo $item['color'] ? '' : 'swatch-option--no-color'; ?>"
-                                                        data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
-                                                        data-value="<?php echo esc_attr($item['slug']); ?>"
-                                                        title="<?php echo esc_attr($item['label']); ?>"
-                                                        <?php echo $item['color'] ? 'style="background-color:' . esc_attr($item['color']) . '"' : ''; ?>
-                                                        aria-label="<?php echo esc_attr($item['label']); ?>"></button>
-                                            <?php else: ?>
-                                                <button type="button"
-                                                        class="variation-chip"
-                                                        data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
-                                                        data-value="<?php echo esc_attr($item['slug']); ?>">
-                                                    <?php echo esc_html($item['label']); ?>
-                                                </button>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
-                                    </div>
+                    <div class="product-info__row">
+                        <!-- Specs Column (renders right in RTL) -->
+                        <div class="product-info__specs-col">
+                            <?php
+                            // Quick info panels: brand, product type (category), then specs — up to 4
+                            $panel_pool = array();
+                            if ($brand_name) {
+                                $panel_pool['برند'] = $brand_name;
+                            }
+                            $product_cats = get_the_terms($product_id, 'product_cat');
+                            if ($product_cats && !is_wp_error($product_cats)) {
+                                $panel_pool['نوع محصول'] = $product_cats[0]->name;
+                            }
+                            if (!empty($excerpt_specs)) {
+                                // The excerpt's specs table is the panel list itself (all rows)
+                                foreach ($excerpt_specs as $excerpt_label => $excerpt_value) {
+                                    $panel_pool[$excerpt_label] = $excerpt_value;
+                                }
+                                $info_panels    = $panel_pool;
+                                $has_more_specs = false;
+                            } else {
+                                foreach ($specs as $spec_label => $spec_value) {
+                                    if (!isset($panel_pool[$spec_label])) {
+                                        $panel_pool[$spec_label] = $spec_value;
+                                    }
+                                }
+                                $info_panels    = array_slice($panel_pool, 0, 4, true);
+                                $has_more_specs = count($panel_pool) > 4;
+                            }
+                            ?>
+                            <?php if (!empty($info_panels)): ?>
+                                <div class="product-info__panels">
+                                    <?php foreach ($info_panels as $panel_label => $panel_value): ?>
+                                        <div class="info-panel">
+                                            <span class="info-panel__label"><?php echo esc_html(pzh_fa_num($panel_label)); ?></span>
+                                            <span class="info-panel__value"><?php echo esc_html(pzh_fa_num($panel_value)); ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                            <?php endforeach; ?>
-                            <div class="variation-picker__status"></div>
-                            <input type="hidden" id="selected-variation-id" value="">
-                        </div>
-                    <?php endif; ?>
+                                <?php if ($has_more_specs): ?>
+                                    <a href="#section-specs" class="product-info__more"><?php _e('بیشتر', 'piazhen'); ?></a>
+                                <?php endif; ?>
+                            <?php endif; ?>
 
-                    <!-- Quantity + Add to Cart -->
-                    <div class="product-info__add-to-cart">
-                        <div class="add-to-cart-row d-flex align-items-center gap-3">
-                            <div class="quantity-selector d-flex align-items-center">
-                                <button class="qty-btn qty-minus" type="button" aria-label="<?php _e('کمتر', 'piazhen'); ?>">-</button>
-                                <input type="number" class="qty-input" value="1" min="1" max="<?php echo $product->get_stock_quantity() ?: 99; ?>" id="single-qty">
-                                <button class="qty-btn qty-plus" type="button" aria-label="<?php _e('بیشتر', 'piazhen'); ?>">+</button>
+                            <!-- Price (bottom-aligned with the add-to-cart button) -->
+                            <div class="product-info__price" id="product-price"
+                                 data-base-price="<?php echo esc_attr($display_price_html); ?>">
+                                <?php echo $display_price_html; ?>
                             </div>
-                            <button class="add-to-cart-single mainBtn mainBtn--yellow"
+                        </div>
+
+                        <!-- Controls Column (renders left in RTL) -->
+                        <div class="product-info__controls">
+                            <!-- Variations (custom AJAX picker — no plugin) -->
+                            <?php if ($is_variable && !empty($variation_picker)): ?>
+                                <div class="pzh-variation-picker" data-product-id="<?php echo $product_id; ?>">
+                                    <?php foreach ($variation_picker as $attribute): ?>
+                                        <div class="variation-group variation-group--<?php echo esc_attr($attribute['type']); ?>">
+                                            <?php if ($attribute['type'] === 'swatch'): ?>
+                                                <!-- Color panel -->
+                                                <div class="variation-panel">
+                                                    <div class="variation-panel__header">
+                                                        <span class="variation-group__label"><?php echo esc_html($attribute['label']); ?></span>
+                                                        <span class="variation-group__selected"></span>
+                                                    </div>
+                                                    <div class="variation-group__options variation-group__options--swatch">
+                                                        <?php foreach ($attribute['items'] as $item): ?>
+                                                            <button type="button"
+                                                                    class="swatch-option <?php echo $item['color'] ? '' : 'swatch-option--no-color'; ?>"
+                                                                    data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                    data-value="<?php echo esc_attr($item['slug']); ?>"
+                                                                    title="<?php echo esc_attr($item['label']); ?>"
+                                                                    <?php echo $item['color'] ? 'style="background-color:' . esc_attr($item['color']) . '"' : ''; ?>
+                                                                    aria-label="<?php echo esc_attr($item['label']); ?>"></button>
+                                                        <?php endforeach; ?>
+                                                        <?php if (count($attribute['items']) > 4): ?>
+                                                            <span class="swatch-more-dots" aria-hidden="true"></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php elseif ($attribute['type'] === 'radio'): ?>
+                                                <!-- Radio group (e.g. warranty) -->
+                                                <span class="variation-group__label">
+                                                    <?php echo esc_html($attribute['label']); ?>:
+                                                    <span class="variation-group__selected"></span>
+                                                </span>
+                                                <div class="variation-group__options variation-group__options--radio">
+                                                    <?php foreach ($attribute['items'] as $item): ?>
+                                                        <button type="button"
+                                                                class="variation-radio"
+                                                                data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                data-value="<?php echo esc_attr($item['slug']); ?>"
+                                                                title="<?php echo esc_attr($item['label']); ?>"
+                                                                aria-label="<?php echo esc_attr($item['label']); ?>">
+                                                            <span class="variation-radio__dot"></span>
+                                                            <span class="variation-radio__text"><?php echo esc_html(pzh_fa_num($item['label'])); ?></span>
+                                                        </button>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <!-- Chip group -->
+                                                <span class="variation-group__label">
+                                                    <?php echo esc_html($attribute['label']); ?>:
+                                                    <span class="variation-group__selected"></span>
+                                                </span>
+                                                <div class="variation-group__options variation-group__options--chip">
+                                                    <?php foreach ($attribute['items'] as $item): ?>
+                                                        <button type="button"
+                                                                class="variation-chip"
+                                                                data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                data-value="<?php echo esc_attr($item['slug']); ?>">
+                                                            <?php echo esc_html(pzh_fa_num($item['label'])); ?>
+                                                        </button>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <div class="variation-picker__status"></div>
+                                    <input type="hidden" id="selected-variation-id" value="">
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Add to Cart (bottom-aligned with the price) -->
+                            <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                                     data-product-id="<?php echo $product_id; ?>"
-                                    <?php echo $is_variable ? 'data-variable="1"' : ''; ?>>
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-                                </svg>
-                                <?php _e('افزودن به سبد خرید', 'piazhen'); ?>
+                                    <?php echo $is_variable ? 'data-variable="1"' : ''; ?>
+                                    <?php echo $can_purchase ? '' : 'disabled'; ?>>
+                                <?php echo $can_purchase ? __('افزودن به سبد خرید', 'piazhen') : __('ناموجود', 'piazhen'); ?>
                             </button>
                         </div>
                     </div>
-
-                    <!-- Services -->
-                    <div class="product-info__services">
-                        <div class="service-item">
-                            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="13" fill="#FBCA38" fill-opacity="0.25"/><path d="M6 17h9v-4.5H6V17z" fill="#b8860b"/><path d="M15 12.5h5l1.5 2.5v2H15v-4.5z" fill="#b8860b"/><circle cx="8.5" cy="17.8" r="1.8" fill="#fff"/><circle cx="18.5" cy="17.8" r="1.8" fill="#fff"/></svg>
-                            <span><?php _e('ارسال سریع', 'piazhen'); ?></span>
-                        </div>
-                        <div class="service-item">
-                            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="13" fill="#FBCA38" fill-opacity="0.25"/><path d="M13 4.5l6.5 2.4v5.1c0 4-2.8 6.8-6.5 8.5-3.7-1.7-6.5-4.5-6.5-8.5V6.9L13 4.5z" fill="#b8860b"/><path d="M10 13l2.2 2.2 3.8-3.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span><?php _e('ضمانت اصالت کالا', 'piazhen'); ?></span>
-                        </div>
-                        <div class="service-item">
-                            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="13" fill="#FBCA38" fill-opacity="0.25"/><rect x="4.5" y="8" width="17" height="10" rx="1.8" fill="#b8860b"/><path d="M4.5 11h17" stroke="#FBCA38" stroke-width="1.6"/></svg>
-                            <span><?php _e('پرداخت امن', 'piazhen'); ?></span>
-                        </div>
-                        <div class="service-item">
-                            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="13" fill="#FBCA38" fill-opacity="0.25"/><path d="M6.5 13.8v-1.1a6.5 6.5 0 0 1 13 0v1.1" stroke="#b8860b" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="5.8" y="13" width="3.8" height="4.8" rx="1.6" fill="#b8860b"/><rect x="16.4" y="13" width="3.8" height="4.8" rx="1.6" fill="#b8860b"/></svg>
-                            <span><?php _e('پشتیبانی ۲۴ ساعته', 'piazhen'); ?></span>
-                        </div>
-                    </div>
-
-                    <!-- Quick Specs -->
-                    <?php if (!empty($specs)): ?>
-                        <div class="product-info__quick-specs">
-                            <h4 class="quick-specs-title"><?php _e('مشخصات کلی', 'piazhen'); ?></h4>
-                            <ul class="quick-specs-list">
-                                <?php $i = 0; foreach ($specs as $label => $value): if ($i++ >= 4) break; ?>
-                                    <li>
-                                        <span class="spec-label"><?php echo esc_html($label); ?>:</span>
-                                        <span class="spec-value"><?php echo esc_html($value); ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                            <a href="#section-specs" class="quick-specs-more"><?php _e('مشاهده همه مشخصات', 'piazhen'); ?> <i class="fa-solid fa-arrow-left"></i></a>
-                        </div>
-                    <?php endif; ?>
 
                 </div>
             </div>
@@ -400,14 +428,12 @@ while (have_posts()): the_post();
 
     <!-- Sticky Add to Cart Bar (mobile) -->
     <div class="sticky-add-to-cart d-md-none">
-        <div class="sticky-price" id="sticky-price"><?php echo $product->get_price_html(); ?></div>
-        <button class="add-to-cart-single mainBtn mainBtn--yellow"
+        <div class="sticky-price" id="sticky-price"><?php echo $display_price_html; ?></div>
+        <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                 data-product-id="<?php echo $product_id; ?>"
-                <?php echo $is_variable ? 'data-variable="1"' : ''; ?>>
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-            <?php _e('افزودن به سبد', 'piazhen'); ?>
+                <?php echo $is_variable ? 'data-variable="1"' : ''; ?>
+                <?php echo $can_purchase ? '' : 'disabled'; ?>>
+            <?php echo $can_purchase ? __('افزودن به سبد', 'piazhen') : __('ناموجود', 'piazhen'); ?>
         </button>
     </div>
 </main>

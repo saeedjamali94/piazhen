@@ -1,22 +1,29 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Homepage Hero Section (Figma design)
-// Grid: large banner (col-md-8) + two stacked cards (col-md-4)
+// Homepage Hero Section (per hero.png)
+// Yellow-gradient hero (col-md-8) + 2 stacked tiles + 3-tile bottom row
 // ============================================================================
 
 .heroSection {
     padding: 28px 0 4px;
 
-    // Large banner (right side)
+    // Swiper root carries the rounded clip so slides curve with it
+    .hero-swiper {
+        border-radius: 32px;
+        overflow: hidden;
+        height: 100%;
+        min-height: 510px;
+    }
+
+    // Large hero slide: yellow gradient, products left, right-aligned text
     &__main-banner {
         position: relative;
         display: flex;
-        align-items: stretch;
+        width: 100%;
         height: 100%;
-        min-height: 480px;
-        background: $heroCream;
-        border-radius: $heroRadius;
+        min-height: 510px;
+        background: linear-gradient(90deg, #FFD300 0%, #FBCE01 30%, #F2BC00 60%, #E4A500 100%);
         overflow: hidden;
 
         .heroSection__main-img {
@@ -24,9 +31,10 @@
             top: 0;
             bottom: 0;
             left: 0;
-            width: 52%;
+            width: 58%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: left bottom;
             transition: transform $transition-slow;
         }
 
@@ -37,133 +45,122 @@
         .heroSection__content {
             position: relative;
             z-index: 1;
-            flex: 1;
+            width: 54%;
+            margin-inline-start: auto;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: flex-end;
             justify-content: center;
-            padding: 44px;
-        }
-    }
-
-    &__badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        background: $siteYellow;
-        color: $textColor;
-        font-size: 13px;
-        font-weight: 700;
-        padding: 6px 16px;
-        border-radius: 50px;
-        margin-bottom: 16px;
-
-        svg {
-            width: 13px;
-            height: 13px;
-        }
-    }
-
-    &__title {
-        font-size: 36px;
-        font-weight: 800;
-        line-height: 1.7;
-        color: $textColor;
-        margin-bottom: 10px;
-    }
-
-    &__subtitle {
-        font-size: 15px;
-        color: rgba($textColor, 0.65);
-        line-height: 1.9;
-        margin-bottom: 24px;
-    }
-
-    &__btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        background: $textColor;
-        color: $white;
-        padding: 13px 34px;
-        border-radius: 50px;
-        font-size: 15px;
-        font-weight: 700;
-        line-height: 1.5;
-        transition: all $transition-fast;
-
-        i {
-            font-size: 15px;
-            transition: transform $transition-fast;
+            text-align: right;
+            padding: 24px 28px 24px 8px;
         }
 
-        &:hover {
-            background: $siteYellowDark;
-            color: $textColor;
+        .heroSection__title {
+            font-size: 36px;
+            font-weight: 900;
+            color: #121212;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
 
-            i {
-                transform: translateX(-4px);
+        .heroSection__subtitle {
+            font-size: 21px;
+            color: rgba($black, 0.8);
+            line-height: 1.9;
+            margin-bottom: 26px;
+
+            p {
+                margin: 0;
+            }
+        }
+
+        .heroSection__btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: $siteOrange;
+            color: $white;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 14px 46px;
+            border-radius: 999px;
+            transition: all $transition-fast;
+
+            &:hover {
+                background: $siteOrangeDark;
+            }
+        }
+
+        // White carousel dots (Swiper pagination)
+        .heroSection__dots {
+            position: absolute;
+            bottom: 26px;
+            right: 92px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            z-index: 5;
+
+            .swiper-pagination-bullet {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba($white, 0.9);
+                opacity: 1;
+                margin: 0;
+                transition: all $transition-fast;
+            }
+
+            .swiper-pagination-bullet-active {
+                width: 23px;
+                border-radius: 5px;
+                background: $white;
             }
         }
     }
 
-    // Side cards (left column, stacked)
-    &__side {
+    // Photo tiles: white title bottom-right + white ↗ arrow bottom-left
+    &__tile {
         position: relative;
         display: block;
         flex: 1 1 0;
-        min-height: 226px;
-        border-radius: $heroRadius;
+        min-height: 254px;
+        border-radius: 32px;
         overflow: hidden;
+        background-color: $gray-300;
+        background-size: cover;
+        background-position: center;
+        transition: all $transition-base;
 
-        img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform $transition-slow;
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: $shadow-md;
         }
 
-        &:hover img {
-            transform: scale(1.05);
-        }
-
-        .heroSection__side-title {
+        .heroSection__tile-title {
             position: absolute;
-            bottom: 18px;
-            right: 24px;
-            left: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin: 0;
-            font-size: 22px;
+            bottom: 26px;
+            right: 23px;
+            font-size: 29px;
             font-weight: 800;
-            line-height: 1.6;
             color: $white;
-            text-shadow: 0 2px 10px rgba($black, 0.4);
+            line-height: 1.5;
+            margin: 0;
+            text-shadow: 0 2px 12px rgba($black, 0.35);
         }
 
-        .heroSection__side-arrow {
-            flex-shrink: 0;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba($white, 0.95);
-            color: $textColor;
+        .heroSection__tile-arrow {
+            position: absolute;
+            bottom: 28px;
+            left: 33px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            box-shadow: $shadow-sm;
-            transition: all $transition-fast;
         }
 
-        &:hover .heroSection__side-arrow {
-            background: $siteYellow;
-            transform: translateX(-4px);
+        // Stacked side tiles fill the column (no fixed height)
+        &--fill {
+            min-height: 0;
         }
     }
 }
@@ -623,101 +620,141 @@
 }
 
 // ============================================================================
-// Instagram & Blog Section
+// Home-end section: Blog + Instagram (per home-end.png)
 // ============================================================================
 
-.home_instagram_blog {
-    .section-card {
-        background: $white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: $shadow-sm;
-        height: 100%;
-        border: 1px solid $gray-200;
-    }
-
-    .section-card > .section-title {
-        margin-bottom: 20px;
-    }
-}
-
-// Instagram Card
-.instagram-card,
-.blog-card {
+.home-end {
     background: $white;
-    border-radius: 12px;
-    overflow: hidden;
 
-    &__image {
-        aspect-ratio: 16 / 10;
+    // Hard constraints — the carousels must never blow out their column
+    .swiper {
+        width: 100%;
+        max-width: 100%;
         overflow: hidden;
-        border-radius: 8px;
-        margin-bottom: 16px;
+    }
 
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.4s ease;
+    .swiper-wrapper {
+        align-items: flex-start;
+    }
+
+    .swiper-slide {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        flex-shrink: 0;
+    }
+
+    .home-end-card {
+        background: #f7f8f9;
+        border-radius: 18px;
+        padding: 16px 16px 18px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
+        // Header: bold dark title at the start + orange icon at the far end
+        &__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 2px 4px 14px;
         }
 
-        &:hover img {
-            transform: scale(1.05);
+        &__title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1c1c1c;
+            margin: 0;
+        }
+
+        &__icon {
+            display: flex;
+            align-items: center;
+            color: #ef9f38;
+        }
+
+        &__empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: $gray-500;
+            font-size: 14px;
         }
     }
 
-    &__content {
-        padding: 0 8px;
-    }
-
-    &__title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        line-height: 1.5;
-    }
-
-    &__excerpt {
-        font-size: 13px;
-        color: $gray-600;
-        line-height: 1.8;
-        margin-bottom: 12px;
-    }
-
-    &__date {
-        font-size: 12px;
-        color: $gray-500;
-        margin-bottom: 8px;
+    // Slide: image + headline + excerpt (whole slide links to the post)
+    .home-end-slide {
         display: block;
-    }
+        max-width: 100%;
 
-    &__link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        color: $lightText;
-        transition: all $transition-fast;
+        &__image {
+            aspect-ratio: 16 / 10;
+            border-radius: 15px;
+            overflow: hidden;
+            background: $gray-200;
+            margin-bottom: 16px;
 
-        &:hover {
-            gap: 10px;
-            color: $siteYellowDark;
+            img {
+                display: block;
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.4s ease;
+            }
+        }
+
+        &:hover &__image img {
+            transform: scale(1.04);
+        }
+
+        &__title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #1c1c1c;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            text-align: right;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        &__excerpt {
+            font-size: 14.5px;
+            font-weight: 400;
+            color: #6e7379;
+            line-height: 1.9;
+            text-align: right;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
     }
-}
 
-.instagram-placeholder {
-    color: $gray-500;
-    font-size: 14px;
+    // Dots: pale peach inactive + solid orange active (no arrows)
+    .home-end-dots {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
 
-    svg {
-        display: block;
-        margin: 0 auto;
-    }
+        .swiper-pagination-bullet {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f4cdb0;
+            opacity: 1;
+            margin: 0;
+            transition: all $transition-fast;
+        }
 
-    a {
-        display: inline-block;
+        .swiper-pagination-bullet-active {
+            background: #ef9f38;
+        }
     }
 }
 
@@ -761,19 +798,19 @@
 @media (max-width: $bp-xl - 1px) {
     .heroSection {
         &__main-banner {
-            min-height: 430px;
+            min-height: 450px;
 
-            .heroSection__content {
-                padding: 36px;
+            .heroSection__title {
+                font-size: 31px;
+            }
+
+            .heroSection__subtitle {
+                font-size: 18px;
             }
         }
 
-        &__title {
-            font-size: 30px;
-        }
-
-        &__side .heroSection__side-title {
-            font-size: 19px;
+        &__tile .heroSection__tile-title {
+            font-size: 25px;
         }
     }
 }
@@ -783,11 +820,7 @@
         padding: 16px 0 0;
 
         &__main-banner {
-            min-height: 400px;
-        }
-
-        &__side {
-            min-height: 190px;
+            min-height: 420px;
         }
     }
 
@@ -806,48 +839,61 @@
 
 @media (max-width: $bp-md - 1px) {
     .heroSection {
-        &__main-banner {
-            min-height: 340px;
+        padding: 12px 0 0;
 
-            .heroSection__content {
-                padding: 26px;
-            }
+        .hero-swiper {
+            min-height: 360px;
+            border-radius: 24px;
+        }
+
+        &__main-banner {
+            min-height: 360px;
 
             .heroSection__main-img {
                 width: 100%;
-                opacity: 0.35;
+                opacity: 0.5;
+            }
+
+            .heroSection__content {
+                width: 100%;
+                padding: 20px 24px 62px;
+            }
+
+            .heroSection__title {
+                font-size: 24px;
+            }
+
+            .heroSection__subtitle {
+                font-size: 15px;
+                margin-bottom: 18px;
+            }
+
+            .heroSection__btn {
+                padding: 11px 32px;
+                font-size: 13px;
+            }
+
+            .heroSection__dots {
+                right: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 20px;
             }
         }
 
-        &__title {
-            font-size: 24px;
-        }
+        &__tile {
+            min-height: 170px;
+            border-radius: 24px;
 
-        &__subtitle {
-            font-size: 13px;
-            margin-bottom: 16px;
-        }
-
-        &__btn {
-            padding: 11px 26px;
-            font-size: 13px;
-        }
-
-        &__side {
-            min-height: 150px;
-            border-radius: 28px;
-
-            .heroSection__side-title {
-                font-size: 17px;
-                right: 18px;
-                left: 18px;
-                bottom: 14px;
+            .heroSection__tile-title {
+                font-size: 20px;
+                bottom: 18px;
+                right: 16px;
             }
 
-            .heroSection__side-arrow {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
+            .heroSection__tile-arrow {
+                bottom: 20px;
+                left: 20px;
             }
         }
     }

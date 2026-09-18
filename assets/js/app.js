@@ -235,11 +235,21 @@ $(document).ready(function () {
     var $searchResults = $('.search-results');
 
     if ($searchInput.length) {
+        // Skeleton placeholder shown in the results while the request is in flight
+        var searchSkeleton =
+            '<div class="search-skeleton">' +
+            '<div class="search-skeleton__row"><span class="search-skeleton__thumb shimmer"></span><span class="search-skeleton__lines"><span class="search-skeleton__line shimmer"></span><span class="search-skeleton__line search-skeleton__line--short shimmer"></span></span></div>' +
+            '<div class="search-skeleton__row"><span class="search-skeleton__thumb shimmer"></span><span class="search-skeleton__lines"><span class="search-skeleton__line shimmer"></span><span class="search-skeleton__line search-skeleton__line--short shimmer"></span></span></div>' +
+            '<div class="search-skeleton__row"><span class="search-skeleton__thumb shimmer"></span><span class="search-skeleton__lines"><span class="search-skeleton__line shimmer"></span><span class="search-skeleton__line search-skeleton__line--short shimmer"></span></span></div>' +
+            '</div>';
+
         $searchInput.on('input', pzhDebounce(function () {
             var term = $(this).val().trim();
+            var $box = $(this).closest('.pzh_search_box');
 
             if (term.length < 2) {
-                $searchResults.removeClass('active').html('');
+                $searchResults.removeClass('active loading').html('');
+                $box.removeClass('loading');
                 return;
             }
 
@@ -252,13 +262,19 @@ $(document).ready(function () {
                     nonce: pzh_options.nonce
                 },
                 beforeSend: function () {
-                    $searchResults.addClass('loading');
+                    $searchResults.html(searchSkeleton).addClass('active loading');
+                    $box.addClass('loading');
                 },
                 success: function (response) {
                     $searchResults.removeClass('loading');
+                    $box.removeClass('loading');
                     if (response.success) {
                         $searchResults.html(response.data.html).addClass('active');
                     }
+                },
+                error: function () {
+                    $searchResults.removeClass('active loading').html('');
+                    $box.removeClass('loading');
                 }
             });
         }, 300));
@@ -386,6 +402,7 @@ $(document).ready(function () {
                     if ($cartDropdown.hasClass('active')) {
                         pzhRefreshMiniCart();
                     }
+                    $(document.body).trigger('added_to_cart');
                 } else {
                     pzhToast(response.data.message, 'error');
                 }
@@ -866,6 +883,15 @@ $(document).ready(function () {
             return null;
         }
 
+        // Homepage hero carousel (yellow slides + white dots)
+        initSwiper('.hero-swiper', {
+            slidesPerView: 1,
+            spaceBetween: 0,
+            loop: true,
+            autoplay: { delay: 5000, disableOnInteraction: false },
+            pagination: { el: '.heroSection__dots', clickable: true },
+        });
+
         // Most Selling Products Carousel (loop + 5 items desktop)
         initSwiper('.most-selling-swiper', {
             slidesPerView: 1,
@@ -909,22 +935,21 @@ $(document).ready(function () {
             },
         });
 
-        // Instagram Carousel (1 item)
-        initSwiper('.instagram-swiper', {
-            slidesPerView: 1,
-            spaceBetween: 0,
-            loop: true,
-            autoplay: { delay: 4000, disableOnInteraction: false },
-            navigation: { nextEl: '.instagram-next', prevEl: '.instagram-prev' },
-        });
-
-        // Blog Posts Carousel (1 item)
-        initSwiper('.blog-swiper', {
+        // Home-end: Blog + Instagram carousels (1 item, dots-only)
+        initSwiper('.home-end-blog-swiper', {
             slidesPerView: 1,
             spaceBetween: 0,
             loop: true,
             autoplay: { delay: 5000, disableOnInteraction: false },
-            navigation: { nextEl: '.blog-next', prevEl: '.blog-prev' },
+            pagination: { el: '.home-end-blog-dots', clickable: true },
+        });
+
+        initSwiper('.home-end-instagram-swiper', {
+            slidesPerView: 1,
+            spaceBetween: 0,
+            loop: true,
+            autoplay: { delay: 5500, disableOnInteraction: false },
+            pagination: { el: '.home-end-instagram-dots', clickable: true },
         });
 
         // Categories Carousel (Archive page)
@@ -992,7 +1017,7 @@ $(document).ready(function () {
     // Single Product Page
     // ========================================================================
 
-    // --- Gallery: vertical thumbnail strip + click-to-switch main image ---
+    // --- Gallery: horizontal thumbnail strip + click-to-switch main image ---
     var $thumbsContainer = $('#product-thumbs');
     var $mainImage = document.getElementById('main-product-image');
 
@@ -1012,15 +1037,6 @@ $(document).ready(function () {
 
         $thumbsContainer.on('click', '.product-gallery__thumb', function () {
             updateMainImage($(this));
-        });
-
-        // Up/down scroll buttons for the vertical strip
-        var $thumbsCol = $('.product-gallery__thumbs-col');
-        $thumbsCol.find('.thumb-nav--up').on('click', function () {
-            $thumbsContainer.stop(true, true).animate({ scrollTop: '-=140' }, 200);
-        });
-        $thumbsCol.find('.thumb-nav--down').on('click', function () {
-            $thumbsContainer.stop(true, true).animate({ scrollTop: '+=140' }, 200);
         });
     }
 
@@ -1042,11 +1058,28 @@ $(document).ready(function () {
             if (basePriceHtml && $priceBox.length) $priceBox.html(basePriceHtml);
             if (basePriceHtml && $stickyPrice.length) $stickyPrice.html(basePriceHtml);
             $status.html('');
+            // Restore the initial buy buttons (stock state as rendered by PHP)
+            var $atc = $('.add-to-cart-single');
+            $atc.each(function () {
+                var $btn = $(this);
+                if ($btn.data('initial-disabled')) {
+                    $btn.addClass('out-of-stock').prop('disabled', true).text('ناموجود');
+                } else {
+                    $btn.removeClass('out-of-stock').prop('disabled', false).text($btn.data('initial-text') || 'افزودن به سبد خرید');
+                }
+            });
         }
+
+        // Remember the initial state of the buy buttons
+        $('.add-to-cart-single').each(function () {
+            var $btn = $(this);
+            $btn.data('initial-text', $btn.text().trim());
+            $btn.data('initial-disabled', $btn.prop('disabled') ? '1' : '');
+        });
 
         function collectSelectedAttributes() {
             var attrs = {};
-            $variationPicker.find('.variation-chip.selected, .swatch-option.selected').each(function () {
+            $variationPicker.find('.variation-chip.selected, .swatch-option.selected, .variation-radio.selected').each(function () {
                 attrs[$(this).data('attr')] = $(this).data('value');
             });
             return attrs;
@@ -1054,11 +1087,11 @@ $(document).ready(function () {
 
         function allAttributesSelected() {
             return $variationPicker.find('.variation-group').length ===
-                   $variationPicker.find('.variation-chip.selected, .swatch-option.selected').length;
+                   $variationPicker.find('.variation-chip.selected, .swatch-option.selected, .variation-radio.selected').length;
         }
 
-        // Chip / swatch selection
-        $variationPicker.on('click', '.variation-chip, .swatch-option', function () {
+        // Chip / swatch / radio selection
+        $variationPicker.on('click', '.variation-chip, .swatch-option, .variation-radio', function () {
             var $btn = $(this);
             var attrName = $btn.data('attr');
 
@@ -1137,21 +1170,6 @@ $(document).ready(function () {
             });
         });
     }
-
-    // --- Quantity +/- Buttons ---
-    $(document).on('click', '.qty-btn', function (e) {
-        e.preventDefault();
-        var $input = $(this).siblings('.qty-input');
-        var currentVal = parseInt($input.val(), 10) || 1;
-        var max = parseInt($input.attr('max'), 10) || 999;
-        var min = parseInt($input.attr('min'), 10) || 1;
-
-        if ($(this).hasClass('qty-plus') && currentVal < max) {
-            $input.val(currentVal + 1).trigger('change');
-        } else if ($(this).hasClass('qty-minus') && currentVal > min) {
-            $input.val(currentVal - 1).trigger('change');
-        }
-    });
 
     // --- Add to Cart (simple + variable, AJAX) ---
     $(document).on('click', '.add-to-cart-single', function (e) {
@@ -1245,6 +1263,9 @@ $(document).ready(function () {
                             $cartPage.find('.pzh-cart-items__rows').html(response.data.items_html);
                             $cartPage.find('.pzh-cart-totals').html(response.data.totals_html);
                         }
+                        if (response.data.delivery_html !== undefined) {
+                            $cartPage.find('.pzh-free-delivery-wrap').html(response.data.delivery_html);
+                        }
 
                         var msg = response.data.message || toastMessage;
                         if (msg) pzhToast(msg);
@@ -1259,6 +1280,14 @@ $(document).ready(function () {
                 }
             });
         }
+
+        // Refresh the whole cart page when a suggested product is added
+        // (simple adds and popup adds both fire 'added_to_cart')
+        $(document.body).on('added_to_cart', function () {
+            if ($cartPage.length && !$cartPage.hasClass('cart-loading')) {
+                pzhCartAction('');
+            }
+        });
 
         // Quantity +/- buttons
         $cartPage.on('click', '.cart-qty__btn', function () {

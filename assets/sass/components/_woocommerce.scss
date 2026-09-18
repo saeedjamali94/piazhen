@@ -64,6 +64,166 @@
     }
 }
 
+// ============================================================================
+// Free Delivery Bar (per cart-free-delivery.png)
+// Yellow-bordered cream box: suggested product cards + orange "+" badges on
+// one side, delivery text + truck icon + right-filling yellow bar on the other.
+// ============================================================================
+
+.pzh-free-delivery-wrap {
+    grid-column: 1 / -1;
+}
+
+.pz-free-delivery {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 27px 29px;
+    background: #FEF6DF; // $siteYellow @16% over white
+    border: 1px solid $siteYellow;
+    border-radius: 16px;
+    font-family: "YekanBakh", sans-serif;
+
+    // Left block: title + suggested product cards
+    &__suggestions {
+        flex: 0 0 auto;
+        width: max-content; // hug the card row — avoids intrinsic-width inflation
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 600;
+        color: $siteOrange;
+        white-space: nowrap;
+    }
+
+    &__cards {
+        display: flex;
+        gap: 19px;
+    }
+
+    // Right block: text + truck, then the progress bar
+    &__status {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    &__text-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-size: 23px;
+        font-weight: 600;
+        color: $siteOrange;
+    }
+
+    &__truck {
+        flex-shrink: 0;
+    }
+
+    &__bar {
+        position: relative;
+        height: 24px;
+        background: $white;
+    }
+
+    // Fills from the physical right (the bar's inline-start in RTL), square ends
+    &__fill {
+        position: absolute;
+        inset-inline-start: 0; // RTL: right edge — mockup-exact
+        top: 0;
+        height: 100%;
+        background: $siteYellow;
+        transition: width $transition-base;
+    }
+
+    // Stack on mobile
+    @media (max-width: $bp-md - 1px) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 20px;
+        padding: 20px 16px;
+
+        &__title,
+        &__text-row {
+            font-size: 17px;
+        }
+
+        &__cards {
+            flex-wrap: wrap;
+        }
+
+        &__bar {
+            height: 20px;
+        }
+    }
+}
+
+// Suggested product card: 148px white tile + orange "+" badge on the corner
+.pz-fd-card {
+    position: relative;
+    flex: 0 0 148px;
+    aspect-ratio: 1;
+    border-radius: 16px;
+    border: 2px solid #EFEFEF;
+    background: #FEFEFE;
+    overflow: visible; // the "+" badge overlaps the top-right corner
+
+    &__image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    }
+
+    &__add {
+        position: absolute;
+        top: -6px;
+        right: -7px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: none;
+        background: $siteOrange;
+        color: $white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: $siteOrangeDark;
+        }
+
+        &.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        flex: 0 0 84px;
+    }
+}
+
 // --- Items list ---
 .pzh-cart-items {
     background: $white;

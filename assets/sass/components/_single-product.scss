@@ -39,83 +39,23 @@
 }
 
 // ============================================================================
-// Product Gallery (vertical thumbnails strip)
+// Product Gallery (per single-product-right.png)
+// Flat monochrome: near-white 1:1 card with a 52px radius, three 40px
+// #CFCFCF circles at the top-right, and a horizontal 130px thumb strip below
+// (the active thumb is darkened 50% — no ring, no border).
 // ============================================================================
 
 .product-gallery {
     position: sticky;
     top: 120px;
 
-    &__layout {
-        display: flex;
-        gap: 14px;
-        align-items: stretch;
-    }
-
-    // Vertical thumbnails column (right side in RTL)
-    &__thumbs-col {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        width: 84px;
-        flex-shrink: 0;
-    }
-
-    &__thumbs {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        overflow-y: auto;
-        max-height: 480px;
-        padding: 2px;
-        scroll-behavior: smooth;
-
-        // Thin scrollbar
-        &::-webkit-scrollbar {
-            width: 3px;
-        }
-        &::-webkit-scrollbar-thumb {
-            background: $gray-300;
-            border-radius: 4px;
-        }
-    }
-
-    &__thumb {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 2px solid transparent;
-        cursor: pointer;
-        transition: all $transition-fast;
-        background: $gray-100;
-        aspect-ratio: 1;
-        flex-shrink: 0;
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        &:hover {
-            border-color: rgba($siteYellow, 0.6);
-        }
-
-        &.active {
-            border-color: $siteYellow;
-            box-shadow: 0 0 0 3px rgba($siteYellow, 0.25);
-        }
-    }
-
-    // Main image
+    // Main image card: 1:1, #FEFEFE, radius 52px, flat (no border, no shadow)
     &__main {
         position: relative;
-        border-radius: 16px;
+        border-radius: 52px;
         overflow: hidden;
-        background: $gray-100;
+        background: #FEFEFE;
         aspect-ratio: 1;
-        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -125,11 +65,6 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        transition: transform 0.3s ease;
-
-        &:hover {
-            transform: scale(1.02);
-        }
     }
 
     &__placeholder {
@@ -146,188 +81,183 @@
         }
     }
 
-    // Action buttons (stacked on the left edge of the image)
+    // Action buttons: flat circles, top-right of the card (24px top / 28px right)
     &__actions {
         position: absolute;
-        top: 16px;
-        left: 16px;
+        top: 24px;
+        right: 28px;
         display: flex;
-        flex-direction: column;
-        gap: 10px;
+        gap: 18px;
         z-index: 3;
     }
 
-    // Sale badge
-    &__sale-badge {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: $saleBadge;
-        color: $white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-        z-index: 3;
+    // Horizontal thumbnail strip below the card (18px gap, 6px between thumbs)
+    &__thumbs {
+        display: flex;
+        gap: 6px;
+        margin-top: 18px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    // Thumb: 130px square, radius 18px, hairline #EFEFEF border
+    &__thumb {
+        flex: 0 0 130px;
+        aspect-ratio: 1;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 2px solid #EFEFEF;
+        background: #FEFEFE;
+        cursor: pointer;
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: filter $transition-fast;
+        }
+
+        // Active thumb: 50% darkened, border removed (mockup-exact, no ring)
+        &.active {
+            border-color: transparent;
+
+            img {
+                filter: brightness(0.5);
+            }
+        }
     }
 }
 
-// Thumb scroll arrows (up/down)
-.thumb-nav {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: $white;
-    border: 1px solid $gray-300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 3;
-    transition: all $transition-fast;
-    color: $gray-700;
-    flex-shrink: 0;
-
-    &:hover {
-        background: $siteYellow;
-        border-color: $siteYellow;
-    }
-}
-
-// Gallery action buttons (round)
+// Gallery action buttons: 40px flat #CFCFCF circles with white icons
 .gallery-action-btn {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: $white;
-    border: 1px solid $gray-200;
+    background: #CFCFCF;
+    border: none;
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: $gray-600;
-    transition: all $transition-fast;
-    box-shadow: $shadow-sm;
+    color: $white;
+    transition: background $transition-fast;
 
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: $shadow-md;
+        background: #B9B9B9;
     }
 
     &.favorite-btn {
-        &:hover, &.active {
-            color: $favoriteActive;
-            border-color: $favoriteActive;
-            background: rgba($favoriteActive, 0.05);
-        }
         &.active {
-            svg { fill: $favoriteActive; }
-        }
-    }
+            background: $siteOrange;
 
-    &.compare-btn {
-        &:hover, &.active {
-            color: $info;
-            border-color: $info;
-            background: rgba($info, 0.05);
-        }
-    }
-
-    &.whatsapp-btn {
-        color: #25D366;
-        &:hover {
-            border-color: #25D366;
-            background: rgba(#25D366, 0.05);
-        }
-    }
-}
-
-// ============================================================================
-// Product Info
-// ============================================================================
-
-.product-info {
-    &__title {
-        font-size: 24px;
-        font-weight: 800;
-        line-height: 1.5;
-        margin-bottom: 10px;
-        color: $textColor;
-    }
-
-    &__subtitle {
-        font-size: 15px;
-        color: $gray-600;
-        line-height: 2;
-        margin-bottom: 12px;
-    }
-
-    // Rating line
-    &__rating {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 14px;
-        transition: opacity $transition-fast;
-
-        .pzh-stars i {
-            font-size: 15px;
-        }
-
-        &-count {
-            font-size: 12px;
-            color: $gray-600;
-        }
-
-        &:hover {
-            opacity: 0.8;
-        }
-    }
-
-    // Brand / category / SKU row
-    &__meta {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px 20px;
-        font-size: 13px;
-        color: $gray-600;
-        margin-bottom: 16px;
-        padding: 14px 16px;
-        background: $gray-100;
-        border-radius: 12px;
-
-        &-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .meta-label {
-            color: $gray-500;
-        }
-
-        a {
-            color: $lightText;
-            font-weight: 600;
-
-            &:hover {
-                color: $siteYellowDark;
+            svg {
+                fill: $white;
             }
         }
     }
 
-    // Price
+    &.compare-btn {
+        &.active {
+            background: $siteOrange;
+        }
+    }
+}
+
+// ============================================================================
+// Product Info (per single-product-left.png)
+// Full-width title + subtitle, then two sub-columns:
+//   specs column (right in RTL): info panels + more + price (bottom)
+//   controls column (left in RTL): variation picker + add-to-cart (bottom)
+// All measured values are literal from the mockup (33/27/24/32/29px, #F0F0F0
+// panels, green #80D388 pill button).
+// ============================================================================
+
+.product-info {
+    // The mockup uses YekanBakh everywhere; the "Numbers" face renders Persian
+    // digits ~1.5x wider, so scope this column to YekanBakh explicitly.
+    font-family: "YekanBakh", sans-serif;
+
+    // Title: orange, bold, 33px
+    &__title {
+        font-size: 33px;
+        font-weight: 700;
+        line-height: 1.6;
+        margin-bottom: 17px;
+        color: $siteOrange;
+    }
+
+    // Subtitle: gray, medium, 27px
+    &__subtitle {
+        font-size: 27px;
+        font-weight: 500;
+        line-height: 1.6;
+        margin-bottom: 34px;
+        color: #828282;
+
+        p { margin: 0; }
+    }
+
+    // Two sub-columns, mirroring the mockup proportions (46% / gap / 46%)
+    &__row {
+        display: grid;
+        grid-template-columns: 46% 46%;
+        justify-content: space-between;
+    }
+
+    &__specs-col {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__controls {
+        display: flex;
+        flex-direction: column;
+    }
+
+    // Info panels (spec list): 60px, #F0F0F0, radius 12, 21px gaps
+    &__panels {
+        display: flex;
+        flex-direction: column;
+        gap: 21px;
+    }
+
+    // "بیشتر" link (no underline, orange, 27px)
+    &__more {
+        align-self: flex-start;
+        font-size: 27px;
+        font-weight: 700;
+        color: $siteOrange;
+        margin-top: 39px;
+        margin-bottom: 48px;
+        transition: opacity $transition-fast;
+
+        &:hover {
+            color: $siteOrange;
+            opacity: 0.75;
+        }
+    }
+
+    // Price: bold 32px #414141, bottom-anchored to align with the button
     &__price {
-        margin-bottom: 10px;
-        font-size: 28px;
-        font-weight: 800;
-        color: $textColor;
+        margin-top: auto;
+        padding-bottom: 4px;
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1.5;
+        color: #414141;
 
         del {
-            font-size: 17px;
-            color: $gray-400;
-            font-weight: 400;
+            font-size: 18px;
+            color: #828282;
+            font-weight: 500;
             margin-right: 8px;
         }
 
@@ -337,232 +267,336 @@
         }
 
         .woocommerce-Price-currencySymbol {
-            font-size: 17px;
+            font-size: 18px;
             margin-right: 3px;
         }
     }
-
-    // Availability
-    &__availability {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 18px;
-
-        &.in-stock {
-            color: $success;
-        }
-
-        &.out-of-stock {
-            color: $danger;
-        }
-    }
-
-    // Add to cart row
-    &__add-to-cart {
-        margin-bottom: 18px;
-    }
-
-    // Services row
-    &__services {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        margin-bottom: 18px;
-        padding: 16px;
-        border: 1px solid $gray-200;
-        border-radius: 14px;
-        background: $white;
-    }
 }
 
-.service-item {
+// Single info panel: label right / value left on one line (value wraps and
+// the panel grows instead of truncating long values)
+.info-panel {
+    min-height: 60px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: $gray-700;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #F0F0F0;
+    border-radius: $cardRadius;
 
-    svg {
-        flex-shrink: 0;
+    &__label {
+        font-size: 24px;
+        font-weight: 700;
+        color: #3F3F3F;
+        // Long labels shrink and wrap so the value never gets pushed outside
+        flex-shrink: 1;
+        min-width: 0;
+        white-space: normal;
+        line-height: 1.5;
+    }
+
+    &__value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #F2854F;
+        white-space: normal;
+        line-height: 1.5;
+        text-align: left;
+        flex-shrink: 0; // the value always stays fully visible
     }
 }
 
 // ============================================================================
-// Custom Variation Picker (chips + swatches — AJAX, no plugin)
+// Custom Variation Picker (panels + radios + chips — AJAX, no plugin)
 // ============================================================================
 
 .pzh-variation-picker {
     margin-bottom: 20px;
 
     .variation-group {
-        margin-bottom: 16px;
+        // Color panel group (mockup: 140px #F0F0F0 panel, header + swatch strip)
+        &--swatch {
+            .variation-group__label {
+                font-size: 24px;
+                font-weight: 700;
+                color: #3F3F3F;
+            }
 
-        &__label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            color: $textColor;
-            margin-bottom: 10px;
+            .variation-group__selected {
+                font-size: 24px;
+                font-weight: 700;
+                color: #F2854F;
+            }
+        }
+
+        // Radio group (e.g. warranty): plain label, right-anchored 2-col grid
+        &--radio {
+            margin-top: 31px;
+
+            &:first-child {
+                margin-top: 0;
+            }
+
+            .variation-group__label {
+                display: block;
+                font-size: 24px;
+                font-weight: 700;
+                color: #414141;
+                margin-bottom: 30px;
+            }
+
+            .variation-group__selected {
+                display: none;
+            }
+        }
+
+        // Chip group (large option sets): keep compact styling
+        &--chip {
+            margin-bottom: 16px;
+
+            .variation-group__label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                font-weight: 700;
+                color: $textColor;
+                margin-bottom: 10px;
+            }
 
             .variation-group__selected {
                 font-weight: 600;
                 color: $siteYellowDark;
             }
         }
-
-        &__options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-    }
-
-    // Text attribute chips
-    .variation-chip {
-        padding: 8px 20px;
-        border: 1.5px solid $gray-300;
-        border-radius: 50px;
-        background: $white;
-        font-size: 13px;
-        font-weight: 600;
-        color: $gray-700;
-        cursor: pointer;
-        transition: all $transition-fast;
-        font-family: $fontFamily;
-        line-height: 1.6;
-
-        &:hover {
-            border-color: $siteYellow;
-        }
-
-        &.selected {
-            background: $siteYellow;
-            border-color: $siteYellow;
-            color: $textColor;
-            font-weight: 700;
-        }
-    }
-
-    // Color swatches
-    .swatch-option {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 2px solid $gray-300;
-        cursor: pointer;
-        transition: all $transition-fast;
-        position: relative;
-        overflow: hidden;
-        background-color: $gray-200;
-        background-position: center;
-        background-size: cover;
-
-        &:hover {
-            border-color: $siteYellow;
-            transform: scale(1.08);
-        }
-
-        &.selected {
-            border-color: $textColor;
-            box-shadow: 0 0 0 2px $white, 0 0 0 4px $textColor;
-        }
-
-        // Fallback for terms without a color value (striped)
-        &--no-color {
-            background-image: repeating-linear-gradient(
-                45deg,
-                $gray-200 0 4px,
-                $gray-100 4px 8px
-            );
-        }
     }
 
     &__status {
         font-size: 13px;
-        min-height: 20px;
-        margin-bottom: 4px;
+        min-height: 0;
+        margin-top: 10px;
 
         .text-success { color: $success; }
         .text-danger { color: $danger; }
+        .text-muted { color: $gray-600; }
     }
 }
 
-// ============================================================================
-// Quantity Selector + Add to Cart
-// ============================================================================
+// Color panel (swatch attribute): #F0F0F0 box with header row + scrollable swatches
+.variation-panel {
+    padding: 16px;
+    background: #F0F0F0;
+    border-radius: $cardRadius;
 
-.quantity-selector {
-    .qty-btn {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        border: 1px solid $gray-300;
-        background: $white;
-        font-size: 20px;
-        font-weight: 700;
-        cursor: pointer;
+    &__header {
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: all $transition-fast;
+        justify-content: space-between;
+        margin-bottom: 20px;
+
+        .variation-group__label {
+            margin-bottom: 0;
+        }
+    }
+}
+
+// Swatch strip: 44px tiles, radius 8, 15px gaps, horizontally scrollable
+.variation-group__options--swatch {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 8px; // room for the selected outline
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+// Color swatches
+.swatch-option {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: none;
+    // hairline for white swatches on light grounds (invisible on colored ones)
+    box-shadow: inset 0 0 0 1px rgba($black, 0.06);
+    cursor: pointer;
+    transition: transform $transition-fast;
+    position: relative;
+    overflow: hidden;
+    background-color: $gray-200;
+    background-position: center;
+    background-size: cover;
+    flex-shrink: 0;
+
+    &:hover {
+        transform: scale(1.05);
+    }
+
+    &.selected {
+        outline: 2px solid $siteOrange;
+        outline-offset: 3px;
+    }
+
+    // Fallback for terms without a color value (striped)
+    &--no-color {
+        background-image: repeating-linear-gradient(
+            45deg,
+            $gray-200 0 4px,
+            $gray-100 4px 8px
+        );
+    }
+}
+
+// "More swatches" dots indicator (mockup: three 7px #8C8C8C dots)
+.swatch-more-dots {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    margin-inline-start: 10px;
+    flex-shrink: 0;
+
+    &::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #8C8C8C;
+        box-shadow: 14px 0 0 #8C8C8C, 28px 0 0 #8C8C8C;
+    }
+}
+
+// Radio options grid: right-anchored 2 columns (mockup: ~130px pitch, 31px rows)
+.variation-group__options--radio {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
+    column-gap: 30px;
+    row-gap: 31px;
+    justify-content: start; // inline-start = right in RTL
+}
+
+// Radio option (custom dot: circle right of label in RTL)
+.variation-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    user-select: none;
+    font-family: inherit;
+    line-height: 1.6;
+
+    &__dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #636366;
+        background: $white;
+        flex-shrink: 0;
+        position: relative;
+        transition: border-color $transition-fast;
+    }
+
+    &__text {
+        font-size: 24px;
+        font-weight: 700;
+        color: #414141;
+    }
+
+    &:hover .variation-radio__dot {
+        border-color: $siteOrange;
+    }
+
+    &.selected {
+        .variation-radio__dot {
+            border-color: $siteOrange;
+
+            &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                margin: auto;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: $siteOrange;
+            }
+        }
+    }
+}
+
+// Text attribute chips (large option sets)
+.variation-group__options--chip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.variation-chip {
+    padding: 8px 20px;
+    border: 1.5px solid $gray-300;
+    border-radius: 50px;
+    background: $white;
+    font-size: 13px;
+    font-weight: 600;
+    color: $gray-700;
+    cursor: pointer;
+    transition: all $transition-fast;
+    font-family: $fontFamily;
+    line-height: 1.6;
+
+    &:hover {
+        border-color: $siteYellow;
+    }
+
+    &.selected {
+        background: $siteYellow;
+        border-color: $siteYellow;
         color: $textColor;
-
-        &:hover {
-            background: $siteYellow;
-            border-color: $siteYellow;
-        }
-    }
-
-    .qty-input {
-        width: 64px;
-        height: 44px;
-        border: 1px solid $gray-300;
-        border-radius: 12px;
-        text-align: center;
-        font-size: 15px;
-        font-weight: 600;
-        font-family: $fontFamily;
-
-        &:focus {
-            border-color: $siteYellow;
-            outline: none;
-        }
-
-        // Hide spin buttons
-        &::-webkit-inner-spin-button,
-        &::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
+        font-weight: 700;
     }
 }
 
-.add-to-cart-row {
-    .add-to-cart-single {
-        flex: 1;
-    }
-}
+// ============================================================================
+// Add to Cart Button (mockup: 260x50 green pill, dark text, no icon)
+// ============================================================================
 
-// Add to Cart Main Button
 .add-to-cart-single {
-    padding: 13px 28px;
-    font-size: 16px;
+    width: 260px;
+    max-width: 100%;
+    height: 50px;
+    margin-top: auto;
+    margin-inline-start: auto; // left side in RTL (inline-end)
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    border-radius: 14px !important;
+    padding: 0 24px; // 24px keeps the 29px label on one line inside 260px
+    border: none;
+    border-radius: 999px;
+    background: #80D388;
+    color: #121212;
+    font-family: "YekanBakh", sans-serif;
+    font-size: 29px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background $transition-fast, opacity $transition-fast;
 
-    .icon {
-        width: 21px;
-        height: 21px;
-        fill: none;
+    &:hover:not(:disabled) {
+        background: #6FC77E;
+    }
+
+    &.out-of-stock,
+    &:disabled {
+        background: #DCDCDC;
+        color: #8A8A8A;
+        cursor: not-allowed;
     }
 
     &.loading {
@@ -576,71 +610,6 @@
             border-top-color: currentColor;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
-        }
-    }
-}
-
-// ============================================================================
-// Quick Specs
-// ============================================================================
-
-.product-info__quick-specs {
-    padding: 16px;
-    background: $gray-100;
-    border-radius: 14px;
-
-    .quick-specs-title {
-        font-size: 14px;
-        font-weight: 700;
-        margin-bottom: 10px;
-        color: $textColor;
-    }
-
-    .quick-specs-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-
-        li {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 6px 0;
-            font-size: 13px;
-            border-bottom: 1px dotted $gray-300;
-
-            &:last-child {
-                border-bottom: 0;
-            }
-        }
-
-        .spec-label {
-            color: $gray-600;
-            flex-shrink: 0;
-        }
-
-        .spec-value {
-            font-weight: 600;
-            color: $textColor;
-        }
-    }
-
-    .quick-specs-more {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 10px;
-        font-size: 12px;
-        font-weight: 700;
-        color: $siteYellowDark;
-        transition: gap $transition-fast;
-
-        &:hover {
-            gap: 10px;
-        }
-
-        i {
-            font-size: 11px;
         }
     }
 }
@@ -1209,7 +1178,7 @@
 
     .sticky-price {
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 700;
         white-space: nowrap;
 
         del {
@@ -1229,8 +1198,10 @@
 
     .add-to-cart-single {
         flex: 1;
-        padding: 10px 16px;
-        font-size: 14px;
+        width: auto;
+        height: 44px;
+        margin: 0;
+        font-size: 15px;
     }
 
     @media (max-width: $bp-md) {
@@ -1249,11 +1220,43 @@
 
     .product-info {
         &__title {
-            font-size: 20px;
+            font-size: 27px;
         }
-        &__price {
+        &__subtitle {
             font-size: 22px;
         }
+        &__more {
+            font-size: 22px;
+        }
+        &__price {
+            font-size: 26px;
+        }
+    }
+
+    .info-panel {
+        min-height: 54px;
+
+        &__label,
+        &__value {
+            font-size: 20px;
+        }
+    }
+
+    .variation-panel {
+        .variation-group__label,
+        .variation-group__selected {
+            font-size: 20px;
+        }
+    }
+
+    .variation-group--radio .variation-group__label,
+    .variation-radio__text {
+        font-size: 20px;
+    }
+
+    .add-to-cart-single {
+        width: 220px;
+        font-size: 24px;
     }
 
     .single-product-tabs-nav {
@@ -1271,46 +1274,25 @@
         padding-bottom: 80px; // Space for sticky bar
     }
 
-    // Thumbs become a horizontal strip under the main image
+    // Mobile gallery: smaller card radius and thumbnails
     .product-gallery {
-        &__layout {
-            flex-direction: column;
-        }
-
-        &__thumbs-col {
-            flex-direction: row;
-            width: 100%;
-            order: 2;
+        &__main {
+            border-radius: 32px;
         }
 
         &__thumbs {
-            flex-direction: row;
-            overflow-x: auto;
-            overflow-y: hidden;
-            max-height: none;
+            gap: 8px;
         }
 
         &__thumb {
-            width: 64px;
-            height: 64px;
-            flex-shrink: 0;
-        }
-
-        &__main {
-            aspect-ratio: 1;
-            border-radius: 12px;
+            flex-basis: 84px;
         }
 
         &__actions {
             top: 12px;
-            left: 12px;
+            right: 12px;
             gap: 8px;
         }
-    }
-
-    .thumb-nav--up,
-    .thumb-nav--down {
-        display: none;
     }
 
     .gallery-action-btn {
@@ -1322,13 +1304,66 @@
         }
     }
 
+    // Info: stack the two sub-columns (specs above controls)
     .product-info {
         &__title {
-            font-size: 18px;
+            font-size: 22px;
+        }
+        &__subtitle {
+            font-size: 19px;
+            margin-bottom: 24px;
+        }
+        &__row {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        &__more {
+            font-size: 19px;
+            margin: 24px 0 8px;
         }
         &__price {
-            font-size: 20px;
+            font-size: 24px;
+            margin-top: 0;
         }
+    }
+
+    .info-panel {
+        min-height: 50px;
+
+        &__label,
+        &__value {
+            font-size: 17px;
+        }
+    }
+
+    .variation-panel {
+        .variation-group__label,
+        .variation-group__selected {
+            font-size: 17px;
+        }
+    }
+
+    .variation-group--radio .variation-group__label,
+    .variation-radio__text {
+        font-size: 17px;
+    }
+
+    .variation-radio__dot {
+        width: 18px;
+        height: 18px;
+    }
+
+    .variation-radio.selected .variation-radio__dot::after {
+        width: 9px;
+        height: 9px;
+    }
+
+    .add-to-cart-single {
+        width: 100%;
+        margin-inline-start: 0;
+        margin-top: 4px;
+        height: 48px;
+        font-size: 19px;
     }
 
     .single-product-section {

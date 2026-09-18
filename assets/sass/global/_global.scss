@@ -35,6 +35,9 @@ a {
 
 button {
     all: unset;
+    // `all: unset` resets box-sizing to content-box; restore Bootstrap's
+    // border-box so width/padding behave as intended on every button.
+    box-sizing: border-box;
 }
 
 .colorWhite {

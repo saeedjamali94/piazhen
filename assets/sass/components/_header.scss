@@ -9,44 +9,60 @@
 .siteHeader {
     background: $white;
     font-size: 16px;
+    position: relative;
 
-    // Main Row (logo + search + icons)
+    // Top bar: exactly two links (درباره ما right / سوالات متداول left)
+    .siteHeader__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 2px solid #f8f8f8;
+        font-size: 13px;
+        font-weight: 400;
+        color: #7f7f7f;
+
+        a {
+            color: #7f7f7f;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $textColor;
+            }
+        }
+    }
+
+    // Main Row (logo + inline nav + search + icons)
     .siteHeader__main {
         display: flex;
-        justify-content: space-between;
         align-items: center;
         gap: 20px;
-        padding: 20px 0;
+        // All vertical space on top — the mega underline lands at the header's bottom edge
+        padding: 26px 0 0;
     }
 
     .logo {
-        flex: 0 1 167px;
+        flex: 0 0 auto;
 
         a {
             display: inline-flex;
         }
 
         img {
-            max-width: 167px;
+            max-width: 155px;
             height: auto;
         }
     }
 
     .navBar {
-        font-weight: 700;
-        padding-bottom: 0; // the underline sits at the header's bottom edge
-
         .main-menu {
-            justify-content: center;
-
-            > li > a {
-                padding: 4px 0 16px;
-            }
+            justify-content: flex-start;
+            gap: 32px;
         }
     }
 
     .icons {
-        flex: 0 1 auto;
+        flex: 0 0 auto;
         direction: ltr;
         display: flex;
         align-items: center;
@@ -61,32 +77,35 @@
 
 .search-wrapper {
     position: relative;
-    flex: 1 1 auto;
-    max-width: 560px;
+    width: 300px;
+    flex-shrink: 0;
+    margin-inline-start: auto;
 
     .pzh_search_box {
         width: 100%;
 
         input[type="search"] {
             width: 100%;
-            padding: 11px 22px 11px 46px;
-            border: 1px solid $gray-200;
-            border-radius: 50px;
-            font-size: 14px;
+            height: 40px;
+            padding: 0 16px 0 40px;
+            border: 1px solid #eaeaea;
+            border-radius: 999px;
+            font-size: 13px;
             font-family: $fontFamily;
-            background: $gray-100;
+            background: $white;
+            color: #333333;
+            text-align: right;
             transition: all $transition-fast;
             direction: rtl;
 
             &:focus {
                 border-color: $siteYellow;
-                background: $white;
-                box-shadow: 0 0 0 4px rgba($siteYellow, 0.18);
+                box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
                 outline: none;
             }
 
             &::placeholder {
-                color: $gray-500;
+                color: #7c8392;
             }
         }
 
@@ -102,7 +121,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: $lightText;
+            color: #969cab;
         }
     }
 
@@ -232,6 +251,80 @@
 }
 
 // ============================================================================
+// Search loading state: skeleton rows + spinner on the search icon
+// ============================================================================
+
+// Shimmer sweep for skeleton blocks
+@keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+.search-skeleton {
+    padding: 10px 0;
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+    }
+
+    &__thumb {
+        width: 48px;
+        height: 48px;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    &__lines {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__line {
+        height: 12px;
+        border-radius: 6px;
+        width: 100%;
+
+        &--short {
+            width: 55%;
+        }
+    }
+
+    .shimmer {
+        background: linear-gradient(90deg, $gray-200 25%, $gray-100 50%, $gray-200 75%);
+        background-size: 200px 100%;
+        animation: shimmer 1.2s linear infinite;
+    }
+}
+
+// Spinner replacing the search submit icon while loading
+.pzh_search_box.loading {
+    button[type="submit"] {
+        svg {
+            display: none;
+        }
+
+        &:after {
+            content: "";
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba($lightText, 0.25);
+            border-top-color: $lightText;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+// ============================================================================
 // Main Navigation + Mega Menu
 // ============================================================================
 
@@ -240,16 +333,19 @@
     margin: 0;
     padding: 0;
     display: flex;
-    align-items: center;
-    gap: 40px;
+    align-items: stretch;
+    align-self: stretch;
+    gap: 32px;
 
     > li {
         position: relative;
-        font-size: 18px;
-        font-weight: 700;
+        display: flex;
+        align-items: center;
+        font-size: 16px;
+        font-weight: 500;
 
         > a {
-            color: $textColor;
+            color: #333333;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -309,10 +405,6 @@
 // ============================================================================
 // Mega Menu (design: container-wide white panel, 4 text columns)
 // ============================================================================
-
-.siteHeader {
-    position: relative;
-}
 
 // The trigger li has its own class — .mega-menu styles belong to the panel only
 .main-menu > li.has-mega-menu {
@@ -822,8 +914,7 @@
         font-size: 16px;
 
         .siteHeader__main {
-            padding: 14px 0;
-            gap: 12px;
+            padding: 14px 0;            gap: 12px;
         }
 
         .logo {

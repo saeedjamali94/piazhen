@@ -18,7 +18,13 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
 
 <header class="siteHeader">
     <div class="container">
-        <!-- Main Row: menu toggle + logo + search + icons -->
+        <!-- Top Bar (exactly two links per the design) -->
+        <div class="siteHeader__top">
+            <a href="<?= SITE_URL ?>/about/"><?php _e('درباره ما', 'piazhen'); ?></a>
+            <a href="<?= SITE_URL ?>/faq/"><?php _e('سوالات متداول', 'piazhen'); ?></a>
+        </div>
+
+        <!-- Main Row: menu toggle + logo + nav + search + icons -->
         <div class="siteHeader__main">
             <!-- Mobile Menu Toggle -->
             <button class="menuBtn d-lg-none" aria-label="<?php _e('منو', 'piazhen'); ?>">
@@ -34,7 +40,20 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
                 </a>
             </div>
 
-            <!-- AJAX Search (inline on desktop) -->
+            <!-- Navigation (inline in the main row) -->
+            <nav class="navBar d-none d-lg-block">
+                <?php
+                wp_nav_menu(array(
+                    'theme_location' => 'primary',
+                    'menu_class'     => 'main-menu',
+                    'container'      => 'ul',
+                    'walker'         => new PZH_Mega_Menu_Walker(),
+                    'fallback_cb'    => 'pzh_primary_menu_fallback',
+                ));
+                ?>
+            </nav>
+
+            <!-- AJAX Search (compact pill per the design) -->
             <div class="search-wrapper d-none d-md-block">
                 <?php get_template_part('template-parts/global/search', 'box'); ?>
                 <div class="search-results"></div>
@@ -113,19 +132,6 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
                 </div>
             </div>
         </div>
-
-        <!-- Navigation (Desktop) -->
-        <nav class="navBar d-none d-lg-block">
-            <?php
-            wp_nav_menu(array(
-                'theme_location' => 'primary',
-                'menu_class'     => 'main-menu',
-                'container'      => 'ul',
-                'walker'         => new PZH_Mega_Menu_Walker(),
-                'fallback_cb'    => 'pzh_primary_menu_fallback',
-            ));
-            ?>
-        </nav>
     </div>
 
     <!-- Mobile Navigation -->

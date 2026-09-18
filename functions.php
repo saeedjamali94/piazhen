@@ -50,19 +50,33 @@ function piazhen_theme_setup() {
 add_action('after_setup_theme', 'piazhen_theme_setup');
 
 // ============================================================================
+// WooCommerce Price Format (per design mockups: Persian digits + تومان suffix)
+// ============================================================================
+
+// "۱۶.۵۵۰.۰۰۰ تومان" — number first, then the currency symbol
+// (wc_price args: %1$s = symbol, %2$s = number)
+add_filter('woocommerce_price_format', function () {
+    return '%2$s %1$s';
+});
+
+// Convert price digits to Persian (۱۵.۵۵۰.۰۰۰ instead of 15.550.000)
+add_filter('formatted_woocommerce_price', 'pzh_fa_num', 10, 6);
+
+// ============================================================================
 // Enqueue Scripts & Styles
 // ============================================================================
 function piazhen_scripts() {
     $version = wp_get_theme()->get('Version');
 
     // Styles
-    wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11.1.0');
+    wp_enqueue_style('swiper-css', PZH_THEME_URI . '/assets/css/swiper-bundle.min.css', array(), '12.1.3');
     wp_enqueue_style('piazhen-font-awesome', PZH_THEME_URI . '/assets/font-icons/css/all.min.css', array(), '7.3.1');
     wp_enqueue_style('piazhen-main-style', PZH_THEME_URI . '/assets/css/styles.css', array('swiper-css'), $version);
 
     // Scripts
     wp_enqueue_script('jquery');
-    wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', array(), '11.1.0', true);
+    // Local Swiper (no CDN dependency — carousels must never break)
+    wp_enqueue_script('swiper-js', PZH_THEME_URI . '/assets/js/swiper-bundle.min.js', array(), '12.1.3', true);
     wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.8', true);
     wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), $version, true);
 
@@ -280,20 +294,50 @@ function pzh_get_brands() {
 function pzh_hero_banners() {
     $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
 
+    // Hero carousel slides (yellow gradient, heading + 2-line subtitle + orange pill)
     $banners = array(
-        // Large panel (right side)
-        'main' => array(
-            'badge'    => __('جشنواره پاییزی پی‌آژن', 'piazhen'),
-            'title'    => __('عطر و ادکلن اورجینال', 'piazhen'),
-            'subtitle' => __('با ضمانت اصالت کالا و ارسال سریع به سراسر کشور', 'piazhen'),
-            'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
-            'link'     => $shop_url,
-            'cta'      => __('خرید کنید', 'piazhen'),
+        'slides' => array(
+            array(
+                'title'    => __('اصلاحی سریع، دقیق و بین‌نقص', 'piazhen'),
+                'subtitle' => array(
+                    __('ظاهر جذاب، تیپی تازه', 'piazhen'),
+                    __('همراه همیشگی آقایان خوش‌تیپ', 'piazhen'),
+                ),
+                'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
+                'link'     => $shop_url,
+                'cta'      => __('مشاهده محصولات', 'piazhen'),
+            ),
+            array(
+                'title'    => __('ست ماشین اصلاح حرفه‌ای', 'piazhen'),
+                'subtitle' => array(
+                    __('قدرت و دقت در یک دستگاه', 'piazhen'),
+                    __('مناسب آرایشگاه و مصارف خانگی', 'piazhen'),
+                ),
+                'image'    => PZH_THEME_URI . '/assets/images/image.png',
+                'link'     => $shop_url,
+                'cta'      => __('مشاهده محصولات', 'piazhen'),
+            ),
+            array(
+                'title'    => __('اپیلاتور و اصلاح موی بدن', 'piazhen'),
+                'subtitle' => array(
+                    __('پوستی صاف و لطیف', 'piazhen'),
+                    __('بدون درد و سوزش', 'piazhen'),
+                ),
+                'image'    => PZH_THEME_URI . '/assets/images/card2.png',
+                'link'     => $shop_url,
+                'cta'      => __('مشاهده محصولات', 'piazhen'),
+            ),
         ),
-        // Two cards on the left column
+        // Two stacked photo tiles (left column)
         'side_cards' => array(
-            array('title' => __('لوازم آرایشی اورجینال', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
-            array('title' => __('جشنواره تخفیف‌های ویژه', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
+            array('title' => __('اپیلاتور', 'piazhen'),          'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+        ),
+        // Three photo tiles (bottom row)
+        'bottom_cards' => array(
+            array('title' => __('سایر محصولات', 'piazhen'),  'image' => PZH_THEME_URI . '/assets/images/card3.png', 'link' => $shop_url),
+            array('title' => __('حالت دهنده مو', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+            array('title' => __('سشوار', 'piazhen'),          'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
         ),
     );
 
@@ -1203,12 +1247,26 @@ function pzh_color_hex($name) {
 }
 
 /**
+ * Does a variable product have at least one purchasable in-stock variation?
+ */
+function pzh_variable_has_stock($product) {
+    if (!$product->is_type('variable')) {
+        return $product->is_in_stock();
+    }
+    foreach ($product->get_available_variations() as $variation) {
+        if (!empty($variation['is_in_stock'])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Variation picker data: attributes as chips (text) or swatches (colors),
  * resolved from WooCommerce data only — no plugins.
  */
 function pzh_get_variation_picker_data($product) {
     if (!$product->is_type('variable')) return array();
-
     $data = array();
     foreach ($product->get_variation_attributes() as $name => $options) {
         $tax      = sanitize_title($name);
@@ -1235,11 +1293,14 @@ function pzh_get_variation_picker_data($product) {
 
         if (empty($items)) continue;
 
+        // Color attributes → swatches; small option sets (e.g. warranty) → radios; the rest → chips
+        $type = $is_color ? 'swatch' : (count($items) <= 4 ? 'radio' : 'chip');
+
         $data[] = array(
             'name'     => $name,
             'label'    => $label,
             'taxonomy' => $tax,
-            'type'     => $is_color ? 'swatch' : 'chip',
+            'type'     => $type,
             'items'    => $items,
         );
     }
@@ -1610,6 +1671,7 @@ function pzh_cart_ajax() {
         'count'      => WC()->cart->get_cart_contents_count(),
         'items_html' => pzh_cart_items_html(),
         'totals_html' => pzh_cart_totals_html(),
+        'delivery_html' => pzh_free_delivery_html(),
         'empty_html' => pzh_cart_empty_html(),
         'is_empty'   => WC()->cart->is_empty(),
     ));
@@ -2804,6 +2866,187 @@ function pzh_admin_withdrawals_menu() {
     );
 }
 add_action('admin_menu', 'pzh_admin_withdrawals_menu');
+
+// ============================================================================
+// Free Delivery Settings (threshold + suggested products) — admin panel
+// ============================================================================
+
+function pzh_admin_free_delivery_menu() {
+    add_submenu_page(
+        'pzh-wallet-withdrawals',
+        __('ارسال رایگان', 'piazhen'),
+        __('ارسال رایگان', 'piazhen'),
+        'manage_options',
+        'pzh-free-delivery',
+        'pzh_admin_free_delivery_render'
+    );
+}
+add_action('admin_menu', 'pzh_admin_free_delivery_menu');
+
+function pzh_admin_free_delivery_render() {
+    // Save settings
+    if (isset($_POST['pzh_fd_save']) && check_admin_referer('pzh_free_delivery_settings')) {
+        $threshold = isset($_POST['pzh_fd_threshold']) ? absint($_POST['pzh_fd_threshold']) : 0;
+        update_option('pzh_free_delivery_threshold', $threshold);
+
+        $products = isset($_POST['pzh_fd_products']) ? array_map('absint', (array) $_POST['pzh_fd_products']) : array();
+        $products = array_values(array_filter(array_unique($products)));
+        update_option('pzh_free_delivery_products', $products);
+
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('تنظیمات ذخیره شد.', 'piazhen') . '</p></div>';
+    }
+
+    $threshold    = absint(get_option('pzh_free_delivery_threshold', 5000000));
+    $selected_ids = array_map('absint', (array) get_option('pzh_free_delivery_products', array()));
+    $products     = get_posts(array(
+        'post_type'      => array('product', 'product_variation'),
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ));
+    ?>
+    <div class="wrap">
+        <h1><?php _e('تنظیمات ارسال رایگان', 'piazhen'); ?></h1>
+        <form method="post" action="">
+            <?php wp_nonce_field('pzh_free_delivery_settings'); ?>
+            <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row">
+                        <label for="pzh_fd_threshold"><?php _e('حداقل مبلغ برای ارسال رایگان (تومان)', 'piazhen'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="pzh_fd_threshold" name="pzh_fd_threshold" class="regular-text"
+                               value="<?php echo esc_attr($threshold); ?>" min="0" step="1000" style="direction: ltr;">
+                        <p class="description"><?php _e('مثلاً ۵۰۰۰۰۰۰ — اگر مجموع سبد کمتر از این مبلغ باشد، نوار پیشرفت و محصولات پیشنهادی نمایش داده می‌شود.', 'piazhen'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="pzh_fd_products"><?php _e('محصولات پیشنهادی', 'piazhen'); ?></label>
+                    </th>
+                    <td>
+                        <select id="pzh_fd_products" name="pzh_fd_products[]" multiple size="12" style="min-width: 420px; max-width: 100%;">
+                            <?php foreach ($products as $product_post): ?>
+                                <?php $product = wc_get_product($product_post); ?>
+                                <?php if (!$product || !$product->is_purchasable()) continue; ?>
+                                <option value="<?php echo esc_attr($product_post->ID); ?>" <?php selected(in_array($product_post->ID, $selected_ids, true)); ?>>
+                                    <?php echo esc_html($product->get_name()); ?> (#<?php echo $product_post->ID; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php _e('برای انتخاب چند محصول، کلید Ctrl (یا Cmd) را نگه دارید. این محصولات وقتی سبد به حد ارسال رایگان نرسیده پیشنهاد می‌شوند.', 'piazhen'); ?></p>
+                    </td>
+                </tr>
+            </table>
+            <p class="submit">
+                <button type="submit" name="pzh_fd_save" class="button button-primary"><?php _e('ذخیره تنظیمات', 'piazhen'); ?></button>
+            </p>
+        </form>
+    </div>
+    <?php
+}
+
+/**
+ * Free delivery settings helper
+ */
+function pzh_free_delivery_data() {
+    return array(
+        'threshold'   => absint(get_option('pzh_free_delivery_threshold', 5000000)),
+        'product_ids' => array_values(array_filter(array_map('absint', (array) get_option('pzh_free_delivery_products', array())))),
+    );
+}
+
+/**
+ * Render the free-delivery progress bar + suggested products (cart page top)
+ * Per cart-free-delivery.png: yellow-bordered cream box, suggested product
+ * cards with orange "+" badges on one side, delivery text + truck icon +
+ * right-filling yellow progress bar on the other.
+ */
+function pzh_free_delivery_html() {
+    $data      = pzh_free_delivery_data();
+    $threshold = max(1, $data['threshold']);
+    $total     = (float) WC()->cart->get_subtotal();
+    $pct       = min(100, round($total / $threshold * 100, 1));
+    $remaining = $total < $threshold ? $threshold - $total : 0;
+
+    // Suggested products: admin-selected, purchasable, not already in cart — max 4
+    $in_cart = array();
+    foreach (WC()->cart->get_cart() as $item) {
+        $in_cart[$item['product_id']] = true;
+        if ($item['variation_id']) {
+            $in_cart[$item['variation_id']] = true;
+        }
+    }
+    $suggestions = array();
+    foreach ($data['product_ids'] as $pid) {
+        if (count($suggestions) >= 4) break;
+        if (isset($in_cart[$pid])) continue;
+        $sugg_product = wc_get_product($pid);
+        if ($sugg_product && $sugg_product->is_purchasable() && $sugg_product->is_in_stock()) {
+            $suggestions[] = $sugg_product;
+        }
+    }
+
+    ob_start();
+    ?>
+    <div class="pz-free-delivery">
+        <!-- Status column first in DOM → renders on the RIGHT (RTL), per the mockup -->
+        <div class="pz-free-delivery__status">
+            <div class="pz-free-delivery__text-row">
+                <svg class="pz-free-delivery__truck" width="38" height="32" viewBox="0 0 39 33" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="1" width="25" height="26" rx="1"/>
+                    <path d="M25 4h8l5 9v10"/>
+                    <path d="M25 23h13"/>
+                    <line x1="25" y1="14" x2="38" y2="14"/>
+                    <circle cx="10.5" cy="26.5" r="4"/>
+                    <circle cx="28.5" cy="26.5" r="4"/>
+                </svg>
+                <div class="pz-free-delivery__text">
+                    <?php if ($remaining > 0): ?>
+                        <?php /* translators: %s = formatted remaining amount for free delivery */ ?>
+                        <?php printf(__('%s تا ارسال رایگان محصول', 'piazhen'), wc_price($remaining)); ?>
+                    <?php else: ?>
+                        <?php _e('این سفارش شامل ارسال رایگان است', 'piazhen'); ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="pz-free-delivery__bar">
+                <span class="pz-free-delivery__fill" style="width: <?php echo esc_attr($pct); ?>%"></span>
+            </div>
+        </div>
+
+        <?php if (!empty($suggestions)): ?>
+            <div class="pz-free-delivery__suggestions">
+                <div class="pz-free-delivery__title">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="10" width="28" height="28" rx="4"/>
+                        <path d="M15 17v14M8 24h14"/>
+                        <path d="M10 1h29M38 1v29"/>
+                    </svg>
+                    <span><?php _e('محصولات پیشنهادی', 'piazhen'); ?></span>
+                </div>
+                <div class="pz-free-delivery__cards">
+                    <?php foreach ($suggestions as $sugg): ?>
+                        <div class="pz-fd-card">
+                            <a class="pz-fd-card__image" href="<?php echo esc_url($sugg->get_permalink()); ?>">
+                                <?php echo $sugg->get_image('pzh_product_thumb'); ?>
+                            </a>
+                            <button type="button"
+                                    class="pz-fd-card__add <?php echo $sugg->is_type('variable') ? 'product-card__add-to-cart--variable' : 'product-card__add-to-cart'; ?>"
+                                    data-product-id="<?php echo $sugg->get_id(); ?>"
+                                    aria-label="<?php esc_attr_e('افزودن به سبد', 'piazhen'); ?>">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 1v10M1 6h10"/></svg>
+                            </button>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
 
 function pzh_admin_withdrawals_render() {
     // Handle approve/reject actions
