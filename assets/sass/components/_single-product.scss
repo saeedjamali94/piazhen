@@ -187,7 +187,7 @@
 
     // Title: orange, bold, 33px
     &__title {
-        font-size: 33px;
+        font-size: 27px;
         font-weight: 700;
         line-height: 1.6;
         margin-bottom: 17px;
@@ -286,7 +286,7 @@
     border-radius: $cardRadius;
 
     &__label {
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 700;
         color: #3F3F3F;
         // Long labels shrink and wrap so the value never gets pushed outside
@@ -297,7 +297,7 @@
     }
 
     &__value {
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 700;
         color: #F2854F;
         white-space: normal;
@@ -504,7 +504,7 @@
     }
 
     &__text {
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 700;
         color: #414141;
     }
@@ -568,7 +568,6 @@
 // ============================================================================
 
 .add-to-cart-single {
-    width: 260px;
     max-width: 100%;
     height: 50px;
     margin-top: auto;
@@ -576,13 +575,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 24px; // 24px keeps the 29px label on one line inside 260px
+    padding: 0 40px; // 24px keeps the 29px label on one line inside 260px
     border: none;
     border-radius: 999px;
     background: #80D388;
     color: #121212;
     font-family: "YekanBakh", sans-serif;
-    font-size: 29px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;

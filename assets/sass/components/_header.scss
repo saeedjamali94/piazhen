@@ -756,7 +756,7 @@
     position: absolute;
     top: calc(100% + 14px);
     left: 0;
-    width: 384px;
+    width: 300px;
     background: $white;
     border: 1px solid #F0F0F0;
     border-radius: 18px;
@@ -796,7 +796,7 @@
             align-items: center;
             gap: 12px;
             padding: 15px 16px;
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 700;
             color: #414141;
             line-height: 1.6;
@@ -914,7 +914,9 @@
         font-size: 16px;
 
         .siteHeader__main {
-            padding: 14px 0;            gap: 12px;
+            padding: 14px 0;
+            gap: 12px;
+            justify-content: space-between;
         }
 
         .logo {
@@ -973,7 +975,7 @@
 @media (max-width: $bp-sm) {
     .cart-dropdown {
         width: 280px;
-        left: -100px;
+        left: 0;
     }
 
     .mega-menu__grid {

@@ -93,7 +93,7 @@ while (have_posts()): the_post();
         <!-- Product Top: Gallery + Info (mockup proportions: 5/12 gallery, 7/12 info) -->
         <div class="single-product-top row g-4">
             <!-- Product Gallery (per single-product-right.png) -->
-            <div class="col-lg-5">
+            <div class="col-lg-4">
                 <div class="product-gallery">
 
                     <!-- Main Image Card -->
@@ -162,7 +162,7 @@ while (have_posts()): the_post();
             </div>
 
             <!-- Product Info -->
-            <div class="col-lg-7">
+            <div class="col-lg-8">
                 <div class="product-info">
 
                     <!-- Title -->

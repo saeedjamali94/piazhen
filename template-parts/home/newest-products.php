@@ -19,14 +19,10 @@ $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_U
                 </svg>
             </span>
             <div>
-                <span class="section-head__badge"><?php _e('جدیدترین‌ها', 'piazhen'); ?></span>
                 <h3 class="section-head__title"><?php _e('محصولات جدید', 'piazhen'); ?></h3>
             </div>
         </div>
-        <a class="see-all-link" href="<?= esc_url($shop_url); ?>">
-            <?php _e('مشاهده همه', 'piazhen'); ?>
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
+
     </div>
 
     <div class="newest-products-swiper-wrapper position-relative">

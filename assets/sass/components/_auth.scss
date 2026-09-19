@@ -67,8 +67,6 @@
 .pzh-auth-card {
     width: 517px;
     max-width: 100%;
-    height: min(843px, calc(100vh - 120px));
-    min-height: 560px;
     display: flex;
     flex-direction: column;
     background: $white;
