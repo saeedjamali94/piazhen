@@ -4,6 +4,8 @@
  *
  * Login / Registration with SMS OTP (Melipayamak) — custom AJAX, no plugins.
  * Steps: phone → OTP code → profile completion (new users) → success.
+ * Design per login.png: full-bleed split — cover image 60.5% + #121212 panel
+ * holding an airy white card (no site header/footer on this page).
  *
  * @package Piazhen
  */
@@ -18,48 +20,47 @@ if (is_user_logged_in()) {
     exit;
 }
 
-get_header();
-
 $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redirect_to'])) : '';
 ?>
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class('pzh-auth-body'); ?>>
+<?php wp_body_open(); ?>
+
 <main class="pzh-auth-page" data-auth-page="1">
-    <div class="container">
+
+    <!-- Cover side (60.5% width per the mockup, full-bleed) -->
+    <div class="pzh-auth-cover" style="background-image:url('<?php echo esc_url(PZH_THEME_URI . '/assets/images/login-cover.png'); ?>');">
+        <img class="pzh-auth-cover__logo"
+             src="<?php echo esc_url(PZH_THEME_URI . '/assets/images/logo.png'); ?>"
+             alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
+    </div>
+
+    <!-- Form panel (39.5% width, flat #121212) -->
+    <div class="pzh-auth-panel">
         <div class="pzh-auth-card">
 
-            <!-- Logo -->
-            <div class="pzh-auth-logo">
-                <a href="<?php echo esc_url(SITE_URL); ?>">
-                    <img src="<?php echo esc_url(PZH_THEME_URI . '/assets/images/logo.png'); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
-                </a>
-            </div>
-
             <!-- ============ Step 1: Phone ============ -->
-            <section class="auth-step" data-step="phone">
-                <div class="auth-tabs">
-                    <button type="button" class="auth-tab active" data-tab="login"><?php _e('ورود', 'piazhen'); ?></button>
-                    <button type="button" class="auth-tab" data-tab="register"><?php _e('ثبت‌نام', 'piazhen'); ?></button>
-                </div>
+            <section class="auth-step auth-step--phone" data-step="phone">
+                <h2 class="auth-title"><?php _e('ورود / ثبت نام', 'piazhen'); ?></h2>
 
-                <h2 class="auth-title"><?php _e('ورود | ثبت‌نام', 'piazhen'); ?></h2>
                 <p class="auth-subtitle">
-                    <?php _e('شماره موبایل خود را وارد کنید تا کد تایید برایتان پیامک شود.', 'piazhen'); ?>
+                    <?php _e('شماره موبایل خود را وارد کنید', 'piazhen'); ?>
                 </p>
 
-                <div class="auth-phone-input">
-                    <span class="auth-phone-prefix">+98</span>
-                    <input type="tel" id="auth-phone" class="auth-phone-field"
-                           placeholder="912 345 6789" maxlength="13" inputmode="numeric" autocomplete="tel" dir="ltr">
-                </div>
+                <input type="tel" id="auth-phone" class="auth-phone-field"
+                       placeholder="۰۹" maxlength="13" inputmode="numeric" autocomplete="tel" dir="ltr">
 
                 <div class="auth-error" id="auth-error-phone"></div>
 
-                <button type="button" class="auth-submit mainBtn mainBtn--yellow w-100" id="auth-send">
-                    <?php _e('دریافت کد تایید', 'piazhen'); ?>
+                <button type="button" class="auth-submit" id="auth-send">
+                    <?php _e('ادامه', 'piazhen'); ?>
                 </button>
-
-                <p class="auth-rules">
-                    <?php _e('با ورود یا ثبت‌نام، قوانین و مقررات پی‌آژن را می‌پذیرید.', 'piazhen'); ?>
-                </p>
             </section>
 
             <!-- ============ Step 2: OTP ============ -->
@@ -93,7 +94,7 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
                     <?php _e('ویرایش شماره موبایل', 'piazhen'); ?>
                 </button>
 
-                <button type="button" class="auth-submit mainBtn mainBtn--yellow w-100" id="auth-verify" disabled>
+                <button type="button" class="auth-submit" id="auth-verify" disabled>
                     <?php _e('تایید کد', 'piazhen'); ?>
                 </button>
             </section>
@@ -132,7 +133,7 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
 
                 <div class="auth-error" id="auth-error-register"></div>
 
-                <button type="button" class="auth-submit mainBtn mainBtn--yellow w-100" id="auth-register-btn">
+                <button type="button" class="auth-submit" id="auth-register-btn">
                     <?php _e('ثبت‌نام و ورود', 'piazhen'); ?>
                 </button>
             </section>
@@ -143,13 +144,20 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
                     <i class="fa-solid fa-circle-check"></i>
                 </div>
                 <h2 class="auth-title"><?php _e('خوش آمدید!', 'piazhen'); ?></h2>
-                <p class="auth-subtitle" id="auth-success-text">
+                <p class="auth-subtitle auth-subtitle--center" id="auth-success-text">
                     <?php _e('ورود با موفقیت انجام شد. در حال انتقال به حساب کاربری...', 'piazhen'); ?>
                 </p>
-                <a href="<?php echo esc_url(pzh_auth_redirect_url()); ?>" class="mainBtn mainBtn--yellow">
+                <a href="<?php echo esc_url(pzh_auth_redirect_url()); ?>" class="auth-submit auth-submit--link">
                     <?php _e('ورود به حساب کاربری', 'piazhen'); ?>
                 </a>
             </section>
+
+            <!-- Logo pinned to the card bottom (per the mockup) -->
+            <div class="pzh-auth-card__logo">
+                <a href="<?php echo esc_url(SITE_URL); ?>">
+                    <img src="<?php echo esc_url(PZH_THEME_URI . '/assets/images/logo.png'); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
+                </a>
+            </div>
 
             <input type="hidden" id="auth-phone-stored" value="">
             <input type="hidden" id="auth-code-stored" value="">
@@ -158,4 +166,6 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
     </div>
 </main>
 
-<?php get_footer(); ?>
+<?php wp_footer(); ?>
+</body>
+</html>

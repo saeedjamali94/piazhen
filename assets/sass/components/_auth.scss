@@ -2,117 +2,188 @@
 
 // ============================================================================
 // Login / Registration Page (SMS OTP flow)
+// Per login.png: full-bleed split screen — 60.5% cover image, 39.5% flat
+// #121212 panel holding an airy white card (20px radius, no border/shadow).
 // ============================================================================
 
+.pzh-auth-body {
+    background: #121212;
+}
+
 .pzh-auth-page {
-    padding: 40px 0 64px;
-    background: linear-gradient(180deg, $gray-100 0%, $white 60%);
-    min-height: 60vh;
+    min-height: 100vh;
+    display: flex;
+    direction: ltr; // LTR flex: cover LEFT, panel RIGHT — mockup-exact (RTL page)
+
+    @media (max-width: $bp-md - 1px) {
+        flex-direction: column;
+    }
+}
+
+// --- Cover side (full-bleed photo + white wordmark) ---
+.pzh-auth-cover {
+    flex: 0 0 60.5%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+
+    &__logo {
+        position: absolute;
+        top: 70px;
+        left: 92px;
+        width: 215px;
+        filter: brightness(0) invert(1); // white wordmark over the photo
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        flex: none;
+        height: 180px;
+
+        &__logo {
+            top: 20px;
+            left: 20px;
+            width: 130px;
+        }
+    }
+}
+
+// --- Form panel ---
+.pzh-auth-panel {
+    flex: 1;
+    min-width: 0;
+    background: #121212;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 63px;
+
+    @media (max-width: $bp-md - 1px) {
+        padding: 24px 16px;
+        align-items: flex-start;
+    }
 }
 
 .pzh-auth-card {
-    max-width: 440px;
-    margin: 0 auto;
+    width: 517px;
+    max-width: 100%;
+    height: min(843px, calc(100vh - 120px));
+    min-height: 560px;
+    display: flex;
+    flex-direction: column;
     background: $white;
-    border: 1px solid $gray-200;
+    border: none;
     border-radius: 20px;
-    padding: 32px 28px;
-    box-shadow: $shadow-md;
+    box-shadow: none;
+    padding: 35px 59px 42px; // 59px side insets give the mockup's 400px input
+    text-align: center;
+    direction: rtl; // the card content is Persian RTL
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        height: auto;
+        min-height: 0;
+        padding: 32px 20px 28px;
+    }
+
+    // Logo pinned to the card bottom (per the mockup)
+    &__logo {
+        margin-top: auto;
+        padding-top: 14px;
+
+        img {
+            width: 165px; // ink ≈ 155px, matching the mockup wordmark
+            height: auto;
+        }
+    }
+}
+
+.auth-step {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     text-align: center;
 }
 
-.pzh-auth-logo {
-    margin-bottom: 24px;
+// --- Titles ---
+.auth-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.45;
+    margin-top: 0; // kill Bootstrap's h2 top margin
+    margin-bottom: 26px;
+    color: $siteOrange;
 
-    img {
-        max-width: 150px;
-        height: auto;
+    // The phone step has the mockup's big airy gap under the title
+    .auth-step--phone & {
+        margin-bottom: 173px;
     }
-}
 
-// --- Tabs ---
-.auth-tabs {
-    display: inline-flex;
-    background: $gray-100;
-    border-radius: 50px;
-    padding: 4px;
-    margin-bottom: 20px;
+    @media (max-width: $bp-md - 1px) {
+        font-size: 26px;
 
-    .auth-tab {
-        padding: 8px 28px;
-        border-radius: 50px;
-        font-size: 14px;
-        font-weight: 700;
-        color: $gray-600;
-        cursor: pointer;
-        transition: all $transition-fast;
-        font-family: $fontFamily;
-        line-height: 1.8;
-
-        &.active {
-            background: $siteYellow;
-            color: $textColor;
+        .auth-step--phone & {
+            margin-bottom: 80px;
         }
     }
-}
-
-.auth-title {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    color: $textColor;
 }
 
 .auth-subtitle {
-    font-size: 13px;
-    color: $gray-600;
-    line-height: 2;
-    margin-bottom: 20px;
+    font-size: 23px;
+    font-weight: 500;
+    color: #121212;
+    line-height: 1.9;
+    text-align: right; // right-aligned to the input edge (mockup)
+    margin-bottom: 12px;
+
+    // Tight leading on the phone step so the input lands where the mockup puts it
+    .auth-step--phone & {
+        line-height: 1.2;
+    }
+
+    &--center {
+        text-align: center;
+    }
+
+    .auth-phone-display {
+        font-weight: 700;
+        color: $siteOrange;
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        font-size: 18px;
+    }
 }
 
-// --- Phone input ---
-.auth-phone-input {
-    display: flex;
-    align-items: center;
-    border: 1.5px solid $gray-300;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 12px;
+// --- Phone input (LTR, left-aligned, no prefix) ---
+.auth-phone-field {
+    width: 100%;
+    height: 60px;
+    padding: 0 25px;
+    border: 2px solid #F0F0F0;
+    border-radius: 20px;
     background: $white;
-    transition: all $transition-fast;
+    font-size: 21px;
+    font-weight: 500;
+    font-family: $fontFamily;
+    color: $textColor;
+    direction: ltr;
+    text-align: left;
+    transition: border-color $transition-fast;
 
-    &:focus-within {
-        border-color: $siteYellow;
-        box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
-    }
-
-    .auth-phone-prefix {
-        padding: 12px 14px;
-        background: $gray-100;
-        border-left: 1px solid $gray-200;
-        font-size: 15px;
-        font-weight: 700;
-        color: $gray-600;
-        direction: ltr;
-        flex-shrink: 0;
-    }
-
-    .auth-phone-field {
-        flex: 1;
-        border: 0;
-        padding: 12px 16px;
-        font-size: 15px;
+    &::placeholder {
+        color: #828282;
         font-family: $fontFamily;
-        text-align: left;
+    }
 
-        &:focus {
-            outline: none;
-        }
-
-        &::placeholder {
-            color: $gray-400;
-            text-align: left;
-        }
+    &:focus {
+        border-color: $siteOrange;
+        outline: none;
     }
 }
 
@@ -120,60 +191,59 @@
 .auth-otp-boxes {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 6px;
 
     .auth-otp-input {
-        width: 56px;
-        height: 60px;
-        border: 1.5px solid $gray-300;
-        border-radius: 12px;
+        width: 62px;
+        height: 66px;
+        border: 2px solid #F0F0F0;
+        border-radius: 16px;
         text-align: center;
-        font-size: 22px;
-        font-weight: 800;
+        font-size: 26px;
+        font-weight: 700;
         font-family: $fontFamily;
         background: $white;
-        transition: all $transition-fast;
+        color: $textColor;
+        transition: border-color $transition-fast;
 
         &:focus {
-            border-color: $siteYellow;
-            box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
+            border-color: $siteOrange;
             outline: none;
         }
 
         &.filled {
-            border-color: $gray-400;
-            background: $gray-100;
+            border-color: #E3E3E3;
         }
 
         @media (max-width: $bp-sm) {
-            width: 48px;
-            height: 52px;
-            font-size: 19px;
+            width: 52px;
+            height: 58px;
+            font-size: 22px;
         }
     }
 }
 
-// --- Timer / resend ---
+// --- Timer / resend / edit phone ---
 .auth-otp-timer {
-    font-size: 12.5px;
-    color: $gray-500;
-    margin-bottom: 8px;
+    font-size: 14px;
+    color: #828282;
+    margin: 14px 0 6px;
 
     #auth-timer {
         font-weight: 700;
-        color: $gray-700;
+        color: $textColor;
     }
 }
 
 .auth-resend {
-    display: block;
-    margin: 0 auto 6px;
-    font-size: 13px;
+    align-self: center;
+    font-size: 14px;
     font-weight: 700;
-    color: $siteYellowDark;
+    color: $siteOrange;
     cursor: pointer;
     transition: opacity $transition-fast;
+    margin-bottom: 4px;
 
     &:disabled {
         opacity: 0.4;
@@ -182,13 +252,13 @@
 }
 
 .auth-edit-phone {
-    display: block;
-    margin: 0 auto 16px;
-    font-size: 12px;
-    font-weight: 600;
-    color: $gray-500;
+    align-self: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #828282;
     cursor: pointer;
     text-decoration: underline;
+    margin-bottom: 16px;
     transition: color $transition-fast;
 
     &:hover {
@@ -199,29 +269,44 @@
 // --- Errors ---
 .auth-error {
     min-height: 22px;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     color: $danger;
     margin-bottom: 10px;
     line-height: 1.8;
+    text-align: right;
 
     &:empty {
         display: none;
     }
 }
 
-// --- Submit ---
+// --- Submit (orange pill, per the mockup) ---
 .auth-submit {
+    width: 326px;
+    max-width: 100%;
+    height: 50px;
+    align-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 13px 24px;
-    font-size: 15px;
-    border-radius: 12px !important;
+    margin-top: 10px;
+    border: none;
+    border-radius: 25px;
+    background: $siteOrange;
+    color: $white;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: $fontFamily;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+        background: $siteOrangeDark;
+    }
 
     &:disabled {
-        opacity: 0.5;
+        opacity: 0.55;
         cursor: not-allowed;
     }
 
@@ -234,13 +319,22 @@
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
     }
-}
 
-.auth-rules {
-    margin-top: 14px;
-    font-size: 11.5px;
-    color: $gray-500;
-    line-height: 2;
+    &--link {
+        text-decoration: none;
+        line-height: 50px;
+    }
+
+    // The phone step's big airy gap above the button (mockup)
+    .auth-step--phone & {
+        margin-top: 172px;
+    }
+
+    @media (max-width: $bp-md - 1px) {
+        .auth-step--phone & {
+            margin-top: 60px;
+        }
+    }
 }
 
 // --- Profile fields ---
@@ -254,49 +348,58 @@
 
         label {
             display: block;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: $textColor;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
 
             .required {
-                color: $danger;
+                color: $siteOrange;
             }
 
             .optional {
-                color: $gray-500;
+                color: #828282;
                 font-weight: 400;
-                font-size: 11px;
+                font-size: 12px;
             }
         }
 
         .auth-input {
             width: 100%;
-            padding: 11px 14px;
-            border: 1.5px solid $gray-300;
-            border-radius: 12px;
-            font-size: 14px;
+            height: 52px;
+            padding: 0 18px;
+            border: 2px solid #F0F0F0;
+            border-radius: 14px;
+            font-size: 15px;
             font-family: $fontFamily;
             background: $white;
-            transition: all $transition-fast;
+            color: $textColor;
+            transition: border-color $transition-fast;
+
+            &::placeholder {
+                color: #828282;
+            }
 
             &:focus {
-                border-color: $siteYellow;
-                box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
+                border-color: $siteOrange;
                 outline: none;
             }
         }
+    }
+
+    .auth-field-row {
+        gap: 12px;
     }
 }
 
 // --- Success ---
 .auth-success-icon {
-    width: 90px;
-    height: 90px;
-    margin: 4px auto 18px;
+    width: 92px;
+    height: 92px;
+    margin: 8px auto 24px;
     border-radius: 50%;
-    background: rgba($success, 0.12);
-    color: $success;
+    background: rgba($siteOrange, 0.12);
+    color: $siteOrange;
     font-size: 46px;
     display: flex;
     align-items: center;
