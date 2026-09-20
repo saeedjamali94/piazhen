@@ -40,6 +40,24 @@ $hero = pzh_hero_banners();
                     <!-- Carousel dots (white, Swiper pagination) -->
                     <div class="heroSection__dots"></div>
                 </div>
+
+                <!-- Bottom Row: Three Photo Tiles -->
+                <div class="col-12">
+                    <div class="row g-4">
+                        <?php foreach ($hero['bottom_cards'] as $card): ?>
+                            <div class="col-md-6">
+                                <a class="heroSection__tile"
+                                   href="<?= esc_url($card['link']); ?>"
+                                   style="background-image: url('<?= esc_url($card['image']); ?>');">
+                                    <span class="heroSection__tile-title"><?= esc_html($card['title']); ?></span>
+                                    <span class="heroSection__tile-arrow">
+                                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+                                </span>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             </div>
 
             <!-- Two Stacked Photo Tiles -->
@@ -54,24 +72,6 @@ $hero = pzh_hero_banners();
                                 <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
                             </span>
                         </a>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Bottom Row: Three Photo Tiles -->
-            <div class="col-12">
-                <div class="row g-4">
-                    <?php foreach ($hero['bottom_cards'] as $card): ?>
-                        <div class="col-md-4">
-                            <a class="heroSection__tile"
-                               href="<?= esc_url($card['link']); ?>"
-                               style="background-image: url('<?= esc_url($card['image']); ?>');">
-                                <span class="heroSection__tile-title"><?= esc_html($card['title']); ?></span>
-                                <span class="heroSection__tile-arrow">
-                                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
-                                </span>
-                            </a>
-                        </div>
                     <?php endforeach; ?>
                 </div>
             </div>

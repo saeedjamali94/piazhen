@@ -1,47 +1,47 @@
 <?php
 /**
- * Homepage: Newest Products - 2x2 grid carousel (col-md-6)
+ * Homepage: Newsest Products Carousel
+ * 5 items in view, auto-loaded by date sort
  */
-$products_query = pzh_get_newest_products(8);
+$products_query = pzh_get_newest_products(15);
 
 if (!$products_query->have_posts()) {
-    return;
+    return; // No products to show
 }
 
 $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
 ?>
-<div class="home_newest col-md-6">
-    <div class="section-head">
-        <div class="section-head__right">
-            <span class="section-head__icon">
-                <svg width="24" height="24" viewBox="0 0 14 14" fill="currentColor">
-                    <path d="M6.8 13.6C6.8 7.5 6.8 7.5 6.8 13.6C6.4 7.5 6.1 7.2 0 6.8C6.1 6.8 6.1 6.8 0 6.8C6.1 6.4 6.4 6.1 6.8 0C6.8 6.1 6.8 6.1 6.8 0C7.2 6.1 7.5 6.4 13.6 6.8C7.5 6.8 7.5 6.8 13.6 6.8C7.5 7.2 7.2 7.5 6.8 13.6Z"/>
-                </svg>
-            </span>
-            <div>
-                <h3 class="section-head__title"><?php _e('محصولات جدید', 'piazhen'); ?></h3>
-            </div>
+<section class="home_most_selling py-5">
+    <div class="container">
+        <div class="section-title-row">
+            <?php
+            // Section title
+            set_query_var('texts', array(
+                'heading'    => __('جدیدترین محصولات', 'piazhen'),
+            ));
+            get_template_part('template-parts/global/section', 'title');
+            ?>
         </div>
 
-    </div>
-
-    <div class="newest-products-swiper-wrapper position-relative">
-        <div class="swiper newest-products-swiper">
-            <div class="swiper-wrapper">
-                <?php while ($products_query->have_posts()): $products_query->the_post(); ?>
-                    <div class="swiper-slide">
-                        <?= pzh_get_product_card_html(get_the_ID()); ?>
-                    </div>
-                <?php endwhile; ?>
+        <div class="most-selling-swiper-wrapper position-relative">
+            <div class="swiper most-selling-swiper">
+                <div class="swiper-wrapper">
+                    <?php while ($products_query->have_posts()): $products_query->the_post(); ?>
+                        <div class="swiper-slide">
+                            <?= pzh_get_product_card_html(get_the_ID()); ?>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
             </div>
-        </div>
 
-        <button class="newest-prev swiper-nav-btn swiper-nav-btn--prev" aria-label="<?php _e('قبلی', 'piazhen'); ?>">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-        <button class="newest-next swiper-nav-btn swiper-nav-btn--next" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
+            <!-- Navigation Arrows -->
+            <button class="most-selling-prev swiper-nav-btn swiper-nav-btn--prev" aria-label="<?php _e('قبلی', 'piazhen'); ?>">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="most-selling-next swiper-nav-btn swiper-nav-btn--next" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
     </div>
-</div>
+</section>
 <?php wp_reset_postdata(); ?>

@@ -21,14 +21,6 @@ if (empty($brands)) {
 ?>
 <section class="home_brands py-5">
     <div class="container">
-        <?php
-        set_query_var('texts', array(
-            'topBtnText' => __('برندها', 'piazhen'),
-            'heading'    => __('برندهای محبوب', 'piazhen'),
-            'text'       => __('محصولات را بر اساس برند مورد علاقه خود انتخاب کنید', 'piazhen'),
-        ));
-        get_template_part('template-parts/global/section', 'title');
-        ?>
 
         <div class="brands-grid">
             <?php foreach ($brands as $brand): ?>

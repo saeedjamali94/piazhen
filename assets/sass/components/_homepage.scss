@@ -12,8 +12,8 @@
     .hero-swiper {
         border-radius: 32px;
         overflow: hidden;
-        height: 100%;
-        min-height: 510px;
+        height: 326px;
+        margin-bottom: 1rem;
     }
 
     // Large hero slide: yellow gradient, products left, right-aligned text
@@ -22,7 +22,6 @@
         display: flex;
         width: 100%;
         height: 100%;
-        min-height: 510px;
         background: linear-gradient(90deg, #FFD300 0%, #FBCE01 30%, #F2BC00 60%, #E4A500 100%);
         overflow: hidden;
 
@@ -55,7 +54,7 @@
         }
 
         .heroSection__title {
-            font-size: 36px;
+            font-size: 25px;
             font-weight: 900;
             color: #121212;
             line-height: 1.6;
@@ -63,7 +62,7 @@
         }
 
         .heroSection__subtitle {
-            font-size: 21px;
+            font-size: 18px;
             color: rgba($black, 0.8);
             line-height: 1.9;
             margin-bottom: 26px;
@@ -124,7 +123,7 @@
         position: relative;
         display: block;
         flex: 1 1 0;
-        min-height: 254px;
+        height: 155px;
         border-radius: 32px;
         overflow: hidden;
         background-color: $gray-300;
@@ -193,7 +192,7 @@
     .whiteGradientVertical {
         font-size: 28px;
         font-weight: 800;
-        margin-bottom: 8px;
+        margin: 0 0 8px;
         line-height: 1.4;
     }
 
@@ -393,7 +392,6 @@
         aspect-ratio: 1;
         border-radius: 17%;
         overflow: hidden;
-        background: #D9D9D9;
 
         a {
             display: block;

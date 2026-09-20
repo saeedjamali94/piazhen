@@ -337,7 +337,6 @@ function pzh_hero_banners() {
         'bottom_cards' => array(
             array('title' => __('سایر محصولات', 'piazhen'),  'image' => PZH_THEME_URI . '/assets/images/card3.png', 'link' => $shop_url),
             array('title' => __('حالت دهنده مو', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
-            array('title' => __('سشوار', 'piazhen'),          'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
         ),
     );
 
