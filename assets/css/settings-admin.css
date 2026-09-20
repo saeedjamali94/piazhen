@@ -1,0 +1,51 @@
+/**
+ * Piazhen Settings Admin — RTL-aware styles
+ */
+
+/* Image preview row */
+.pzh-media-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pzh-media-preview {
+    min-width: 60px;
+    min-height: 40px;
+    border: 1px dashed #c3c4c7;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f1;
+    overflow: hidden;
+}
+
+.pzh-media-preview img {
+    display: block;
+    object-fit: contain;
+}
+
+/* RTL: nav-tab-wrapper tweaks */
+.pzh-settings-wrap .nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.pzh-settings-tab-content {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 20px;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Persian digits in number inputs — keep LTR for numeric */
+input[dir="ltr"] {
+    direction: ltr;
+    text-align: left;
+}
+
+.rtl input[dir="ltr"] {
+    text-align: left;
+}
