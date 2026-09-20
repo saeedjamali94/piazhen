@@ -12,10 +12,10 @@ if (!defined('ABSPATH')) {
             <!-- Column 1 (RTL first): Brand + About + e-Namad -->
             <div class="footer-col footer-col--about">
                 <div class="footer-logo">
-                    <img src="<?= PZH_THEME_URI ?>/assets/images/logo.png" width="138" height="40" alt="<?= esc_attr(get_bloginfo('name')); ?>">
+                    <img src="<?php echo esc_url(pzh_logo_url()); ?>" width="138" height="40" alt="<?= esc_attr(get_bloginfo('name')); ?>">
                 </div>
                 <p class="footer-about-text">
-                    <?php _e('با گذشته‌ی بیش از ۱۰ سال در بازار ایران، ما در «پی‌آژن» بهترین محصولات اصلی و با کیفیت در حوزهٔ ماشین‌های اصلاح مردانه و زنانه، دستگاه ماشین زن خط زن، اپیلاتور برس بادی و برس حرارتی را به شما عرضه می‌کنیم.', 'piazhen'); ?>
+                    <?php _e('با گذشته‌ی بیش از ۱۰ سال در بازار ایران، ما در «پیاژن» بهترین محصولات اصلی و با کیفیت در حوزهٔ ماشین‌های اصلاح مردانه و زنانه، دستگاه ماشین زن خط زن، اپیلاتور برس بادی و برس حرارتی را به شما عرضه می‌کنیم.', 'piazhen'); ?>
                 </p>
                 <div class="footer-namad" aria-label="<?php esc_attr_e('نماد اعتماد الکترونیکی', 'piazhen'); ?>">
                     <span class="footer-namad__mark">e</span>
@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) {
                     <li><a href="<?= SITE_URL ?>/shop/"><?php _e('فروشگاه', 'piazhen'); ?></a></li>
                     <li><a href="<?= SITE_URL ?>/about/"><?php _e('درباره ما', 'piazhen'); ?></a></li>
                     <li><a href="<?= SITE_URL ?>/faq/"><?php _e('سوالات متداول', 'piazhen'); ?></a></li>
-                    <li><a href="<?= SITE_URL ?>/blog/"><?php _e('مجله پی‌آژن', 'piazhen'); ?></a></li>
+                    <li><a href="<?= SITE_URL ?>/blog/"><?php _e('مجله پیاژن', 'piazhen'); ?></a></li>
                     <li><a href="<?= SITE_URL ?>/guarantee/"><?php _e('گارانتی', 'piazhen'); ?></a></li>
                 </ul>
             </div>
@@ -48,7 +48,7 @@ if (!defined('ABSPATH')) {
                 <ul class="footer-contact">
                     <li>
                         <svg class="footer-contact__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        <span dir="ltr">۰۹۱۲ ۷۷۷ ۲۱ ۶۷ - ۰۹۱۲ ۰۴۳ ۴۹ ۴۳ - ۰۲۱ ۹۱۶۹۲۲۳۳</span>
+                        <span dir="ltr"><?php echo esc_html(pzh_phones()); ?></span>
                     </li>
                     <li>
                         <svg class="footer-contact__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -67,22 +67,23 @@ if (!defined('ABSPATH')) {
         </div>
 
         <!-- Bottom Bar: bare outline socials + centered copyright -->
+        <?php $social_links = pzh_social_links(); ?>
         <div class="footer-bottom">
             <div class="footer-social">
-                <a href="https://t.me/piazhen" target="_blank" rel="noopener" aria-label="Telegram">
+                <a href="<?php echo esc_url($social_links['telegram']); ?>" target="_blank" rel="noopener" aria-label="Telegram">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 3.5L2.5 10.5l6 2.5m13-9.5l-5 17-4.5-6m-2-4l4.5 6"/></svg>
                 </a>
-                <a href="https://x.com/piazhen" target="_blank" rel="noopener" aria-label="X">
+                <a href="<?php echo esc_url($social_links['twitter']); ?>" target="_blank" rel="noopener" aria-label="X">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M20 4L4 20"/></svg>
                 </a>
-                <a href="https://instagram.com/piazhen" target="_blank" rel="noopener" aria-label="Instagram">
+                <a href="<?php echo esc_url($social_links['instagram']); ?>" target="_blank" rel="noopener" aria-label="Instagram">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
                 </a>
-                <a href="https://linkedin.com/company/piazhen" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <a href="<?php echo esc_url($social_links['linkedin']); ?>" target="_blank" rel="noopener" aria-label="LinkedIn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4V8h6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
                 </a>
             </div>
-            <p class="footer-copyright">&copy; <?php _e('تمام حقوق برای پی‌آژن محفوظ است', 'piazhen'); ?></p>
+            <p class="footer-copyright">&copy; <?php _e('تمام حقوق برای پیاژن محفوظ است', 'piazhen'); ?></p>
             <span class="footer-bottom__spacer"></span>
         </div>
     </div>

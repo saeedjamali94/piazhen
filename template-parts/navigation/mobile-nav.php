@@ -7,6 +7,7 @@
         'menu_class' => 'topNav d-flex align-items-center gap-5',
         'container' => 'ul',
         'container_class' => 'd-flex align-items-center gap-5',
+        'walker' => new PZH_Mega_Menu_Walker(),
     ));
     ?>
 </nav>

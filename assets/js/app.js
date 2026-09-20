@@ -38,6 +38,59 @@ $.fn.serializeObject = function () {
     return obj;
 };
 
+/** Fallback string map — mirrors PHP pzh_js_strings() defaults */
+var PZH_STR = {
+    server_error:          'خطا در ارتباط با سرور.',
+    add_to_cart_error:     'خطا در افزودن به سبد خرید.',
+    add_to_cart_success:   'محصول به سبد خرید اضافه شد.',
+    save_error:            'خطا در ذخیره اطلاعات.',
+    address_save_error:    'خطا در ذخیره آدرس.',
+    cart_update_error:     'خطا در بهروزرسانی سبد خرید.',
+    withdraw_error:        'خطا در ثبت درخواست برداشت.',
+    review_error:          'خطا در ثبت نظر.',
+    newsletter_error:      'خطا در ثبت عضویت.',
+    payment_error:         'خطا در اتصال به درگاه پرداخت.',
+    invalid_phone:         'شماره موبایل معتبر نیست. (مثال: 9123456789)',
+    name_required:         'نام و نام خانوادگی الزامی است.',
+    password_short:        'رمز عبور باید حداقل ۶ کاراکتر باشد.',
+    password_mismatch:     'تکرار رمز عبور مطابقت ندارد.',
+    otp_error:             'خطا در ارسال کد.',
+    register_error:        'خطا در ثبتنام.',
+    login_success:         'ورود با موفقیت انجام شد.',
+    compare_added:         'محصول به لیست مقایسه اضافه شد.',
+    compare_removed:       'محصول از لیست مقایسه حذف شد.',
+    compare_limit:         'حداکثر ۴ محصول قابل مقایسه است.',
+    wallet_insufficient:   'موجودی کیف پول برای انتقال کافی نیست.',
+    coming_soon:           'این قابلیت بهزودی فعال میشود.',
+    charge_amount:         'مبلغ شارژ را وارد کنید. (حداقل ۱۰,۰۰۰ تومان)',
+    withdraw_amount:       'مبلغ انتقال را وارد کنید. (حداقل ۱۰,۰۰۰ تومان)',
+    redirecting_gateway:   'در حال انتقال به درگاه پرداخت...',
+    loading_address:       'در حال دریافت آدرس...',
+    location_set:          'موقعیت روی نقشه ثبت شد؛ لطفا آدرس را در فرم تکمیل کنید.',
+    please_wait:           'لطفا صبر کنید...',
+    product_load_error:    'خطا در بارگذاری اطلاعات محصول.',
+    select_options:        'لطفا همه گزینهها را انتخاب کنید',
+    select_product_opts:   'لطفا گزینههای محصول را انتخاب کنید.',
+    select_specs:          'لطفا مشخصات محصول را انتخاب کنید.',
+    add_to_cart:           'افزودن به سبد خرید',
+    out_of_stock:          'ناموجود',
+    combination_unavail:   'این ترکیب موجود نیست.',
+    checking:              'در حال بررسی...',
+    show_more:             'مشاهده بیشتر ...',
+    show_less:             'بستن ...',
+    map_click_hint:        'روی نقشه کلیک کنید تا آدرس از موقعیت انتخابشده پر شود.',
+    both_addresses_set:    'هر دو آدرس ثبت شدهاند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.',
+    add_to_cart_short:     'خطا در افزودن به سبد.'
+};
+
+/**
+ * Look up a localized string from pzh_options.hui (PHP side) with a
+ * hardcoded JS fallback so nothing breaks if localization is absent.
+ */
+function pzhStr(key) {
+    return (window.pzh_options && pzh_options.hui && pzh_options.hui[key]) ? pzh_options.hui[key] : (PZH_STR[key] || '');
+}
+
 /**
  * Address map (Neshan SDK with key / Leaflet + OSM fallback) with a pin and
  * AJAX reverse geocoding that fills the address fields:
@@ -72,7 +125,7 @@ function pzhInitAddressMap(opts) {
             attributionControl: false,
             scrollWheelZoom: false
         });
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 5 }).addTo(map);
+        L.tileLayer((window.pzh_options && pzh_options.map_tiles) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 5 }).addTo(map);
     }
 
     var pinIcon = L.divIcon({
@@ -97,7 +150,7 @@ function pzhInitAddressMap(opts) {
 
         $lat.val(latlng.lat.toFixed(6));
         $lng.val(latlng.lng.toFixed(6));
-        $bar.html('<span class="muted-note">در حال دریافت آدرس...</span>');
+        $bar.html('<span class="muted-note">' + pzhStr('loading_address') + '</span>');
 
         $.ajax({
             url: pzh_options.ajax_url,
@@ -155,11 +208,11 @@ function pzhInitAddressMap(opts) {
                         if ($dist.length && !$dist.val()) $dist.val(resp.data.district);
                     }
                 } else {
-                    $bar.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+                    $bar.html(pzhStr('location_set'));
                 }
             },
             error: function () {
-                $bar.html('موقعیت روی نقشه ثبت شد؛ لطفاً آدرس را در فرم تکمیل کنید.');
+                $bar.html(pzhStr('location_set'));
             }
         });
     }
@@ -409,7 +462,7 @@ $(document).ready(function () {
             },
             error: function () {
                 $btn.removeClass('loading').prop('disabled', false);
-                pzhToast('خطا در ارتباط با سرور.', 'error');
+                pzhToast(pzhStr('server_error'), 'error');
             }
         });
     });
@@ -625,7 +678,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     if ($productsContainer.length) $productsContainer.removeClass('loading');
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         }
@@ -715,7 +768,7 @@ $(document).ready(function () {
 
         // Show loading
         $modal.show();
-        $modalInner.html('<div class="variation-modal__loading">لطفاً صبر کنید...</div>');
+        $modalInner.html('<div class="variation-modal__loading">' + pzhStr('please_wait') + '</div>');
 
         // Fetch variation form via AJAX
         $.ajax({
@@ -737,7 +790,7 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                $modalInner.html('<p class="text-center py-4 text-danger">خطا در ارتباط با سرور.</p>');
+                $modalInner.html('<p class="text-center py-4 text-danger">' + pzhStr('server_error') + '</p>');
             }
         });
     });
@@ -786,7 +839,7 @@ $(document).ready(function () {
             });
 
             if (!allSelected) {
-                $submit.prop('disabled', true).text('لطفاً همه گزینه‌ها را انتخاب کنید');
+                $submit.prop('disabled', true).text(pzhStr('select_options'));
                 return;
             }
 
@@ -808,12 +861,12 @@ $(document).ready(function () {
                             $price.html(resp.data.price_html);
                         }
                         $submit.prop('disabled', false)
-                               .text('افزودن به سبد خرید')
+                               .text(pzhStr('add_to_cart'))
                                .data('variation-id', resp.data.variation_id)
                                .data('attributes', JSON.stringify(attrs));
                     } else {
                         $message.html('<span class="text-danger">این ترکیب موجود نیست.</span>');
-                        $submit.prop('disabled', true).text('ناموجود');
+                        $submit.prop('disabled', true).text(pzhStr('out_of_stock'));
                     }
                 }
             });
@@ -831,7 +884,7 @@ $(document).ready(function () {
             }
 
             if (!variationId) {
-                pzhToast('لطفاً گزینه‌های محصول را انتخاب کنید.', 'error');
+                pzhToast(pzhStr('select_product_opts'), 'error');
                 return;
             }
 
@@ -853,19 +906,19 @@ $(document).ready(function () {
                     $btn.removeClass('loading').prop('disabled', false);
                     if (resp && resp.success) {
                         pzhUpdateCartBadge(resp.data.cart_count);
-                        pzhToast(resp.data.message || 'محصول به سبد خرید اضافه شد.');
+                        pzhToast(resp.data.message || pzhStr('add_to_cart_success'));
                         if ($('.cart-dropdown').hasClass('active')) pzhRefreshMiniCart();
                         $(document.body).trigger('added_to_cart');
                         // Close modal
                         $modal.hide();
                         $modalInner.html('');
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در افزودن به سبد خرید.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('add_to_cart_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1007,9 +1060,9 @@ $(document).ready(function () {
         $box.toggleClass('open');
 
         if ($box.hasClass('open')) {
-            $this.html('بستن <svg class="ms-2" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L7.29289 6.70711C7.62623 6.37377 7.79289 6.20711 8 6.20711C8.20711 6.20711 8.37377 6.37377 8.70711 6.70711L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
+            $this.html(pzhStr('show_less') + ' <svg class="ms-2" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L7.29289 6.70711C7.62623 6.37377 7.79289 6.20711 8 6.20711C8.20711 6.20711 8.37377 6.37377 8.70711 6.70711L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
         } else {
-            $this.html('مشاهده بیشتر <svg class="ms-2" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L7.29289 9.29289C7.62623 9.62623 7.79289 9.79289 8 9.79289C8.20711 9.79289 8.37377 9.62623 8.70711 9.29289L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
+            $this.html(pzhStr('show_more') + ' <svg class="ms-2" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L7.29289 9.29289C7.62623 9.62623 7.79289 9.79289 8 9.79289C8.20711 9.79289 8.37377 9.62623 8.70711 9.29289L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>');
         }
     });
 
@@ -1063,9 +1116,9 @@ $(document).ready(function () {
             $atc.each(function () {
                 var $btn = $(this);
                 if ($btn.data('initial-disabled')) {
-                    $btn.addClass('out-of-stock').prop('disabled', true).text('ناموجود');
+                    $btn.addClass('out-of-stock').prop('disabled', true).text(pzhStr('out_of_stock'));
                 } else {
-                    $btn.removeClass('out-of-stock').prop('disabled', false).text($btn.data('initial-text') || 'افزودن به سبد خرید');
+                    $btn.removeClass('out-of-stock').prop('disabled', false).text($btn.data('initial-text') || pzhStr('add_to_cart'));
                 }
             });
         }
@@ -1124,7 +1177,7 @@ $(document).ready(function () {
             }
 
             // All attributes selected → find the matching variation
-            $status.html('<span class="text-muted">در حال بررسی...</span>');
+            $status.html('<span class="text-muted">' + pzhStr('checking') + '</span>');
             $.ajax({
                 url: pzh_options.ajax_url,
                 type: 'POST',
@@ -1161,11 +1214,11 @@ $(document).ready(function () {
                     } else {
                         window.pzhVarState.variationId = 0;
                         $('#selected-variation-id').val('');
-                        $status.html('<span class="text-danger">' + ((resp && resp.data && resp.data.message) || 'این ترکیب موجود نیست.') + '</span>');
+                        $status.html('<span class="text-danger">' + ((resp && resp.data && resp.data.message) || pzhStr('combination_unavail')) + '</span>');
                     }
                 },
                 error: function () {
-                    $status.html('<span class="text-danger">خطا در ارتباط با سرور.</span>');
+                    $status.html('<span class="text-danger">' + pzhStr('server_error') + '</span>');
                 }
             });
         });
@@ -1185,7 +1238,7 @@ $(document).ready(function () {
             variationId = parseInt($('#selected-variation-id').val(), 10) || 0;
             variation = window.pzhVarState.attributes || {};
             if (!variationId) {
-                pzhToast('لطفاً مشخصات محصول را انتخاب کنید.', 'error');
+                pzhToast(pzhStr('select_specs'), 'error');
                 if ($('.pzh-variation-picker').length) {
                     $('html, body').animate({ scrollTop: $('.pzh-variation-picker').offset().top - 140 }, 300);
                 }
@@ -1213,18 +1266,18 @@ $(document).ready(function () {
                 $btn.removeClass('loading').prop('disabled', false);
                 if (response && response.success) {
                     pzhUpdateCartBadge(response.data.cart_count);
-                    pzhToast(response.data.message || 'محصول به سبد خرید اضافه شد.');
+                    pzhToast(response.data.message || pzhStr('add_to_cart_success'));
                     if ($('.cart-dropdown').hasClass('active')) {
                         pzhRefreshMiniCart();
                     }
                     $(document.body).trigger('added_to_cart');
                 } else {
-                    pzhToast((response && response.data && response.data.message) || 'خطا در افزودن به سبد خرید.', 'error');
+                    pzhToast((response && response.data && response.data.message) || pzhStr('add_to_cart_error'), 'error');
                 }
             },
             error: function () {
                 $btn.removeClass('loading').prop('disabled', false);
-                pzhToast('خطا در ارتباط با سرور.', 'error');
+                pzhToast(pzhStr('server_error'), 'error');
             }
         });
     });
@@ -1276,7 +1329,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     $cartPage.removeClass('cart-loading');
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         }
@@ -1450,7 +1503,7 @@ $(document).ready(function () {
             var v = raw.replace(/[^0-9]/g, '');
             if (v.length === 10) v = '0' + v;
             if (!/^09[0-9]{9}$/.test(v)) {
-                showAuthError('phone', 'شماره موبایل معتبر نیست. (مثال: 9123456789)');
+                showAuthError('phone', pzhStr('invalid_phone'));
                 return;
             }
 
@@ -1477,7 +1530,7 @@ $(document).ready(function () {
                         $card.find('.auth-otp-input').eq(0).focus();
                     } else {
                         var cooldown = (resp && resp.data && resp.data.cooldown) ? resp.data.cooldown : 0;
-                        var msg = (resp && resp.data && resp.data.message) || 'خطا در ارسال کد.';
+                        var msg = (resp && resp.data && resp.data.message) || pzhStr('otp_error');
                         if (cooldown > 0) {
                             startAuthTimer(cooldown);
                             showAuthStep('otp');
@@ -1489,7 +1542,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    showAuthError('phone', 'خطا در ارتباط با سرور.');
+                    showAuthError('phone', pzhStr('server_error'));
                 }
             });
         }
@@ -1586,7 +1639,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
-                    showAuthError('otp', 'خطا در ارتباط با سرور.');
+                    showAuthError('otp', pzhStr('server_error'));
                 }
             });
         });
@@ -1600,9 +1653,9 @@ $(document).ready(function () {
             var pass = $('#auth-password').val();
             var confirm = $('#auth-password-confirm').val();
 
-            if (!first || !last) { showAuthError('register', 'نام و نام خانوادگی الزامی است.'); return; }
-            if (pass.length < 6) { showAuthError('register', 'رمز عبور باید حداقل ۶ کاراکتر باشد.'); return; }
-            if (pass !== confirm) { showAuthError('register', 'تکرار رمز عبور مطابقت ندارد.'); return; }
+            if (!first || !last) { showAuthError('register', pzhStr('name_required')); return; }
+            if (pass.length < 6) { showAuthError('register', pzhStr('password_short')); return; }
+            if (pass !== confirm) { showAuthError('register', pzhStr('password_mismatch')); return; }
 
             var $btn = $(this).addClass('loading').prop('disabled', true);
             $.ajax({
@@ -1622,15 +1675,15 @@ $(document).ready(function () {
                 success: function (resp) {
                     $btn.removeClass('loading').prop('disabled', false);
                     if (resp && resp.success) {
-                        $('#auth-success-text').text(resp.data.message || 'ورود با موفقیت انجام شد.');
+                        $('#auth-success-text').text(resp.data.message || pzhStr('login_success'));
                         finishAuth(resp.data.redirect);
                     } else {
-                        showAuthError('register', (resp && resp.data && resp.data.message) || 'خطا در ثبت‌نام.');
+                        showAuthError('register', (resp && resp.data && resp.data.message) || pzhStr('register_error'));
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    showAuthError('register', 'خطا در ارتباط با سرور.');
+                    showAuthError('register', pzhStr('server_error'));
                 }
             });
         });
@@ -1674,7 +1727,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     $dashContent.removeClass('loading');
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         }
@@ -1711,12 +1764,12 @@ $(document).ready(function () {
                         pzhToast(resp.data.message);
                         loadDashSection('account', {}, false);
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره اطلاعات.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('save_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1734,13 +1787,13 @@ $(document).ready(function () {
         $dash.on('click', '.dash-address-add', function () {
             var type = $(this).data('add-type');
             if (!type) {
-                pzhToast('هر دو آدرس ثبت شده‌اند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.', 'error');
+                pzhToast(pzhStr('both_addresses_set'), 'error');
                 return;
             }
             $('#dash-modal-address-type').val(type);
             $('#dash-address-modal-form')[0].reset();
             $('#dash-modal-lat, #dash-modal-lng').val('');
-            $('#dash-address-map-bar').text('روی نقشه کلیک کنید تا آدرس از موقعیت انتخاب‌شده پر شود.');
+            $('#dash-address-map-bar').text(pzhStr('map_click_hint'));
             $addressModal.show();
 
             if (!dashAddressMap) {
@@ -1786,12 +1839,12 @@ $(document).ready(function () {
                         $addressModal.hide();
                         loadDashSection('addresses', {}, false);
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره آدرس.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('address_save_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1812,12 +1865,12 @@ $(document).ready(function () {
                         pzhToast(resp.data.message);
                         $dashContent.html(resp.data.html);
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ذخیره آدرس.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('address_save_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1843,12 +1896,12 @@ $(document).ready(function () {
                         pzhToast(resp.data.message);
                         $dashContent.html(resp.data.html);
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت نظر.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('review_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1887,12 +1940,12 @@ $(document).ready(function () {
                         pzhToast(resp.data.message);
                         if ($('.cart-dropdown').hasClass('active')) pzhRefreshMiniCart();
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در افزودن به سبد.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('add_to_cart_short'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1912,7 +1965,7 @@ $(document).ready(function () {
             if (action === 'transfer') {
                 var balance = parseInt($(this).data('balance'), 10) || 0;
                 if (balance < 10000) {
-                    pzhToast('موجودی کیف پول برای انتقال کافی نیست.', 'error');
+                    pzhToast(pzhStr('wallet_insufficient'), 'error');
                     return;
                 }
                 $('#dash-withdraw-form')[0].reset();
@@ -1921,7 +1974,7 @@ $(document).ready(function () {
                 $withdrawModal.show();
                 return;
             }
-            pzhToast('این قابلیت به‌زودی فعال می‌شود.');
+            pzhToast(pzhStr('coming_soon'));
         });
 
         // "انتقال کل موجودی" fills the max amount
@@ -1939,7 +1992,7 @@ $(document).ready(function () {
             var $form = $(this);
             var amount = parseInt($('#dash-withdraw-amount').val(), 10);
             if (!amount || amount < 10000) {
-                pzhToast('مبلغ انتقال را وارد کنید. (حداقل ۱۰٬۰۰۰ تومان)', 'error');
+                pzhToast(pzhStr('withdraw_amount'), 'error');
                 return;
             }
             var $btn = $form.find('button[type="submit"]').addClass('loading').prop('disabled', true);
@@ -1955,12 +2008,12 @@ $(document).ready(function () {
                         $withdrawModal.hide();
                         loadDashSection('wallet', {}, false);
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت درخواست برداشت.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('withdraw_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -1989,7 +2042,7 @@ $(document).ready(function () {
             e.preventDefault();
             var amount = parseInt($('#dash-wallet-amount').val(), 10);
             if (!amount || amount < 10000) {
-                pzhToast('مبلغ شارژ را وارد کنید. (حداقل ۱۰٬۰۰۰ تومان)', 'error');
+                pzhToast(pzhStr('charge_amount'), 'error');
                 return;
             }
             var $btn = $(this).find('button[type="submit"]').addClass('loading').prop('disabled', true);
@@ -2001,15 +2054,15 @@ $(document).ready(function () {
                 success: function (resp) {
                     $btn.removeClass('loading').prop('disabled', false);
                     if (resp && resp.success && resp.data.redirect) {
-                        pzhToast(resp.data.message || 'در حال انتقال به درگاه پرداخت...');
+                        pzhToast(resp.data.message || pzhStr('redirecting_gateway'));
                         window.location.href = resp.data.redirect;
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در اتصال به درگاه پرداخت.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('payment_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.removeClass('loading').prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -2074,7 +2127,7 @@ $(document).ready(function () {
                 },
                 error: function () {
                     $results.removeClass('loading');
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         }
@@ -2129,12 +2182,12 @@ $(document).ready(function () {
                         pzhToast(resp.data.message);
                         $input.val('');
                     } else {
-                        pzhToast((resp && resp.data && resp.data.message) || 'خطا در ثبت عضویت.', 'error');
+                        pzhToast((resp && resp.data && resp.data.message) || pzhStr('newsletter_error'), 'error');
                     }
                 },
                 error: function () {
                     $btn.prop('disabled', false);
-                    pzhToast('خطا در ارتباط با سرور.', 'error');
+                    pzhToast(pzhStr('server_error'), 'error');
                 }
             });
         });
@@ -2212,16 +2265,16 @@ $(document).ready(function () {
 
         if (compareList.indexOf(productId) === -1) {
             if (compareList.length >= 4) {
-                pzhToast('حداکثر ۴ محصول قابل مقایسه است.', 'error');
+                pzhToast(pzhStr('compare_limit'), 'error');
                 return;
             }
             compareList.push(productId);
             $btn.addClass('active');
-            pzhToast('محصول به لیست مقایسه اضافه شد.');
+            pzhToast(pzhStr('compare_added'));
         } else {
             compareList = compareList.filter(function (id) { return id !== productId; });
             $btn.removeClass('active');
-            pzhToast('محصول از لیست مقایسه حذف شد.');
+            pzhToast(pzhStr('compare_removed'));
         }
 
         try {

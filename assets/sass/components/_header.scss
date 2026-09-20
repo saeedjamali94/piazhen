@@ -39,13 +39,18 @@
         gap: 20px;
         // All vertical space on top — the mega underline lands at the header's bottom edge
         padding: 26px 0 0;
+        justify-content: space-between;
     }
 
     .logo {
         flex: 0 0 auto;
 
         a {
-            display: inline-flex;
+            .heading-text {
+                font-size: 18px;
+                color: $siteOrange;
+                line-height: 6px;
+            }
         }
 
         img {
@@ -79,7 +84,6 @@
     position: relative;
     width: 300px;
     flex-shrink: 0;
-    margin-inline-start: auto;
 
     .pzh_search_box {
         width: 100%;
@@ -402,6 +406,14 @@
     }
 }
 
+// Nav menu item icon (Font Awesome)
+.menu-icon {
+    font-size: 0.9em;
+    width: 1.2em;
+    text-align: center;
+    flex-shrink: 0;
+}
+
 // ============================================================================
 // Mega Menu (design: container-wide white panel, 4 text columns)
 // ============================================================================
@@ -462,7 +474,9 @@
 
     // Category header: bold dark
     &__header {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-size: 16px;
         font-weight: 700;
         color: #121212;

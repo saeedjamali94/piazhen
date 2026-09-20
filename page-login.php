@@ -35,9 +35,9 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
 <main class="pzh-auth-page" data-auth-page="1">
 
     <!-- Cover side (60.5% width per the mockup, full-bleed) -->
-    <div class="pzh-auth-cover" style="background-image:url('<?php echo esc_url(PZH_THEME_URI . '/assets/images/login-cover.png'); ?>');">
+    <div class="pzh-auth-cover" style="background-image:url('<?php echo esc_url(pzh_login_cover_url()); ?>');">
         <img class="pzh-auth-cover__logo"
-             src="<?php echo esc_url(PZH_THEME_URI . '/assets/images/logo.png'); ?>"
+             src="<?php echo esc_url(pzh_logo_url()); ?>"
              alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
     </div>
 
@@ -54,7 +54,7 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
                 </p>
 
                 <input type="tel" id="auth-phone" class="auth-phone-field"
-                       placeholder="۰۹" maxlength="13" inputmode="numeric" autocomplete="tel" dir="ltr">
+                       placeholder="<?php esc_attr_e('۰۹', 'piazhen'); ?>" maxlength="13" inputmode="numeric" autocomplete="tel" dir="ltr">
 
                 <div class="auth-error" id="auth-error-phone"></div>
 
@@ -155,7 +155,7 @@ $redirect_to = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash($_GET['redir
             <!-- Logo pinned to the card bottom (per the mockup) -->
             <div class="pzh-auth-card__logo">
                 <a href="<?php echo esc_url(SITE_URL); ?>">
-                    <img src="<?php echo esc_url(PZH_THEME_URI . '/assets/images/logo.png'); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
+                    <img src="<?php echo esc_url(pzh_logo_url()); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
                 </a>
             </div>
 

@@ -35,8 +35,11 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
 
             <!-- Logo -->
             <div class="logo">
-                <a href="<?= SITE_URL ?>">
-                    <img src="<?= PZH_THEME_URI ?>/assets/images/logo.png" alt="<?= esc_attr($site_title); ?>">
+                <a href="<?= SITE_URL ?>" class="d-flex flex-column">
+                    <img src="<?php echo esc_url(pzh_logo_url()); ?>" alt="<?= esc_attr($site_title); ?>">
+                    <h1 class="heading-text">
+                        لوازم آرایشی برقی پیاژن
+                    </h1>
                 </a>
             </div>
 

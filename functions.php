@@ -16,6 +16,9 @@ define('PZH_THEME_URI', get_template_directory_uri());
 define('SPRITE_URL', PZH_THEME_URI . '/assets/images/sprite.svg');
 define('SITE_URL', get_site_url());
 
+// Load site settings (admin panel + helper functions)
+require get_template_directory() . '/inc/settings.php';
+
 // ============================================================================
 // Theme Setup
 // ============================================================================
@@ -95,16 +98,98 @@ function piazhen_scripts() {
     wp_localize_script('piazhen-js', 'pzh_options', array(
         'theme_url'  => PZH_THEME_URI,
         'ajax_url'   => admin_url('admin-ajax.php'),
-        'sprite_url' => SPRITE_URL,
+        'sprite_url' => pzh_sprite_url(),
         'site_url'   => SITE_URL,
         'nonce'      => wp_create_nonce('pzh_ajax_nonce'),
         'is_rtl'     => is_rtl(),
         'neshan_key' => pzh_neshan_api_key(),
-        'map_center' => apply_filters('pzh_map_center', array(35.7219, 51.3347)), // Tehran
-        'map_zoom'   => apply_filters('pzh_map_zoom', 12),
+        'map_center' => apply_filters('pzh_map_center', array(pzh_map_defaults()['lat'], pzh_map_defaults()['lng'])),
+        'map_zoom'   => apply_filters('pzh_map_zoom', pzh_map_defaults()['zoom']),
+        'map_tiles'  => pzh_map_defaults()['tiles'],
+        'hui'        => pzh_js_strings(),
     ));
 }
 add_action('wp_enqueue_scripts', 'piazhen_scripts');
+
+// ============================================================================
+// Nav Menu Item Icon (Admin)
+// ============================================================================
+
+/**
+ * Enqueue Font Awesome on nav-menus admin page for icon preview
+ */
+function pzh_admin_menu_icon_assets($hook) {
+    if ('nav-menus.php' !== $hook) return;
+    wp_enqueue_style('piazhen-font-awesome', PZH_THEME_URI . '/assets/font-icons/css/all.min.css', array(), '7.3.1');
+    add_action('admin_print_footer_scripts', 'pzh_menu_icon_admin_js');
+}
+add_action('admin_enqueue_scripts', 'pzh_admin_menu_icon_assets');
+
+/**
+ * Add Font Awesome icon text field to each menu item in Appearance → Menus
+ */
+function pzh_menu_item_icon_field($item_id, $item, $depth, $args) {
+    $icon_class = get_post_meta($item_id, '_menu_item_icon', true);
+    ?>
+    <p class="field-icon description description-wide">
+        <label for="menu-item-icon-<?php echo esc_attr($item_id); ?>">
+            <?php esc_html_e('Icon (Font Awesome class)', 'piazhen'); ?><br>
+            <input type="text"
+                   id="menu-item-icon-<?php echo esc_attr($item_id); ?>"
+                   class="widefat menu-item-icon-input"
+                   name="menu-item-icon[<?php echo esc_attr($item_id); ?>]"
+                   value="<?php echo esc_attr($icon_class); ?>"
+                   placeholder="<?php echo esc_attr('e.g. fa-solid fa-shirt'); ?>"
+                   data-item-id="<?php echo esc_attr($item_id); ?>">
+            <span class="menu-icon-preview" id="menu-icon-preview-<?php echo esc_attr($item_id); ?>">
+                <?php if ($icon_class): ?>
+                    <i class="<?php echo esc_attr($icon_class); ?>"></i>
+                <?php endif; ?>
+            </span>
+        </label>
+    </p>
+    <?php
+}
+add_action('wp_nav_menu_item_custom_fields', 'pzh_menu_item_icon_field', 10, 4);
+
+/**
+ * Save menu item icon post meta on menu update
+ */
+function pzh_save_menu_item_icon($menu_id, $menu_item_db_id, $args) {
+    if (isset($_POST['menu-item-icon'][$menu_item_db_id])) {
+        $icon = sanitize_text_field(wp_unslash($_POST['menu-item-icon'][$menu_item_db_id]));
+        if (!empty($icon)) {
+            update_post_meta($menu_item_db_id, '_menu_item_icon', $icon);
+        } else {
+            delete_post_meta($menu_item_db_id, '_menu_item_icon');
+        }
+    }
+}
+add_action('wp_update_nav_menu_item', 'pzh_save_menu_item_icon', 10, 3);
+
+/**
+ * Live icon preview inline JS + CSS for the menu editor
+ */
+function pzh_menu_icon_admin_js() {
+    ?>
+    <script>
+    (function($) {
+        $(document).on('input', '.menu-item-icon-input', function() {
+            var $input = $(this);
+            var itemId = $input.data('item-id');
+            var $preview = $('#menu-icon-preview-' + itemId);
+            var iconClass = $input.val().trim();
+            $preview.html(iconClass ? '<i class="' + iconClass + '"></i>' : '');
+        });
+    })(jQuery);
+    </script>
+    <style>
+    .menu-icon-preview { margin-inline-start: 8px; font-size: 18px; color: #555; vertical-align: middle; }
+    .menu-icon-preview i { width: 20px; text-align: center; }
+    .field-icon { clear: both; margin-top: 8px; }
+    </style>
+    <?php
+}
 
 // ============================================================================
 // Helper Functions
@@ -303,7 +388,7 @@ function pzh_hero_banners() {
                     __('ظاهر جذاب، تیپی تازه', 'piazhen'),
                     __('همراه همیشگی آقایان خوش‌تیپ', 'piazhen'),
                 ),
-                'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
+                'image'    => pzh_setting_image('images', 'hero_slide'),
                 'link'     => $shop_url,
                 'cta'      => __('مشاهده محصولات', 'piazhen'),
             ),
@@ -313,7 +398,7 @@ function pzh_hero_banners() {
                     __('قدرت و دقت در یک دستگاه', 'piazhen'),
                     __('مناسب آرایشگاه و مصارف خانگی', 'piazhen'),
                 ),
-                'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
+                'image'    => pzh_setting_image('images', 'hero_slide'),
                 'link'     => $shop_url,
                 'cta'      => __('مشاهده محصولات', 'piazhen'),
             ),
@@ -323,20 +408,20 @@ function pzh_hero_banners() {
                     __('پوستی صاف و لطیف', 'piazhen'),
                     __('بدون درد و سوزش', 'piazhen'),
                 ),
-                'image'    => PZH_THEME_URI . '/assets/images/cover1.png',
+                'image'    => pzh_setting_image('images', 'hero_slide'),
                 'link'     => $shop_url,
                 'cta'      => __('مشاهده محصولات', 'piazhen'),
             ),
         ),
         // Two stacked photo tiles (left column)
         'side_cards' => array(
-            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/image.png',  'link' => $shop_url),
-            array('title' => __('اپیلاتور', 'piazhen'),          'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => pzh_setting_image('images', 'hero_feature'), 'link' => $shop_url),
+            array('title' => __('اپیلاتور', 'piazhen'),          'image' => pzh_setting_image('images', 'hero_card2'),   'link' => $shop_url),
         ),
         // Three photo tiles (bottom row)
         'bottom_cards' => array(
-            array('title' => __('سایر محصولات', 'piazhen'),  'image' => PZH_THEME_URI . '/assets/images/card3.png', 'link' => $shop_url),
-            array('title' => __('حالت دهنده مو', 'piazhen'), 'image' => PZH_THEME_URI . '/assets/images/card2.png', 'link' => $shop_url),
+            array('title' => __('سایر محصولات', 'piazhen'),  'image' => pzh_setting_image('images', 'hero_card3'), 'link' => $shop_url),
+            array('title' => __('حالت دهنده مو', 'piazhen'), 'image' => pzh_setting_image('images', 'hero_card2'), 'link' => $shop_url),
         ),
     );
 
@@ -1717,7 +1802,13 @@ add_action('init', 'pzh_force_ship_to_billing_only');
  * (raster tiles are public); only reverse geocoding/search is skipped.
  */
 function pzh_neshan_api_key() {
-    return apply_filters('pzh_neshan_api_key', defined('PZH_NESHAN_API_KEY') ? PZH_NESHAN_API_KEY : '');
+    // Constant wins, then site setting, then empty fallback
+    if (defined('PZH_NESHAN_API_KEY') && PZH_NESHAN_API_KEY) {
+        $key = PZH_NESHAN_API_KEY;
+    } else {
+        $key = pzh_setting('map', 'neshan_key');
+    }
+    return apply_filters('pzh_neshan_api_key', $key);
 }
 
 /**
@@ -1771,7 +1862,7 @@ function pzh_reverse_geocode() {
 
     // No Neshan key: fall back to Nominatim (OpenStreetMap, free, keyless)
     if (!$key) {
-        $url  = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' . $lat . '&lon=' . $lng . '&accept-language=fa';
+        $url  = pzh_setting('map', 'nominatim') . '?format=jsonv2&lat=' . $lat . '&lon=' . $lng . '&accept-language=fa';
         $resp = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array('User-Agent' => 'Piazhen-Theme/1.0 (localhost)'),
@@ -1804,7 +1895,7 @@ function pzh_reverse_geocode() {
         ));
     }
 
-    $url = 'https://api.neshan.org/v5/reverse?lat=' . $lat . '&lng=' . $lng;
+    $url = pzh_setting('map', 'neshan_url') . '?lat=' . $lat . '&lng=' . $lng;
     $resp = wp_remote_get($url, array(
         'headers' => array('Api-Key' => $key),
         'timeout' => 10,
@@ -1854,11 +1945,12 @@ add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_f
  * Melipayamak credentials (override with constants or the pzh_sms_credentials filter)
  */
 function pzh_sms_credentials() {
+    $sms_settings = pzh_settings('sms');
     return apply_filters('pzh_sms_credentials', array(
-        'username' => defined('PZH_SMS_USERNAME') ? PZH_SMS_USERNAME : '09127772167',
-        'password' => defined('PZH_SMS_PASSWORD') ? PZH_SMS_PASSWORD : 'aa601577-a7ad-436d-9d42-4a2de9bfd2de',
-        'sender'   => defined('PZH_SMS_SENDER') ? PZH_SMS_SENDER : '50002710072167',
-        'pattern'  => defined('PZH_SMS_PATTERN') ? PZH_SMS_PATTERN : '186253',
+        'username' => defined('PZH_SMS_USERNAME') ? PZH_SMS_USERNAME : $sms_settings['sms_username'],
+        'password' => defined('PZH_SMS_PASSWORD') ? PZH_SMS_PASSWORD : $sms_settings['sms_password'],
+        'sender'   => defined('PZH_SMS_SENDER') ? PZH_SMS_SENDER : $sms_settings['sms_sender'],
+        'pattern'  => defined('PZH_SMS_PATTERN') ? PZH_SMS_PATTERN : $sms_settings['sms_pattern'],
     ));
 }
 
@@ -3522,6 +3614,17 @@ function pzh_primary_menu_fallback() {
     ));
 }
 
+/**
+ * Get icon HTML for a menu item (Font Awesome <i> tag)
+ */
+function pzh_get_menu_item_icon_html($item_id) {
+    $icon_class = get_post_meta($item_id, '_menu_item_icon', true);
+    if (!empty($icon_class)) {
+        return '<i class="menu-icon ' . esc_attr($icon_class) . '"></i>';
+    }
+    return '';
+}
+
 class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
 
     public $menu_id = 0;
@@ -3558,6 +3661,7 @@ class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
 
         $item_output = $args->before;
         $item_output .= '<a' . $attributes . '>';
+        $item_output .= pzh_get_menu_item_icon_html($item->ID);
         $item_output .= $args->link_before . apply_filters('the_title', $item->title, $item->ID) . $args->link_after;
         // Arrow only for regular dropdowns — the design shows no chevron on the mega trigger
         if ($has_children && !$is_mega) {
@@ -3700,6 +3804,7 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
                 <div class="mega-menu__col">
                     <?php foreach ($column as $cat): ?>
                         <a class="mega-menu__header" href="<?php echo esc_url($cat['item']->url); ?>">
+                            <?php echo pzh_get_menu_item_icon_html($cat['item']->ID); ?>
                             <?php echo esc_html($cat['item']->title); ?>
                         </a>
                         <?php if (!empty($cat['subs'])): ?>

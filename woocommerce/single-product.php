@@ -65,7 +65,8 @@ while (have_posts()): the_post();
     }
     $faqs            = pzh_get_product_faqs($product_id);
     $related_ids     = pzh_get_related_products($product_id, 10);
-    $whatsapp_url    = 'https://wa.me/?text=' . urlencode($product->get_name() . ' - ' . get_permalink($product_id));
+    $whatsapp_number = pzh_whatsapp_number();
+    $whatsapp_url    = ($whatsapp_number ? 'https://wa.me/' . $whatsapp_number : 'https://wa.me/') . '?text=' . urlencode($product->get_name() . ' - ' . get_permalink($product_id));
     $is_variable     = $product->is_type('variable');
     $variation_picker = $is_variable ? pzh_get_variation_picker_data($product) : array();
     $can_purchase    = pzh_variable_has_stock($product);
@@ -180,11 +181,11 @@ while (have_posts()): the_post();
                             // Quick info panels: brand, product type (category), then specs — up to 4
                             $panel_pool = array();
                             if ($brand_name) {
-                                $panel_pool['برند'] = $brand_name;
+                                $panel_pool[__('برند', 'piazhen')] = $brand_name;
                             }
                             $product_cats = get_the_terms($product_id, 'product_cat');
                             if ($product_cats && !is_wp_error($product_cats)) {
-                                $panel_pool['نوع محصول'] = $product_cats[0]->name;
+                                $panel_pool[__('نوع محصول', 'piazhen')] = $product_cats[0]->name;
                             }
                             if (!empty($excerpt_specs)) {
                                 // The excerpt's specs table is the panel list itself (all rows)

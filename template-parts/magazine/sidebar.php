@@ -9,11 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$socials = array(
-    'instagram' => 'https://instagram.com/piazhen',
-    'telegram'  => 'https://t.me/piazhen',
-    'whatsapp'  => 'https://wa.me/989127772167',
-);
+$socials = pzh_social_links();
 ?>
 <aside class="mag-sidebar">
 

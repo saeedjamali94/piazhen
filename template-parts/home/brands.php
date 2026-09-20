@@ -7,16 +7,14 @@ $brands = pzh_get_brands();
 
 // If no brands from taxonomy, show placeholder brands
 if (empty($brands)) {
-    $brands = array(
-        array('name' => 'برند ۱', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۲', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۳', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۴', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۵', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۶', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۷', 'image' => '', 'link' => '#'),
-        array('name' => 'برند ۸', 'image' => '', 'link' => '#'),
-    );
+    $brands = array();
+    for ($i = 1; $i <= 8; $i++) {
+        $brands[] = array(
+            'name'  => sprintf(__('برند %s', 'piazhen'), pzh_fa_num($i)),
+            'image' => '',
+            'link'  => '#',
+        );
+    }
 }
 ?>
 <section class="home_brands py-5">
