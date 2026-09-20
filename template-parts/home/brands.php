@@ -8,14 +8,14 @@ $brands = pzh_get_brands();
 // If no brands from taxonomy, show placeholder brands
 if (empty($brands)) {
     $brands = array(
-        array('name' => 'برند ۱', 'image' => PZH_THEME_URI.'/assets/images/brand1.png', 'link' => '#'),
-        array('name' => 'برند ۲', 'image' => PZH_THEME_URI.'/assets/images/brand2.png', 'link' => '#'),
-        array('name' => 'برند ۳', 'image' => PZH_THEME_URI.'/assets/images/brand3.png', 'link' => '#'),
-        array('name' => 'برند ۴', 'image' => PZH_THEME_URI.'/assets/images/brand3.png', 'link' => '#'),
-        array('name' => 'برند ۵', 'image' => PZH_THEME_URI.'/assets/images/brand2.png', 'link' => '#'),
-        array('name' => 'برند ۶', 'image' => PZH_THEME_URI.'/assets/images/brand1.png', 'link' => '#'),
-        array('name' => 'برند ۷', 'image' => PZH_THEME_URI.'/assets/images/brand2.png', 'link' => '#'),
-        array('name' => 'برند ۸', 'image' => PZH_THEME_URI.'/assets/images/brand3.png', 'link' => '#'),
+        array('name' => 'برند ۱', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۲', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۳', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۴', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۵', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۶', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۷', 'image' => '', 'link' => '#'),
+        array('name' => 'برند ۸', 'image' => '', 'link' => '#'),
     );
 }
 ?>

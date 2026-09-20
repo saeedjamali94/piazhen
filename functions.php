@@ -238,7 +238,7 @@ function pzh_get_brands_category() {
  * Get brand terms. Prefers the product_brand taxonomy; falls back to the
  * children of the "برند ها" product category (how this site stores brands).
  */
-function pzh_get_brand_terms($hide_empty = true) {
+function pzh_get_brand_terms($hide_empty = false) {
     if (taxonomy_exists('product_brand')) {
         $terms = get_terms(array('taxonomy' => 'product_brand', 'hide_empty' => $hide_empty));
         if (!empty($terms) && !is_wp_error($terms)) return $terms;
