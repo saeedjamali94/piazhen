@@ -33,14 +33,6 @@ $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_U
                     <?php endwhile; ?>
                 </div>
             </div>
-
-            <!-- Navigation Arrows -->
-            <button class="most-selling-prev swiper-nav-btn swiper-nav-btn--prev" aria-label="<?php _e('قبلی', 'piazhen'); ?>">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
-            <button class="most-selling-next swiper-nav-btn swiper-nav-btn--next" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
         </div>
     </div>
 </section>
