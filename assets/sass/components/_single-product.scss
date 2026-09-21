@@ -614,6 +614,75 @@
 }
 
 // ============================================================================
+// Single Product Quantity Selector
+// Replaces the add-to-cart button while the product (or selected variation)
+// is in the cart — same green pill shape as the CTA it swaps with.
+// ============================================================================
+
+.single-qty-box {
+    height: 50px;
+    width: 260px;
+    max-width: 100%;
+    margin-top: auto;
+    margin-inline-start: auto; // same corner as the add button (RTL: left)
+    display: flex;
+    align-items: center;
+    border: 2px solid #80D388;
+    border-radius: 999px;
+    overflow: hidden;
+    background: $white;
+
+    &.loading {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+
+    &__btn {
+        flex: 0 0 54px;
+        height: 100%;
+        border: none;
+        background: transparent;
+        color: #38A05C;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: rgba(#80D388, 0.18);
+        }
+
+        &:active {
+            background: rgba(#80D388, 0.32);
+        }
+    }
+
+    &__input {
+        flex: 1;
+        height: 100%;
+        min-width: 0;
+        border: none;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 800;
+        font-family: "YekanBakh", sans-serif;
+        color: #121212;
+        background: transparent;
+
+        &:focus {
+            outline: none;
+        }
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+}
+
+// ============================================================================
 // Tabs Navigation
 // ============================================================================
 

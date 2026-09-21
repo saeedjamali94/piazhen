@@ -71,6 +71,20 @@ while (have_posts()): the_post();
     $variation_picker = $is_variable ? pzh_get_variation_picker_data($product) : array();
     $can_purchase    = pzh_variable_has_stock($product);
 
+    // Is the product (or its default variation) already in the cart?
+    // If so, show the quantity selector instead of the add-to-cart button.
+    $default_variation_id = 0;
+    if ($is_variable) {
+        $default_attrs = $product->get_default_attributes();
+        if (!empty($default_attrs)) {
+            $data_store = WC_Data_Store::load('product');
+            $default_variation_id = intval($data_store->find_matching_product_variation($product, $default_attrs));
+        }
+    }
+    $initial_cart_item = pzh_find_cart_item($product_id, $is_variable ? $default_variation_id : 0);
+    $initial_cart_qty  = $initial_cart_item ? $initial_cart_item['quantity'] : 0;
+    $initial_cart_key  = $initial_cart_item ? $initial_cart_item['key'] : '';
+
     // Variable products show a single entry price (as in the mockup); the
     // exact variation price replaces it via AJAX once options are selected.
     $min_variation_price = $is_variable ? $product->get_variation_price('min') : '';
@@ -302,9 +316,28 @@ while (have_posts()): the_post();
                             <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                                     data-product-id="<?php echo $product_id; ?>"
                                     <?php echo $is_variable ? 'data-variable="1"' : ''; ?>
-                                    <?php echo $can_purchase ? '' : 'disabled'; ?>>
+                                    <?php echo $can_purchase ? '' : 'disabled'; ?>
+                                    <?php echo ($can_purchase && $initial_cart_qty > 0) ? 'style="display:none;"' : ''; ?>>
                                 <?php echo $can_purchase ? __('افزودن به سبد خرید', 'piazhen') : __('ناموجود', 'piazhen'); ?>
                             </button>
+
+                            <!-- Quantity selector — replaces the button while the product
+                                 (or the selected variation) is in the cart -->
+                            <div class="single-qty-box"
+                                 data-product-id="<?php echo $product_id; ?>"
+                                 data-variation-id="<?php echo $default_variation_id; ?>"
+                                 data-cart-key="<?php echo esc_attr($initial_cart_key); ?>"
+                                 <?php echo ($can_purchase && $initial_cart_qty > 0) ? '' : 'style="display:none;"'; ?>>
+                                <button type="button" class="single-qty-box__btn single-qty-box__minus" aria-label="<?php esc_attr_e('کمتر', 'piazhen'); ?>">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </button>
+                                <input type="number" class="single-qty-box__input"
+                                       value="<?php echo $initial_cart_qty > 0 ? $initial_cart_qty : 1; ?>"
+                                       min="1" max="99">
+                                <button type="button" class="single-qty-box__btn single-qty-box__plus" aria-label="<?php esc_attr_e('بیشتر', 'piazhen'); ?>">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
 

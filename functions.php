@@ -1133,14 +1133,33 @@ function pzh_add_to_cart() {
         <?php
         $cart_badge = ob_get_clean();
 
+        $cart_item = WC()->cart->get_cart_item($cart_item_key);
+
         wp_send_json_success(array(
-            'message'    => __('محصول به سبد خرید اضافه شد.', 'piazhen'),
-            'cart_count' => WC()->cart->get_cart_contents_count(),
-            'cart_badge' => $cart_badge,
+            'message'       => __('محصول به سبد خرید اضافه شد.', 'piazhen'),
+            'cart_count'    => WC()->cart->get_cart_contents_count(),
+            'cart_badge'    => $cart_badge,
+            'cart_item_key' => $cart_item_key,
+            'item_qty'      => $cart_item ? $cart_item['quantity'] : $quantity,
         ));
     } else {
         wp_send_json_error(array('message' => __('خطا در افزودن به سبد خرید.', 'piazhen')));
     }
+}
+
+/**
+ * Find a cart item by product + variation (variation_id 0 = simple product).
+ * Returns array('key' => ..., 'quantity' => ...) or null.
+ */
+function pzh_find_cart_item($product_id, $variation_id = 0) {
+    if (!WC()->cart || WC()->cart->is_empty()) return null;
+
+    foreach (WC()->cart->get_cart() as $key => $item) {
+        if ((int) $item['product_id'] === (int) $product_id && (int) $item['variation_id'] === (int) $variation_id) {
+            return array('key' => $key, 'quantity' => $item['quantity']);
+        }
+    }
+    return null;
 }
 add_action('wp_ajax_pzh_add_to_cart', 'pzh_add_to_cart');
 add_action('wp_ajax_nopriv_pzh_add_to_cart', 'pzh_add_to_cart');
@@ -1285,12 +1304,17 @@ function pzh_get_variation_match() {
         // Variation image (falls back to the parent image)
         $image = $variation->get_image_id() ? wp_get_attachment_image_url($variation->get_image_id(), 'woocommerce_single') : '';
 
+        // Is this variation already in the cart? (drives the add-button vs qty-selector switch)
+        $cart_item = pzh_find_cart_item($product_id, $variation_id);
+
         wp_send_json_success(array(
-            'variation_id' => $variation_id,
-            'price_html'   => $variation->get_price_html(),
-            'availability' => $availability,
-            'in_stock'     => $variation->is_in_stock(),
-            'image'        => $image,
+            'variation_id'  => $variation_id,
+            'price_html'    => $variation->get_price_html(),
+            'availability'  => $availability,
+            'in_stock'      => $variation->is_in_stock(),
+            'image'         => $image,
+            'cart_qty'      => $cart_item ? $cart_item['quantity'] : 0,
+            'cart_item_key' => $cart_item ? $cart_item['key'] : '',
         ));
     } else {
         wp_send_json_error(array('message' => __('ترکیب انتخاب شده موجود نیست.', 'piazhen')));

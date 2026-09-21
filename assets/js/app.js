@@ -1234,6 +1234,7 @@ $(document).ready(function () {
                 if (basePriceHtml && $priceBox.length) $priceBox.html(basePriceHtml);
                 if (basePriceHtml && $stickyPrice.length) $stickyPrice.html(basePriceHtml);
                 $status.html('');
+                pzhShowSingleAddButton();
                 return;
             }
 
@@ -1272,10 +1273,17 @@ $(document).ready(function () {
                             $mainImage.setAttribute('data-zoom', resp.data.image);
                             $thumbsContainer.find('.product-gallery__thumb').removeClass('active');
                         }
+                        // Already in the cart? Show the quantity selector instead of the button
+                        if (resp.data.cart_qty > 0) {
+                            pzhShowSingleQtyBox(variationProductId, resp.data.variation_id, resp.data.cart_item_key, resp.data.cart_qty);
+                        } else {
+                            pzhShowSingleAddButton();
+                        }
                     } else {
                         window.pzhVarState.variationId = 0;
                         $('#selected-variation-id').val('');
                         $status.html('<span class="text-danger">' + ((resp && resp.data && resp.data.message) || pzhStr('combination_unavail')) + '</span>');
+                        pzhShowSingleAddButton();
                     }
                 },
                 error: function () {
@@ -1332,6 +1340,10 @@ $(document).ready(function () {
                         pzhRefreshMiniCart();
                     }
                     $(document.body).trigger('added_to_cart');
+                    // Swap the button for the quantity selector
+                    if (response.data.cart_item_key) {
+                        pzhShowSingleQtyBox(productId, variationId, response.data.cart_item_key, response.data.item_qty);
+                    }
                 } else {
                     pzhToast((response && response.data && response.data.message) || pzhStr('add_to_cart_error'), 'error');
                 }
@@ -1341,6 +1353,106 @@ $(document).ready(function () {
                 pzhToast(pzhStr('server_error'), 'error');
             }
         });
+    });
+
+    // ========================================================================
+    // Single Product Quantity Selector (replaces the add button in the cart state)
+    // ========================================================================
+    function pzhShowSingleQtyBox(productId, variationId, cartKey, qty) {
+        var $box = $('.single-qty-box');
+        if (!$box.length) return;
+        $box.data('product-id', productId)
+            .data('variation-id', variationId)
+            .data('cart-key', cartKey)
+            .find('.single-qty-box__input').val(qty || 1);
+        $box.show();
+        $('.add-to-cart-single').hide();
+    }
+
+    function pzhShowSingleAddButton() {
+        $('.single-qty-box').hide();
+        $('.add-to-cart-single').show();
+    }
+
+    function pzhSetSingleQtyAjax(cartKey, qty, $box) {
+        if (!cartKey) return;
+        $box.addClass('loading');
+        $.ajax({
+            url: pzh_options.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pzh_cart_ajax',
+                cart_action: 'set_qty',
+                cart_key: cartKey,
+                qty: qty,
+                nonce: pzh_options.nonce
+            },
+            success: function (resp) {
+                $box.removeClass('loading');
+                if (resp && resp.success) {
+                    pzhUpdateCartBadge(resp.count);
+                    if ($('.cart-dropdown').hasClass('active')) pzhRefreshMiniCart();
+                    $(document.body).trigger('updated_cart_totals');
+                } else {
+                    pzhToast((resp && resp.data && resp.data.message) || pzhStr('server_error'), 'error');
+                }
+            },
+            error: function () {
+                $box.removeClass('loading');
+                pzhToast(pzhStr('server_error'), 'error');
+            }
+        });
+    }
+
+    // +/- buttons
+    $(document).on('click', '.single-qty-box__btn', function () {
+        var $box   = $(this).closest('.single-qty-box');
+        var $input = $box.find('.single-qty-box__input');
+        var cartKey = $box.data('cart-key');
+        var val    = parseInt($input.val(), 10) || 1;
+        var max    = parseInt($input.attr('max'), 10) || 99;
+        var next   = $(this).hasClass('single-qty-box__plus') ? val + 1 : val - 1;
+
+        // Removing the last unit removes the item from the cart
+        if (next < 1) {
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_cart_ajax',
+                    cart_action: 'remove',
+                    cart_key: cartKey,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    if (resp && resp.success) {
+                        pzhUpdateCartBadge(resp.count);
+                        if ($('.cart-dropdown').hasClass('active')) pzhRefreshMiniCart();
+                        $(document.body).trigger('removed_from_cart');
+                        pzhShowSingleAddButton();
+                    }
+                }
+            });
+            return;
+        }
+
+        if (next > max) next = max;
+        $input.val(next);
+        pzhSetSingleQtyAjax(cartKey, next, $box);
+    });
+
+    // Typing a quantity directly
+    $(document).on('change', '.single-qty-box__input', function () {
+        var $box  = $(this).closest('.single-qty-box');
+        var $input = $(this);
+        var val   = parseInt($input.val(), 10) || 0;
+        var max   = parseInt($input.attr('max'), 10) || 99;
+        if (val < 1) val = 1;
+        if (val > max) val = max;
+        $input.val(val);
+        pzhSetSingleQtyAjax($box.data('cart-key'), val, $box);
     });
 
     // ========================================================================
