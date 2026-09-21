@@ -1260,9 +1260,6 @@
     }
 
     li.is-open > .mob-toggle {
-        background: $siteYellow;
-        color: $textColor;
-
         .mob-toggle__icon {
             transform: rotate(180deg);
         }
