@@ -243,10 +243,6 @@ function pzh_get_product_card_html($product_id) {
             <a href="<?php echo get_permalink($product_id); ?>"><?php echo $product->get_name(); ?></a>
         </h3>
 
-        <div class="product-card__price">
-            <?php echo wc_price($product->get_price()); ?>
-        </div>
-
         <!-- Mobile bottom row: price + quick add-to-cart (hidden on desktop) -->
         <div class="product-card__bottom">
             <div class="product-card__price-row">
@@ -264,18 +260,21 @@ function pzh_get_product_card_html($product_id) {
                         aria-label="<?php _e('ناموجود', 'piazhen'); ?>"
                         title="<?php _e('ناموجود', 'piazhen'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <span class="product-card__add-text"><?php _e('ناموجود', 'piazhen'); ?></span>
                 </button>
             <?php elseif ($is_variable): ?>
                 <button type="button" class="product-card__add product-card__add-to-cart--variable"
                         data-product-id="<?php echo esc_attr($product_id); ?>"
                         aria-label="<?php _e('انتخاب و افزودن به سبد خرید', 'piazhen'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <span class="product-card__add-text"><?php echo wc_price($product->get_price()); ?></span>
                 </button>
             <?php else: ?>
                 <button type="button" class="product-card__add product-card__add-to-cart"
                         data-product-id="<?php echo esc_attr($product_id); ?>"
                         aria-label="<?php _e('افزودن به سبد خرید', 'piazhen'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <span class="product-card__add-text"><?php echo wc_price($product->get_price()); ?></span>
                 </button>
             <?php endif; ?>
         </div>

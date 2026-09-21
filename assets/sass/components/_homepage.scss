@@ -509,8 +509,68 @@
         display: none;
     }
 
+    // Desktop bottom row: green add-to-cart pill. The green price pill above
+    // already shows the price, so the price row stays hidden on desktop.
     &__bottom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 0 14px 2px;
+    }
+
+    &__price-row {
         display: none;
+    }
+
+    // Same green stadium pill style as &__price, so the price pill and the
+    // add-to-cart pill read as one visual family on desktop.
+    &__add {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: none;
+        border-radius: 999px;
+        background: #80D388;
+        color: #121212;
+        padding: 8px 26px;
+        font-family: "IRANSansWebFaNum", sans-serif;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.7;
+        cursor: pointer;
+        transition: background $transition-fast, transform $transition-fast;
+
+        svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        &:hover:not(:disabled) {
+            background: #6FC77E;
+        }
+
+        &:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        &:disabled {
+            background: #DCDCDC;
+            color: #8A8A8A;
+            cursor: not-allowed;
+        }
+
+        &.loading {
+            pointer-events: none;
+            opacity: 0.7;
+
+            svg {
+                animation: btnSpin 0.6s linear infinite;
+            }
+        }
     }
 }
 
@@ -543,6 +603,7 @@
         &__image {
             border-radius: 12px;
             background: #f5f6f8;
+            height: 200px;
 
             a {
                 padding: 6%;
@@ -656,6 +717,7 @@
             width: 38px;
             height: 38px;
             border-radius: 50%;
+            padding: 0;
             background: $siteYellow;
             border: none;
             display: flex;
@@ -688,6 +750,11 @@
                     animation: btnSpin 0.6s linear infinite;
                 }
             }
+        }
+
+        // Icon-only circle on mobile — the label belongs to the desktop pill
+        &__add-text {
+            display: none;
         }
     }
 }

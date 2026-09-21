@@ -181,9 +181,8 @@
 // ============================================================================
 
 .product-info {
-    // The mockup uses YekanBakh everywhere; the "Numbers" face renders Persian
-    // digits ~1.5x wider, so scope this column to YekanBakh explicitly.
-    font-family: "YekanBakh", sans-serif;
+    // The mockup uses IRANSansWebFaNum everywhere; scope this column to it explicitly.
+    font-family: "IRANSansWebFaNum", sans-serif;
 
     // Title: orange, bold, 33px
     &__title {
@@ -580,7 +579,7 @@
     border-radius: 999px;
     background: #80D388;
     color: #121212;
-    font-family: "YekanBakh", sans-serif;
+    font-family: "IRANSansWebFaNum", sans-serif;
     font-size: 16px;
     font-weight: 700;
     line-height: 1;
@@ -666,7 +665,7 @@
         text-align: center;
         font-size: 16px;
         font-weight: 800;
-        font-family: "YekanBakh", sans-serif;
+        font-family: "IRANSansWebFaNum", sans-serif;
         color: #121212;
         background: transparent;
 
