@@ -68,20 +68,29 @@ add_filter('formatted_woocommerce_price', 'pzh_fa_num', 10, 6);
 // ============================================================================
 // Enqueue Scripts & Styles
 // ============================================================================
-function piazhen_scripts() {
-    $version = wp_get_theme()->get('Version');
 
+/**
+ * Asset version: theme version + file mtime, so every edit to a local asset
+ * produces a new ?ver= query string and the browser never serves a stale
+ * cached copy (no hard refresh needed while developing).
+ */
+function pzh_asset_version($file) {
+    $mtime = @filemtime(PZH_THEME_DIR . $file);
+    return wp_get_theme()->get('Version') . ($mtime ? '-' . $mtime : '');
+}
+
+function piazhen_scripts() {
     // Styles
     wp_enqueue_style('swiper-css', PZH_THEME_URI . '/assets/css/swiper-bundle.min.css', array(), '12.1.3');
     wp_enqueue_style('piazhen-font-awesome', PZH_THEME_URI . '/assets/font-icons/css/all.min.css', array(), '7.3.1');
-    wp_enqueue_style('piazhen-main-style', PZH_THEME_URI . '/assets/css/styles.css', array('swiper-css'), $version);
+    wp_enqueue_style('piazhen-main-style', PZH_THEME_URI . '/assets/css/styles.css', array('swiper-css'), pzh_asset_version('/assets/css/styles.css'));
 
     // Scripts
     wp_enqueue_script('jquery');
     // Local Swiper (no CDN dependency — carousels must never break)
     wp_enqueue_script('swiper-js', PZH_THEME_URI . '/assets/js/swiper-bundle.min.js', array(), '12.1.3', true);
     wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.8', true);
-    wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), $version, true);
+    wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), pzh_asset_version('/assets/js/app.js'), true);
 
     // Checkout map (Neshan SDK with API key, or plain Leaflet + OSM fallback)
     if (is_checkout()) {

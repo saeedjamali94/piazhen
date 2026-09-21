@@ -6,16 +6,16 @@
 
 .siteFooter {
     background: #121212;
-    color: #8e8e8e;
+    color: #fff;
     padding: 37px 0 24px;
     font-size: 14px;
 
     a {
-        color: #8e8e8e;
+        color: #fff;
         transition: color $transition-fast;
 
         &:hover {
-            color: $white;
+            color: $siteOrange;
         }
     }
 }
@@ -63,7 +63,7 @@
         .footer-about-text {
             font-size: 14px;
             line-height: 1.75;
-            color: #8e8e8e;
+            color: #fff;
             text-align: justify;
             margin: 0;
         }
@@ -157,7 +157,7 @@
 
     &__icon {
         margin-left: 10px;
-        color: #8e8e8e;
+        color: #fff;
     }
 }
 

@@ -140,7 +140,7 @@ function pzhInitAddressMap(opts) {
     var $lat = $('#' + opts.latId);
     var $lng = $('#' + opts.lngId);
 
-    function placePin(latlng, animate) {
+    function placePin(latlng, animate, overwrite) {
         if (marker) {
             marker.setLatLng(latlng);
         } else {
@@ -169,29 +169,29 @@ function pzhInitAddressMap(opts) {
                     // آدرس — main address text
                     if (opts.addressFieldId) {
                         var $addr = $('#' + opts.addressFieldId);
-                        if ($addr.length && !$addr.val()) $addr.val(resp.data.address);
+                        if ($addr.length && (overwrite || !$addr.val())) $addr.val(resp.data.address);
                     }
 
                     // پلاک and واحد — filled separately when available
                     if (opts.plaqueFieldId && resp.data.plaque) {
                         var $plaque = $('#' + opts.plaqueFieldId);
-                        if ($plaque.length && !$plaque.val()) $plaque.val(resp.data.plaque);
+                        if ($plaque.length && (overwrite || !$plaque.val())) $plaque.val(resp.data.plaque);
                     }
                     if (opts.unitFieldId && resp.data.unit) {
                         var $unit = $('#' + opts.unitFieldId);
-                        if ($unit.length && !$unit.val()) $unit.val(resp.data.unit);
+                        if ($unit.length && (overwrite || !$unit.val())) $unit.val(resp.data.unit);
                     }
 
                     // شهر — text input
                     if (opts.cityFieldId && resp.data.city) {
                         var $city = $('#' + opts.cityFieldId);
-                        if ($city.length && !$city.val()) $city.val(resp.data.city);
+                        if ($city.length && (overwrite || !$city.val())) $city.val(resp.data.city);
                     }
 
                     // استان — select, matched by option text (PWS uses numeric codes)
                     if (opts.stateFieldId && resp.data.state) {
                         var $state = $('#' + opts.stateFieldId);
-                        if ($state.length && $state.is('select') && !$state.val()) {
+                        if ($state.length && $state.is('select') && (overwrite || !$state.val())) {
                             var wanted = resp.data.state.trim();
                             $state.find('option').each(function () {
                                 if ($(this).text().trim() === wanted) {
@@ -205,7 +205,7 @@ function pzhInitAddressMap(opts) {
                     // محله
                     if (opts.districtFieldId && resp.data.district) {
                         var $dist = $('#' + opts.districtFieldId);
-                        if ($dist.length && !$dist.val()) $dist.val(resp.data.district);
+                        if ($dist.length && (overwrite || !$dist.val())) $dist.val(resp.data.district);
                     }
                 } else {
                     $bar.html(pzhStr('location_set'));
@@ -218,7 +218,8 @@ function pzhInitAddressMap(opts) {
     }
 
     map.on('click', function (e) {
-        placePin(e.latlng, false);
+        // Explicit user click: always replace the address fields with the new location
+        placePin(e.latlng, false, true);
     });
 
     if ($lat.val() && $lng.val()) {
@@ -378,6 +379,10 @@ $(document).ready(function () {
     var $cartDropdown = $('.cart-dropdown');
 
     $cartIcon.on('click', function (e) {
+        // Let clicks on links inside the dropdown (cart/checkout buttons) work normally
+        if ($(e.target).closest('.cart-dropdown').length) {
+            return;
+        }
         e.preventDefault();
         $cartDropdown.toggleClass('active');
         // Refresh cart content each time it opens
