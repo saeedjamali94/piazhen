@@ -1022,25 +1022,62 @@ $(document).ready(function () {
     } // end typeof Swiper check
 
     // ========================================================================
-    // Mega Menu Interactions
+    // Mobile Navigation (drawer + accordion)
     // ========================================================================
-    // Desktop: pure CSS hover (see _header.scss). Mobile: click to toggle.
-    var $megaMenuItems = $('.main-menu .has-mega-menu, .main-menu .menu-item-has-children');
+    var $mobileNav = $('.mobileNav');
 
-    if ($(window).width() < 992) {
-        $megaMenuItems.on('click', '> a', function (e) {
-            e.preventDefault();
-            $(this).siblings('.mega-menu, .sub-menu').slideToggle(200);
-        });
+    function pzhOpenMobileMenu() {
+        $mobileNav.addClass('open');
+        $('body').addClass('menu-open');
     }
 
-    // ========================================================================
-    // Mobile Navigation
-    // ========================================================================
-    $('.menuBtn, .menuClose').on('click', function () {
-        $('.mobileNav').toggleClass('open');
-        $('body').toggleClass('menu-open');
+    function pzhCloseMobileMenu() {
+        $mobileNav.removeClass('open');
+        $('body').removeClass('menu-open');
+        // Reset the accordion so the drawer reopens from the top level
+        $mobileNav.find('li.is-open').removeClass('is-open');
+        $mobileNav.find('.mob-toggle').attr('aria-expanded', 'false');
+    }
+
+    $('.menuBtn').on('click', pzhOpenMobileMenu);
+    $mobileNav.on('click', '.menuClose', pzhCloseMobileMenu);
+
+    // Backdrop click closes the drawer (the fixed overlay belongs to body)
+    $(document).on('click', function (e) {
+        if (e.target === document.body && $('body').hasClass('menu-open')) {
+            pzhCloseMobileMenu();
+        }
     });
+
+    // ESC closes the drawer
+    $(document).on('keyup', function (e) {
+        if ((e.key === 'Escape' || e.key === 'Esc') && $('body').hasClass('menu-open')) {
+            pzhCloseMobileMenu();
+        }
+    });
+
+    // Accordion: the chevron expands the submenu; the label still navigates
+    $mobileNav.on('click', '.mob-toggle', function () {
+        var $toggle = $(this);
+        var $li     = $toggle.closest('li');
+        var open    = !$li.hasClass('is-open');
+
+        $li.toggleClass('is-open', open);
+        $toggle.attr('aria-expanded', open ? 'true' : 'false');
+
+        // Accordion feel: close siblings on the same level
+        if (open) {
+            $li.siblings('li.is-open').removeClass('is-open')
+                .find('> .mob-toggle').attr('aria-expanded', 'false');
+        }
+    });
+
+    // Resizing up to desktop while the drawer is open
+    $(window).on('resize', pzhDebounce(function () {
+        if ($(window).width() >= 992 && $('body').hasClass('menu-open')) {
+            pzhCloseMobileMenu();
+        }
+    }, 150));
 
     // ========================================================================
     // Footer Navigation Toggle (Mobile)

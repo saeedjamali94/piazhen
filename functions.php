@@ -3590,8 +3590,10 @@ remove_action('woocommerce_sidebar', 'woocommerce_get_sidebar', 10);
 /**
  * Primary menu fallback: use the first available menu (preferring one whose
  * name contains "هدر") when no menu is assigned to the 'primary' location.
+ *
+ * @param string $menu_class CSS class for the rendered <ul>.
  */
-function pzh_primary_menu_fallback() {
+function pzh_primary_menu_fallback($menu_class = 'main-menu') {
     $menus = wp_get_nav_menus();
     if (empty($menus)) return;
 
@@ -3608,9 +3610,9 @@ function pzh_primary_menu_fallback() {
 
     wp_nav_menu(array(
         'menu'       => $chosen,
-        'menu_class' => 'main-menu',
+        'menu_class' => $menu_class,
         'container'  => 'ul',
-        'walker'     => new PZH_Mega_Menu_Walker(),
+        'walker'     => 'mobile-menu' === $menu_class ? new PZH_Mobile_Menu_Walker() : new PZH_Mega_Menu_Walker(),
     ));
 }
 
@@ -3705,6 +3707,59 @@ class PZH_Mega_Menu_Walker extends Walker_Nav_Menu {
             return;
         }
         $output .= '</li>';
+    }
+}
+
+/**
+ * Mobile menu walker: plain nested accordion markup (no mega panels).
+ *
+ * Each sub-menu is wrapped in <div class="mob-sub__wrap"> inside the <ul>
+ * so CSS can animate the height (grid-template-rows 0fr → 1fr). Items with
+ * children get a dedicated chevron button next to the link — tapping the
+ * label navigates, tapping the chevron expands. Depth classes on the li
+ * and level classes on the sub <ul> let styles build hierarchy for menus
+ * with 3-4 levels.
+ */
+class PZH_Mobile_Menu_Walker extends Walker_Nav_Menu {
+
+    function start_lvl(&$output, $depth = 0, $args = array()) {
+        $lvl = $depth + 1;
+        $output .= '<ul class="sub-menu mob-sub mob-sub--lvl' . $lvl . '"><div class="mob-sub__wrap">';
+    }
+
+    function end_lvl(&$output, $depth = 0, $args = array()) {
+        $output .= '</div></ul>';
+    }
+
+    function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0) {
+        $classes      = empty($item->classes) ? array() : (array) $item->classes;
+        $has_children = in_array('menu-item-has-children', $classes);
+        $classes[]    = 'mob-depth-' . $depth;
+
+        $output .= '<li class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        $attributes  = '';
+        $attributes .= !empty($item->url) ? ' href="' . esc_url($item->url) . '"' : '';
+        $attributes .= !empty($item->target) ? ' target="' . esc_attr($item->target) . '"' : '';
+        $attributes .= !empty($item->xfn) ? ' rel="' . esc_attr($item->xfn) . '"' : '';
+
+        $item_output = $args->before;
+        $item_output .= '<a' . $attributes . '>';
+        $item_output .= pzh_get_menu_item_icon_html($item->ID);
+        $item_output .= '<span class="mob-label">';
+        $item_output .= $args->link_before . apply_filters('the_title', $item->title, $item->ID) . $args->link_after;
+        $item_output .= '</span>';
+        $item_output .= '</a>';
+
+        if ($has_children) {
+            $item_output .= '<button type="button" class="mob-toggle" aria-expanded="false" aria-label="' . esc_attr(sprintf(__('زیرمنوی %s', 'piazhen'), $item->title)) . '">';
+            $item_output .= '<svg class="mob-toggle__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+            $item_output .= '</button>';
+        }
+
+        $item_output .= $args->after;
+
+        $output .= apply_filters('walker_nav_menu_start_el', $item_output, $item, $depth, $args);
     }
 }
 
