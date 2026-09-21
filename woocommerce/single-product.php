@@ -113,9 +113,10 @@ while (have_posts()): the_post();
 
                         <!-- Action Buttons (favorite / compare / whatsapp) -->
                         <div class="product-gallery__actions">
-                            <button class="gallery-action-btn favorite-btn <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
+                            <button class="gallery-action-btn favorite-btn product-card__favorite position-relative <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
                                     data-product-id="<?php echo $product_id; ?>"
-                                    title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>">
+                                    title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>"
+                                    style="top: 0;right: 0">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                                 </svg>

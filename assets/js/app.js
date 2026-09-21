@@ -491,7 +491,6 @@ $(document).ready(function () {
                     } else {
                         $btn.removeClass('active');
                     }
-                    pzhToast(response.data.message);
                 }
             }
         });
@@ -950,8 +949,8 @@ $(document).ready(function () {
             slidesPerView: 1,
             spaceBetween: 16,
             loop: true,
+            dots: true,
             autoplay: { delay: 4000, disableOnInteraction: false },
-            navigation: { nextEl: '.most-selling-next', prevEl: '.most-selling-prev' },
             breakpoints: {
                 576:  { slidesPerView: 2 },
                 768:  { slidesPerView: 3 },
@@ -964,9 +963,9 @@ $(document).ready(function () {
         initSwiper('.newest-products-swiper', {
             slidesPerView: 2,
             spaceBetween: 16,
-            loop: false,
+            loop: true,
+            dots: true,
             autoplay: { delay: 5000, disableOnInteraction: false },
-            navigation: { nextEl: '.newest-next', prevEl: '.newest-prev' },
             grid: { rows: 2, fill: 'row' },
             breakpoints: {
                 0:   { slidesPerView: 1, grid: { rows: 2, fill: 'row' } },
@@ -978,9 +977,9 @@ $(document).ready(function () {
         initSwiper('.on-sale-swiper', {
             slidesPerView: 2,
             spaceBetween: 16,
-            loop: false,
+            loop: true,
             autoplay: { delay: 5000, disableOnInteraction: false },
-            navigation: { nextEl: '.sale-next', prevEl: '.sale-prev' },
+            dots: true,
             grid: { rows: 2, fill: 'row' },
             breakpoints: {
                 0:   { slidesPerView: 1, grid: { rows: 2, fill: 'row' } },
@@ -1953,7 +1952,6 @@ $(document).ready(function () {
                 data: { action: 'pzh_toggle_favorite', product_id: $btn.data('product-id'), nonce: pzh_options.nonce },
                 success: function (resp) {
                     if (resp && resp.success) {
-                        pzhToast(resp.data.message);
                         loadDashSection('favorites', {}, false);
                     }
                 }
