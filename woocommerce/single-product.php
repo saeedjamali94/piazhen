@@ -244,7 +244,7 @@ while (have_posts()): the_post();
                                                         <?php foreach ($attribute['items'] as $item): ?>
                                                             <button type="button"
                                                                     class="swatch-option <?php echo $item['color'] ? '' : 'swatch-option--no-color'; ?>"
-                                                                    data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                    data-attr="<?php echo esc_attr($attribute['attr_key']); ?>"
                                                                     data-value="<?php echo esc_attr($item['slug']); ?>"
                                                                     title="<?php echo esc_attr($item['label']); ?>"
                                                                     <?php echo $item['color'] ? 'style="background-color:' . esc_attr($item['color']) . '"' : ''; ?>
@@ -265,7 +265,7 @@ while (have_posts()): the_post();
                                                     <?php foreach ($attribute['items'] as $item): ?>
                                                         <button type="button"
                                                                 class="variation-radio"
-                                                                data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                data-attr="<?php echo esc_attr($attribute['attr_key']); ?>"
                                                                 data-value="<?php echo esc_attr($item['slug']); ?>"
                                                                 title="<?php echo esc_attr($item['label']); ?>"
                                                                 aria-label="<?php echo esc_attr($item['label']); ?>">
@@ -284,7 +284,7 @@ while (have_posts()): the_post();
                                                     <?php foreach ($attribute['items'] as $item): ?>
                                                         <button type="button"
                                                                 class="variation-chip"
-                                                                data-attr="attribute_<?php echo esc_attr($attribute['taxonomy']); ?>"
+                                                                data-attr="<?php echo esc_attr($attribute['attr_key']); ?>"
                                                                 data-value="<?php echo esc_attr($item['slug']); ?>">
                                                             <?php echo esc_html(pzh_fa_num($item['label'])); ?>
                                                         </button>

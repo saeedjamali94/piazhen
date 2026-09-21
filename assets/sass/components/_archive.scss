@@ -681,7 +681,7 @@
 
     @media (max-width: $bp-sm) {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
 
     &__empty {
@@ -896,7 +896,7 @@
 
     .products-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
 
     .category-card {
@@ -1099,6 +1099,64 @@
                 border-color: $siteYellow;
                 outline: none;
             }
+        }
+    }
+}
+
+// Quantity selector inside the variation popup — matches the cart page
+// control (bordered group, yellow hover/press) with popup sizing.
+.quantity-selector {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid $gray-300;
+    border-radius: 12px;
+    overflow: hidden;
+    background: $white;
+
+    .qty-btn {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: $white;
+        border: none;
+        color: $textColor;
+        cursor: pointer;
+        transition: background $transition-fast, color $transition-fast;
+
+        &:hover {
+            background: $siteYellow;
+        }
+
+        &:active {
+            background: $siteYellowDark;
+            color: $white;
+        }
+    }
+
+    .qty-input {
+        width: 56px;
+        height: 42px;
+        border: 0;
+        border-left: 1px solid $gray-200;
+        border-right: 1px solid $gray-200;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: $fontFamily;
+        background: $white;
+        color: $textColor;
+
+        &:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px rgba($siteYellow, 0.45);
+        }
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
     }
 }

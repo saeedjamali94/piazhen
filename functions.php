@@ -214,6 +214,10 @@ function pzh_get_product_card_html($product_id) {
     $product = wc_get_product($product_id);
     if (!$product) return '';
 
+    $discount    = pzh_get_discount_percentage($product);
+    $is_variable = $product->is_type('variable');
+    $in_stock    = $product->is_in_stock();
+
     ob_start();
     ?>
     <div class="product-card" data-product-id="<?php echo esc_attr($product_id); ?>">
@@ -221,6 +225,11 @@ function pzh_get_product_card_html($product_id) {
             <a href="<?php echo get_permalink($product_id); ?>">
                 <?php echo $product->get_image('pzh_product_card'); ?>
             </a>
+
+            <?php if ($discount > 0): ?>
+                <span class="product-card__discount"><?php echo pzh_fa_num($discount); ?>٪</span>
+            <?php endif; ?>
+
             <button class="product-card__favorite <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
                     data-product-id="<?php echo esc_attr($product_id); ?>"
                     aria-label="<?php _e('افزودن به علاقه‌مندی', 'piazhen'); ?>">
@@ -236,6 +245,39 @@ function pzh_get_product_card_html($product_id) {
 
         <div class="product-card__price">
             <?php echo wc_price($product->get_price()); ?>
+        </div>
+
+        <!-- Mobile bottom row: price + quick add-to-cart (hidden on desktop) -->
+        <div class="product-card__bottom">
+            <div class="product-card__price-row">
+                <?php
+                $regular_price = $product->is_on_sale() ? pzh_get_product_regular_price($product) : 0;
+                if ($regular_price > 0 && $regular_price > floatval($product->get_price())):
+                    ?>
+                    <del><?php echo wc_price($regular_price); ?></del>
+                <?php endif; ?>
+                <?php echo wc_price($product->get_price()); ?>
+            </div>
+
+            <?php if (!$in_stock): ?>
+                <button type="button" class="product-card__add" disabled
+                        aria-label="<?php _e('ناموجود', 'piazhen'); ?>"
+                        title="<?php _e('ناموجود', 'piazhen'); ?>">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </button>
+            <?php elseif ($is_variable): ?>
+                <button type="button" class="product-card__add product-card__add-to-cart--variable"
+                        data-product-id="<?php echo esc_attr($product_id); ?>"
+                        aria-label="<?php _e('انتخاب و افزودن به سبد خرید', 'piazhen'); ?>">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </button>
+            <?php else: ?>
+                <button type="button" class="product-card__add product-card__add-to-cart"
+                        data-product-id="<?php echo esc_attr($product_id); ?>"
+                        aria-label="<?php _e('افزودن به سبد خرید', 'piazhen'); ?>">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -260,12 +302,39 @@ function pzh_is_favorited($product_id) {
 function pzh_get_discount_percentage($product) {
     if (!$product->is_on_sale()) return 0;
 
-    $regular_price = $product->get_regular_price();
-    $sale_price    = $product->get_sale_price();
+    $regular_price = pzh_get_product_regular_price($product);
+    $sale_price    = floatval($product->get_price());
 
-    if ($regular_price > 0) {
+    if ($regular_price > 0 && $sale_price > 0) {
         return round((($regular_price - $sale_price) / $regular_price) * 100);
     }
+    return 0;
+}
+
+/**
+ * Regular price that works for every product type. Variable products return
+ * an empty string from get_regular_price() — use the min regular price
+ * across their variations instead.
+ */
+function pzh_get_product_regular_price($product) {
+    $regular = floatval($product->get_regular_price());
+    if ($regular > 0) {
+        return $regular;
+    }
+
+    if ($product->is_type('variable')) {
+        $prices = array();
+        foreach ($product->get_visible_children() as $child_id) {
+            $variation = wc_get_product($child_id);
+            if ($variation && '' !== $variation->get_regular_price()) {
+                $prices[] = floatval($variation->get_regular_price());
+            }
+        }
+        if (!empty($prices)) {
+            return min($prices);
+        }
+    }
+
     return 0;
 }
 
@@ -1118,8 +1187,20 @@ function pzh_get_variation_popup() {
                 <div class="variation-fields">
                     <?php foreach ($attributes as $attribute_name => $options): ?>
                         <?php
-                        $selected = isset($_REQUEST['attribute_' . sanitize_title($attribute_name)])
-                            ? wc_clean(stripslashes($_REQUEST['attribute_' . sanitize_title($attribute_name)]))
+                        // Canonical variation attribute key (attribute_pa_xxx for
+                        // taxonomy attributes) — the key find_matching_product_variation()
+                        // actually compares against.
+                        $attr_tax = '';
+                        foreach ($product->get_attributes() as $product_attr) {
+                            if ($product_attr->get_name() === $attribute_name) {
+                                $attr_tax = $product_attr->get_taxonomy();
+                                break;
+                            }
+                        }
+                        $attr_key = $attr_tax ? 'attribute_' . $attr_tax : wc_variation_attribute_name($attribute_name);
+
+                        $selected = isset($_REQUEST[$attr_key])
+                            ? wc_clean(stripslashes($_REQUEST[$attr_key]))
                             : $product->get_variation_default_attribute($attribute_name);
                         ?>
                         <div class="variation-field">
@@ -1128,13 +1209,13 @@ function pzh_get_variation_popup() {
                             </label>
                             <div class="variation-field__options">
                                 <select class="variation-select"
-                                        data-attribute_name="<?php echo esc_attr(wc_variation_attribute_name($attribute_name)); ?>"
-                                        name="<?php echo esc_attr(wc_variation_attribute_name($attribute_name)); ?>">
+                                        data-attribute_name="<?php echo esc_attr($attr_key); ?>"
+                                        name="<?php echo esc_attr($attr_key); ?>">
                                     <option value=""><?php echo esc_html(sprintf(__('انتخاب %s', 'piazhen'), wc_attribute_label($attribute_name))); ?></option>
                                     <?php foreach ($options as $option): ?>
                                         <option value="<?php echo esc_attr($option); ?>"
                                             <?php selected($selected, $option); ?>>
-                                            <?php echo esc_html(apply_filters('woocommerce_variation_option_name', $option, null, $attribute_name, $product)); ?>
+                                            <?php echo esc_html(pzh_variation_option_label($option, $attribute_name, $product)); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -1146,10 +1227,14 @@ function pzh_get_variation_popup() {
 
             <div class="variation-popup__qty">
                 <label class="variation-field__label"><?php _e('تعداد', 'piazhen'); ?></label>
-                <div class="quantity-selector d-flex align-items-center gap-2">
-                    <button class="qty-btn qty-minus" type="button">-</button>
+                <div class="quantity-selector">
+                    <button type="button" class="qty-btn qty-minus" aria-label="<?php esc_attr_e('کمتر', 'piazhen'); ?>">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                     <input type="number" class="qty-input" id="popup-qty" value="1" min="1" max="99">
-                    <button class="qty-btn qty-plus" type="button">+</button>
+                    <button type="button" class="qty-btn qty-plus" aria-label="<?php esc_attr_e('بیشتر', 'piazhen'); ?>">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -1349,18 +1434,95 @@ function pzh_variable_has_stock($product) {
  * Variation picker data: attributes as chips (text) or swatches (colors),
  * resolved from WooCommerce data only — no plugins.
  */
+/**
+ * Resolve a variation option to its taxonomy term.
+ *
+ * get_variation_attributes() returns term SLUGS (percent-encoded Persian) for
+ * taxonomy attributes. The reliable attribute→taxonomy mapping comes from the
+ * product itself (sanitize_title on a Persian attribute name never matches
+ * the stored pa_* slug).
+ */
+function pzh_variation_option_term($option, $attribute_name, $product) {
+    if (!$product) return null;
+
+    $tax = '';
+    foreach ($product->get_attributes() as $attr) {
+        if ($attr->get_name() === $attribute_name || $attr->get_taxonomy() === $attribute_name) {
+            $tax = $attr->get_taxonomy();
+            break;
+        }
+    }
+    if (!$tax || !taxonomy_exists($tax)) return null;
+
+    $term = get_term_by('slug', $option, $tax);
+    return $term ?: null;
+}
+
+/**
+ * Human-readable label for a variation option (term name when taxonomy,
+ * raw value otherwise). Term resolution happens BEFORE the
+ * woocommerce_variation_option_name filter (the global Persian-digit
+ * filter below would otherwise change the slug and break the lookup).
+ */
+function pzh_variation_option_label($option, $attribute_name, $product = null) {
+    $term  = pzh_variation_option_term($option, $attribute_name, $product);
+    $label = $term ? $term->name : $option;
+
+    // Let other plugins shape the label (the Persian-digit filter below runs here)
+    return apply_filters('woocommerce_variation_option_name', $label, $term, $attribute_name, $product);
+}
+
+/**
+ * Global: convert digits in variation option labels to Persian.
+ * Covers Woo Variation Swatches buttons, WooCommerce variation dropdowns,
+ * and cart variation data (anywhere WC applies this filter).
+ */
+add_filter('woocommerce_variation_option_name', function ($name, $object = null, $attribute = null, $product = null) {
+    return pzh_fa_num((string) $name);
+}, 20, 4);
+
+/**
+ * Translate the variation dropdown placeholder to Persian — the string is
+ * emitted by WooCommerce AND by Woo Variation Swatches under its own domain.
+ */
+add_filter('gettext', function ($translated, $text, $domain) {
+    if (in_array($domain, array('woocommerce', 'woo-variation-swatches'), true) && 'Choose an option' === $text) {
+        return __('انتخاب کنید', 'piazhen');
+    }
+    return $translated;
+}, 20, 3);
+
+/**
+ * Convert digits to Persian in attribute values (e.g. the "additional
+ * information" table: "10 روز مهلت ..., 12 ماهه گارانتی").
+ */
+add_filter('woocommerce_attribute', function ($value) {
+    return pzh_fa_num($value);
+}, 20);
+
 function pzh_get_variation_picker_data($product) {
     if (!$product->is_type('variable')) return array();
     $data = array();
     foreach ($product->get_variation_attributes() as $name => $options) {
-        $tax      = sanitize_title($name);
-        $is_tax   = taxonomy_exists($tax);
         $label    = wc_attribute_label($name, $product);
         $is_color = (stripos($label, 'رنگ') !== false || stripos($name, 'color') !== false);
 
+        // Real attribute→taxonomy mapping from the product itself
+        $tax = '';
+        foreach ($product->get_attributes() as $attr) {
+            if ($attr->get_name() === $name) {
+                $tax = $attr->get_taxonomy();
+                break;
+            }
+        }
+
+        // Full WC variation attribute key — this is what find_matching_product_variation()
+        // compares against (attribute_pa_xxx for taxonomies, attribute_<sanitized> for custom)
+        $attr_key = $tax ? 'attribute_' . $tax : wc_variation_attribute_name($name);
+
         $items = array();
         foreach ($options as $option) {
-            $term  = $is_tax ? get_term_by('slug', $option, $tax) : null;
+            $term  = pzh_variation_option_term($option, $name, $product);
             $color = '';
             if ($is_color && $term) {
                 $color = get_term_meta($term->term_id, 'product_attribute_color', true);
@@ -1370,7 +1532,7 @@ function pzh_get_variation_picker_data($product) {
             }
             $items[] = array(
                 'slug'  => (string) $option,
-                'label' => $term ? $term->name : $option,
+                'label' => pzh_variation_option_label($option, $name, $product),
                 'color' => $color ?: '',
             );
         }
@@ -1384,6 +1546,7 @@ function pzh_get_variation_picker_data($product) {
             'name'     => $name,
             'label'    => $label,
             'taxonomy' => $tax,
+            'attr_key' => $attr_key,
             'type'     => $type,
             'items'    => $items,
         );
@@ -3890,6 +4053,13 @@ function pzh_cart_fragments($fragments) {
     <span class="cart-count"><?php echo WC()->cart->get_cart_contents_count(); ?></span>
     <?php
     $fragments['.cart-count'] = ob_get_clean();
+
+    // Mobile drawer badge (always rendered, hidden at zero)
+    ob_start();
+    ?>
+    <span class="mobileNav__cart-count" <?= WC()->cart->get_cart_contents_count() > 0 ? '' : 'style="display:none;"'; ?>><?php echo WC()->cart->get_cart_contents_count(); ?></span>
+    <?php
+    $fragments['.mobileNav__cart-count'] = ob_get_clean();
 
     return $fragments;
 }

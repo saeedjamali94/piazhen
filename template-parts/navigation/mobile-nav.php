@@ -46,9 +46,7 @@ $cart_count = class_exists('WooCommerce') ? WC()->cart->get_cart_contents_count(
             <a href="<?= class_exists('WooCommerce') ? esc_url(wc_get_cart_url()) : '#'; ?>" class="mobileNav__action mobileNav__action--cart">
                 <i class="fa-solid fa-bag-shopping"></i>
                 <span><?php _e('سبد خرید', 'piazhen'); ?></span>
-                <?php if ($cart_count > 0): ?>
-                    <span class="mobileNav__cart-count"><?= $cart_count; ?></span>
-                <?php endif; ?>
+                <span class="mobileNav__cart-count" <?= $cart_count > 0 ? '' : 'style="display:none;"'; ?>><?= $cart_count; ?></span>
             </a>
         </div>
     </div>

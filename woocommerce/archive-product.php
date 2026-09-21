@@ -336,14 +336,6 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
         <?php endif; ?>
     </div>
 
-    <!-- Variation Popup Modal (hidden by default) -->
-    <div class="variation-modal-overlay" id="variation-modal" style="display:none;">
-        <div class="variation-modal">
-            <div class="variation-modal__inner" id="variation-modal-inner">
-                <!-- AJAX content loads here -->
-            </div>
-        </div>
-    </div>
 </main>
 
 <?php get_footer(); ?>

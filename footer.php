@@ -89,6 +89,15 @@ if (!defined('ABSPATH')) {
     </div>
 </footer>
 
+    <!-- Variation Popup Modal (hidden by default; shared by product cards site-wide) -->
+    <div class="variation-modal-overlay" id="variation-modal" style="display:none;">
+        <div class="variation-modal">
+            <div class="variation-modal__inner" id="variation-modal-inner">
+                <!-- AJAX content loads here -->
+            </div>
+        </div>
+    </div>
+
 <?php wp_footer(); ?>
 </body>
 </html>

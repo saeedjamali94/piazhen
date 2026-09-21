@@ -503,6 +503,15 @@
             font-weight: 600;
         }
     }
+
+    // Mobile-only elements — hidden on desktop, shown in the mobile redesign below
+    &__discount {
+        display: none;
+    }
+
+    &__bottom {
+        display: none;
+    }
 }
 
 @keyframes heartPop {
@@ -513,6 +522,174 @@
 
 @keyframes btnSpin {
     to { transform: rotate(360deg); }
+}
+
+// ============================================================================
+// Product Card — Mobile Redesign (tablet & phone)
+// Container card: gray image block + discount badge + heart, 2-line title,
+// bottom row with price and a quick add-to-cart button. Desktop keeps the
+// original Row.png design (green pill, no container).
+// ============================================================================
+
+@media (max-width: $bp-lg - 1px) {
+    .product-card {
+        background: $white;
+        border: 1px solid #eef0f3;
+        border-radius: 16px;
+        padding: 10px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        height: 100%;
+
+        &__image {
+            border-radius: 12px;
+            background: #f5f6f8;
+
+            a {
+                padding: 6%;
+            }
+
+            img {
+                border-radius: 10px;
+            }
+        }
+
+        // Discount badge (top-right in RTL)
+        &__discount {
+            display: block;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 2;
+            background: $siteOrange;
+            color: $white;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            padding: 5px 9px;
+            border-radius: 999px;
+            box-shadow: 0 2px 6px rgba($siteOrange, 0.35);
+        }
+
+        // Heart: white circle on the image's left edge (badge owns the right)
+        &__favorite {
+            top: 8px;
+            right: auto;
+            left: 8px;
+            width: 30px;
+            height: 30px;
+            background: $white;
+            color: $gray-500;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+
+            svg {
+                width: 16px;
+                height: 15px;
+            }
+
+            &.active {
+                background: $white;
+            }
+        }
+
+        // Desktop pill is replaced by the bottom price row on mobile
+        &__price {
+            display: none;
+        }
+
+        &__title {
+            padding: 10px 2px 0;
+            text-align: right;
+            flex: 1;
+
+            a {
+                font-size: 12.5px;
+                font-weight: 600;
+                line-height: 1.75;
+                -webkit-line-clamp: 2;
+                min-height: 44px; // reserve two lines so card bottoms align
+            }
+        }
+
+        // Bottom row: price (right) + quick add button (left)
+        &__bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 0 2px 2px;
+        }
+
+        &__price-row {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            min-width: 0;
+
+            .woocommerce-Price-amount {
+                font-size: 13px;
+                font-weight: 800;
+                color: #121212;
+            }
+
+            del .woocommerce-Price-amount {
+                font-size: 11px;
+                font-weight: 400;
+                color: $gray-500;
+                text-decoration: line-through;
+            }
+
+            ins {
+                text-decoration: none;
+            }
+
+            .woocommerce-Price-currencySymbol {
+                font-size: 10px;
+                font-weight: 600;
+                color: $gray-600;
+                margin-right: 3px;
+            }
+        }
+
+        &__add {
+            flex-shrink: 0;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: $siteYellow;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #121212;
+            cursor: pointer;
+            transition: background $transition-fast, transform $transition-fast;
+
+            &:hover {
+                background: $siteYellowDark;
+                color: $white;
+            }
+
+            &:active {
+                transform: scale(0.92);
+            }
+
+            &:disabled {
+                background: $gray-200;
+                color: $gray-500;
+                cursor: not-allowed;
+            }
+
+            &.loading {
+                pointer-events: none;
+                opacity: 0.75;
+
+                svg {
+                    animation: btnSpin 0.6s linear infinite;
+                }
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -922,9 +1099,4 @@
         }
     }
 
-    .product-card {
-        &__title a { font-size: 13px; }
-        &__price { font-size: 12px; padding: 6px 18px; }
-        &__favorite { width: 32px; height: 32px; top: 12px; right: 10px; }
-    }
 }

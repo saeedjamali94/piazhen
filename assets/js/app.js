@@ -256,6 +256,16 @@ function pzhUpdateCartBadge(count) {
     } else {
         $badge.hide();
     }
+
+    // Mobile drawer badge
+    var $drawerBadge = $('.mobileNav__cart-count');
+    if ($drawerBadge.length) {
+        if (count > 0) {
+            $drawerBadge.text(count).show();
+        } else {
+            $drawerBadge.hide();
+        }
+    }
 }
 
 /** Refresh mini-cart dropdown content */
@@ -920,6 +930,21 @@ $(document).ready(function () {
                     pzhToast(pzhStr('server_error'), 'error');
                 }
             });
+        });
+
+        // Quantity +/- buttons
+        $popup.find('.qty-minus').on('click', function () {
+            var $input = $popup.find('#popup-qty');
+            var val = parseInt($input.val(), 10) || 1;
+            var min = parseInt($input.attr('min'), 10) || 1;
+            if (val > min) $input.val(val - 1);
+        });
+
+        $popup.find('.qty-plus').on('click', function () {
+            var $input = $popup.find('#popup-qty');
+            var val = parseInt($input.val(), 10) || 1;
+            var max = parseInt($input.attr('max'), 10) || 99;
+            if (val < max) $input.val(val + 1);
         });
     }
 
