@@ -69,3 +69,29 @@ button {
     border-radius: 24px;
     padding: 20px;
 }
+
+// Generic Swiper pagination dots shown under a carousel
+// (product carousels, related products, ...)
+.swiper-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 18px;
+
+    .swiper-pagination-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: $gray-300;
+        opacity: 1;
+        margin: 0;
+        transition: all $transition-fast;
+    }
+
+    .swiper-pagination-bullet-active {
+        width: 23px;
+        border-radius: 5px;
+        background: $siteOrange;
+    }
+}

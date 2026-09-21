@@ -88,33 +88,34 @@
                 background: $siteOrangeDark;
             }
         }
+    }
 
-        // White carousel dots (Swiper pagination)
-        .heroSection__dots {
-            position: absolute;
-            bottom: 26px;
-            right: 92px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            z-index: 5;
+    // White carousel dots (Swiper pagination) — under the CTA button,
+    // right-aligned with the content column
+    .heroSection__dots {
+        position: absolute;
+        bottom: 26px;
+        right: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        z-index: 5;
 
-            .swiper-pagination-bullet {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: rgba($white, 0.9);
-                opacity: 1;
-                margin: 0;
-                transition: all $transition-fast;
-            }
+        .swiper-pagination-bullet {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba($white, 0.9);
+            opacity: 1;
+            margin: 0;
+            transition: all $transition-fast;
+        }
 
-            .swiper-pagination-bullet-active {
-                width: 23px;
-                border-radius: 5px;
-                background: $white;
-            }
+        .swiper-pagination-bullet-active {
+            width: 23px;
+            border-radius: 5px;
+            background: $white;
         }
     }
 
@@ -453,27 +454,81 @@
         }
     }
 
-    // Centered title, dark, wraps like the design
+    // Centered title, one line with ellipsis; hovering shows the full
+    // title in a dark popover bubble (content comes from data-title attr).
+    // Fixed height (flex: 0 0 auto + min-height on the link) so every card's
+    // title occupies the exact same space and titles align across a row.
     &__title {
+        position: relative;
         text-align: center;
         padding: 18px 14px 0;
         margin: 0;
-        flex: 1;
+        flex: 0 0 auto;
 
         a {
             color: #121212;
             font-size: 15px;
             font-weight: 600;
             line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
+            display: block;
+            min-height: 1.6em;
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
             transition: color $transition-fast;
 
             &:hover {
                 color: $siteOrange;
             }
+        }
+
+        // Popover bubble (full title)
+        &::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translate(-50%, 8px);
+            background: rgba(#1c1c1c, 0.95);
+            color: $white;
+            font-size: 12.5px;
+            font-weight: 500;
+            line-height: 1.9;
+            text-align: center;
+            padding: 10px 16px;
+            border-radius: 12px;
+            max-width: 280px;
+            min-width: 90px;
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            white-space: normal;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+            transition: opacity $transition-fast, transform $transition-fast, visibility $transition-fast;
+        }
+
+        // Popover arrow pointing down at the title
+        &::before {
+            content: "";
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translate(-50%, 8px);
+            border: 6px solid transparent;
+            border-top-color: rgba(#1c1c1c, 0.95);
+            z-index: 31;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity $transition-fast, transform $transition-fast, visibility $transition-fast;
+        }
+
+        &:hover::after,
+        &:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, 0);
         }
     }
 
@@ -511,13 +566,14 @@
 
     // Desktop bottom row: green add-to-cart pill. The green price pill above
     // already shows the price, so the price row stays hidden on desktop.
+    // margin-top: auto pins the row to the card bottom so pills align too.
     &__bottom {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        margin-top: 12px;
-        padding: 0 14px 2px;
+        margin-top: auto;
+        padding: 12px 14px 2px;
     }
 
     &__price-row {
@@ -660,14 +716,13 @@
         &__title {
             padding: 10px 2px 0;
             text-align: right;
-            flex: 1;
+            flex: 0 0 auto;
 
             a {
                 font-size: 12.5px;
                 font-weight: 600;
                 line-height: 1.75;
-                -webkit-line-clamp: 2;
-                min-height: 44px; // reserve two lines so card bottoms align
+                // One line + ellipsis and fixed height inherited from the base rule
             }
         }
 
@@ -677,8 +732,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            margin-top: 10px;
-            padding: 0 2px 2px;
+            margin-top: auto;
+            padding: 10px 2px 2px;
         }
 
         &__price-row {
@@ -756,6 +811,14 @@
         &__add-text {
             display: none;
         }
+    }
+}
+
+// No hover on touch screens — the full-title popover is pointless there
+@media (hover: none) {
+    .product-card__title::after,
+    .product-card__title::before {
+        display: none;
     }
 }
 

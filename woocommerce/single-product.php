@@ -429,6 +429,7 @@ while (have_posts()): the_post();
                     <button class="related-next swiper-nav-btn swiper-nav-btn--next" aria-label="<?php _e('بعدی', 'piazhen'); ?>">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
+                    <div class="swiper-dots related-dots"></div>
                 </div>
             </div>
         </section>

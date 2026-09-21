@@ -33,6 +33,7 @@ $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_U
                     <?php endwhile; ?>
                 </div>
             </div>
+            <div class="swiper-dots most-selling-dots"></div>
         </div>
     </div>
 </section>

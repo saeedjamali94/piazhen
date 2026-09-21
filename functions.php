@@ -248,7 +248,7 @@ function pzh_get_product_card_html($product_id) {
             </button>
         </div>
 
-        <h3 class="product-card__title">
+        <h3 class="product-card__title" data-title="<?php echo esc_attr($product->get_name()); ?>">
             <a href="<?php echo get_permalink($product_id); ?>"><?php echo $product->get_name(); ?></a>
         </h3>
 

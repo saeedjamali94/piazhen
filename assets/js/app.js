@@ -979,7 +979,7 @@ $(document).ready(function () {
             slidesPerView: 1,
             spaceBetween: 16,
             loop: true,
-            dots: true,
+            pagination: { el: '.most-selling-dots', clickable: true },
             autoplay: { delay: 4000, disableOnInteraction: false },
             breakpoints: {
                 576:  { slidesPerView: 2 },
@@ -994,7 +994,7 @@ $(document).ready(function () {
             slidesPerView: 2,
             spaceBetween: 16,
             loop: true,
-            dots: true,
+            pagination: { el: '.newest-products-dots', clickable: true },
             autoplay: { delay: 5000, disableOnInteraction: false },
             grid: { rows: 2, fill: 'row' },
             breakpoints: {
@@ -1009,7 +1009,7 @@ $(document).ready(function () {
             spaceBetween: 16,
             loop: true,
             autoplay: { delay: 5000, disableOnInteraction: false },
-            dots: true,
+            pagination: { el: '.on-sale-dots', clickable: true },
             grid: { rows: 2, fill: 'row' },
             breakpoints: {
                 0:   { slidesPerView: 1, grid: { rows: 2, fill: 'row' } },
@@ -2479,6 +2479,7 @@ $(document).ready(function () {
                 nextEl: '.related-next',
                 prevEl: '.related-prev',
             },
+            pagination: { el: '.related-dots', clickable: true },
             breakpoints: {
                 576:  { slidesPerView: 2 },
                 768:  { slidesPerView: 3 },
