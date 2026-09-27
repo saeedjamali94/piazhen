@@ -638,95 +638,174 @@
 }
 
 // ============================================================================
-// Checkout
+// Checkout (redesign — mockup: Shipping information1/2/3.png)
 // ============================================================================
+
+// Checkout brand orange + hairline from the mockup
+$ckOrange: #F06824;
+$ckLine: #F0F0F0;
+$ckGray: #8A8A8A;
 
 .pzh-checkout-layout {
     display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 24px;
+    grid-template-columns: 830px 444px;
+    gap: 45px;
     align-items: start;
+    justify-content: center;
     margin-bottom: 48px;
 
     @media (max-width: $bp-lg - 1px) {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 830px);
+        gap: 24px;
+        justify-content: center;
     }
 }
 
-// --- Steps ---
-.checkout-step {
-    background: $white;
-    border: 1px solid $gray-200;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
+.pzh-checkout-form {
+    // 25px (last field row margin) + 40 ≈ the mockup's 64px below توضیحات
+    margin-bottom: 40px;
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid $gray-100;
+// The mockup has no coupon UI at the checkout (WC renders the toggle notice
+// above the form; its text doesn't even paint under the theme's styles)
+.woocommerce-checkout .woocommerce-form-coupon-toggle {
+    display: none;
+}
+
+// --- Shipping choice cards (حضوری تحویل میگیرم / ارسال شود) ---
+.pzh-ship-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 21px;
+    margin-bottom: 24px;
+
+    &__card {
+        display: block;
+        width: 100%;
+        text-align: right;
+        background: $white;
+        border: 2px solid $ckLine;
+        border-radius: 25px;
+        padding: 22px 40px 22px 26px;
+        min-height: 131px;
+        cursor: pointer;
+        font-family: $fontFamily;
+        transition: border-color $transition-fast;
+
+        &.is-selected {
+            border-color: $ckOrange;
+        }
+
+        &:hover {
+            border-color: $ckOrange;
+        }
     }
 
-    &__num {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: $siteYellow;
-        color: $textColor;
-        font-size: 14px;
-        font-weight: 800;
+    &__main {
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 12px;
+        font-size: 20px;
+        font-weight: 800;
+        color: $textColor;
+        line-height: 1.6;
+
+        svg {
+            width: 44px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+    }
+
+    &__card.is-selected &__main {
+        color: $ckOrange;
+    }
+
+    // Mockup quirk: the pickup card's title/icon stay orange even when the
+    // card is unselected (only its border flips); the ship card flips fully.
+    &__card[data-mode="pickup"] &__main {
+        color: $ckOrange;
+    }
+
+    &__sub {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 6px;
+        font-size: 20px;
+        font-weight: 400;
+        color: $ckGray;
+        line-height: 1.4;
+    }
+
+    &__addr {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__add {
+        color: $ckOrange;
+        font-weight: 600;
         flex-shrink: 0;
     }
-
-    &__title {
-        font-size: 16px;
-        font-weight: 800;
-        margin: 0;
-        color: $textColor;
-    }
 }
 
-// --- Checkout fields (WooCommerce form rows) ---
-.checkout-fields-grid {
+// --- Field grids (contact + address) ---
+.pzh-fields-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 14px;
+    grid-template-columns: 400px 400px;
+    gap: 0 30px;
+
+    @media (max-width: $bp-md - 1px) {
+        grid-template-columns: 1fr 1fr;
+    }
 
     @media (max-width: $bp-sm) {
         grid-template-columns: 1fr;
     }
 
-    // Full-width rows (address, city selects)
-    .form-row-wide,
-    .form-row.notes,
-    .form-row.woocommerce-validated,
-    .address-field {
-        grid-column: 1 / -1;
+    .form-row {
+        float: none;
+        width: auto;
+        margin: 0 0 25px;
+        display: flex;
+        flex-direction: column;
+
+        &.form-row-wide {
+            grid-column: 1 / -1;
+        }
     }
 }
 
+.pzh-contact-grid {
+    // the last field row's own margin (25px) stacks here: 25 + 6 ≈ the
+    // mockup's 31px gap to the shipping-method heading
+    margin-bottom: 6px;
+}
+
+.pzh-address-grid {
+    margin-bottom: 0;
+}
+
+// --- Field look (60px inputs / 238px textareas, radius 25, 2px hairline) ---
 .woocommerce-checkout,
 .pzh-checkout-form {
     .form-row {
-        margin: 0 0 14px;
+        margin: 0 0 25px;
         display: flex;
         flex-direction: column;
 
         label {
-            font-size: 13px;
+            font-size: 20px;
             font-weight: 600;
             color: $textColor;
-            margin-bottom: 6px;
-            line-height: 1.8;
+            margin-bottom: 13px;
+            line-height: 1.4;
 
             .required {
-                color: $danger;
+                color: $ckOrange;
                 text-decoration: none;
             }
 
@@ -744,29 +823,63 @@
         input[type="email"],
         input[type="number"],
         input[type="password"],
-        textarea,
-        select,
-        .select2-selection {
+        select {
             width: 100%;
-            padding: 10px 14px;
-            border: 1px solid $gray-300;
-            border-radius: 10px;
-            font-size: 14px;
+            height: 60px;
+            box-sizing: border-box;
+            padding: 0 22px;
+            border: 2px solid $ckLine;
+            border-radius: 25px;
+            font-size: 20px;
             font-family: $fontFamily;
             background: $white;
-            transition: border-color $transition-fast, box-shadow $transition-fast;
+            color: $textColor;
+            transition: border-color $transition-fast;
+            box-shadow: none;
+
+            &::placeholder {
+                color: #808080;
+                opacity: 1;
+            }
+        }
+
+        textarea {
+            width: 100%;
+            height: 238px;
+            box-sizing: border-box;
+            padding: 16px 22px;
+            border: 2px solid $ckLine;
+            border-radius: 25px;
+            font-size: 20px;
+            font-family: $fontFamily;
+            background: $white;
+            color: $textColor;
+            resize: none;
+            transition: border-color $transition-fast;
+            box-shadow: none;
+
+            &::placeholder {
+                color: #808080;
+                opacity: 1;
+            }
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 8' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 2l7 5 7-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 22px center;
+            background-size: 18px 8px;
+            padding-left: 52px;
         }
 
         input:focus,
         textarea:focus,
         select:focus {
-            border-color: $siteYellow;
+            border-color: $ckOrange;
             outline: none;
-            box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
-        }
-
-        textarea {
-            min-height: 90px;
+            box-shadow: none;
         }
 
         &.woocommerce-invalid {
@@ -786,16 +899,22 @@
         }
     }
 
+    // Latin / numeric inputs (phone, email, postcode) align left like the mockup
+    input.input-ltr {
+        direction: ltr;
+        text-align: left;
+    }
+
     // Select2 (country/state selects)
     .select2-container {
         .select2-selection {
-            height: auto;
-            min-height: 44px;
+            height: 60px;
+            box-sizing: border-box;
             display: flex;
             align-items: center;
-            border: 1px solid $gray-300;
-            border-radius: 10px;
-            padding: 8px 14px;
+            border: 2px solid $ckLine;
+            border-radius: 25px;
+            padding: 0 22px;
 
             .select2-selection__arrow {
                 top: 50%;
@@ -804,92 +923,198 @@
 
             .select2-selection__rendered {
                 line-height: 1.6;
-                font-size: 14px;
+                font-size: 20px;
             }
         }
 
         &.select2-container--focus .select2-selection {
-            border-color: $siteYellow;
-            box-shadow: 0 0 0 3px rgba($siteYellow, 0.15);
+            border-color: $ckOrange;
+            box-shadow: none;
         }
     }
 }
 
-// --- Shipping methods (checkout) ---
-#pzh-shipping-methods {
-    .shipping-methods-note {
-        font-size: 13px;
-        color: $gray-500;
-        background: $gray-100;
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin: 0;
+// --- Shipping methods section (cards + radios) ---
+.pzh-ship-methods {
+    margin-bottom: 60px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 30px;
+        font-size: 20px;
+        line-height: 1.6;
+
+        .required {
+            color: $ckOrange;
+        }
     }
 
-    .woocommerce-shipping-methods {
-        margin: 0;
-        padding: 0;
-        list-style: none;
+    &__title {
+        font-weight: 800;
+        color: $textColor;
+    }
+
+    &__note {
+        font-size: 22px;
+        font-weight: 400;
+        color: #808080;
+    }
+
+    &__cards {
+        display: grid;
+        grid-template-columns: 400px 400px;
+        gap: 30px;
+
+        @media (max-width: $bp-md - 1px) {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        @media (max-width: $bp-sm) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__card {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        // the icon SVG has ~9px internal padding per side, so 0 = 9px ink gap
+        gap: 0;
+        text-align: right;
+        background: $white;
+        border: 2px solid $ckLine;
+        border-radius: 25px;
+        padding: 20px 30px;
+        min-height: 108px;
+        cursor: pointer;
+        font-family: $fontFamily;
+        transition: border-color $transition-fast;
+
+        &.is-selected {
+            border-color: $ckOrange;
+        }
+
+        &:hover {
+            border-color: $ckOrange;
+        }
+    }
+
+    &__text {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    &__name {
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.4;
+        color: $textColor;
+    }
+
+    &__desc {
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: #B0B0B0;
+    }
+
+    &__card.is-selected &__name,
+    &__card.is-selected &__icon {
+        color: $ckOrange;
+    }
+
+    &__icon {
+        color: $textColor;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+
+        svg {
+            width: 50px;
+            height: 34px;
+        }
+    }
+
+    // Radio row under the cards (mockup: 20px circles, right-aligned)
+    &__radios {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 28px;
+        margin: 38px 0 0;
+        padding: 0;
+        list-style: none;
 
         li {
+            display: flex;
+            align-items: center;
             margin: 0;
         }
 
-        label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 14px;
-            border: 1.5px solid $gray-200;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            color: $gray-700;
-            transition: all $transition-fast;
-
-            &:hover {
-                border-color: $siteYellow;
-            }
-        }
-
         input[type="radio"] {
-            accent-color: $siteYellow;
-            width: 16px;
-            height: 16px;
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #808080;
+            border-radius: 50%;
+            background: $white;
+            cursor: pointer;
+            position: relative;
+            margin: 0 0 0 8px;
             flex-shrink: 0;
-        }
 
-        .amount {
-            font-weight: 800;
-            color: $textColor;
-            margin-inline-start: auto;
+            &:checked {
+                border-color: $ckOrange;
+            }
 
-            .woocommerce-Price-currencySymbol {
-                font-size: 11px;
+            &:checked::after {
+                content: '';
+                position: absolute;
+                inset: 3px;
+                border-radius: 50%;
+                background: $ckOrange;
             }
         }
 
-        li:has(input:checked) label,
-        label:has(input:checked) {
-            border-color: $siteYellow;
-            background: rgba($siteYellow, 0.08);
+        label {
+            font-size: 18px;
+            font-weight: 600;
+            color: $textColor;
+            cursor: pointer;
         }
-    }
 
-    .shipping-calculator-button {
-        font-size: 12px;
-        font-weight: 600;
-        color: $siteYellowDark;
-        text-decoration: underline;
-        margin-top: 8px;
+        .pzh-radio-pickup {
+            display: none;
+        }
     }
 }
 
-// --- Payment methods (checkout) ---
+// Radios stay in the DOM (for card clicks) but hidden when pickup is chosen
+.pzh-hidden-radios {
+    display: none !important;
+}
+
+// Hint shown while the address hasn't produced any shipping rates yet
+.shipping-methods-note {
+    font-size: 16px;
+    color: $gray-500;
+    background: $gray-100;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin: 0;
+}
+
+// Payment radios are not part of the design — kept in the DOM, hidden
+.pzh-payment-hidden {
+    display: none;
+}
+
+// --- Payment methods (hidden in the redesign; styles kept for safety) ---
 .woocommerce-checkout-payment {
     .wc_payment_methods {
         margin: 0;
@@ -964,7 +1189,7 @@
     background: rgba($siteYellow, 0.08);
 }
 
-// --- Summary card (checkout) ---
+// --- Invoice card (checkout summary) ---
 .pzh-checkout-summary {
     @media (min-width: $bp-lg) {
         position: sticky;
@@ -972,130 +1197,104 @@
     }
 }
 
-.checkout-summary-card {
-    background: $white;
-    border: 1px solid $gray-200;
-    border-radius: 16px;
-    padding: 20px;
-
-    &__title {
-        font-size: 16px;
-        font-weight: 800;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid $siteYellow;
-    }
-}
-
-// Review order items
-.review-order__items {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding-left: 4px;
-    margin-bottom: 16px;
-
-    &::-webkit-scrollbar {
-        width: 4px;
-    }
-    &::-webkit-scrollbar-thumb {
-        background: $gray-300;
-        border-radius: 4px;
-    }
-}
-
-.review-order__item {
+.pzh-invoice-head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 20px;
 
-    &-image {
-        position: relative;
-        width: 56px;
-        height: 56px;
-        border-radius: 10px;
-        overflow: hidden;
-        background: $gray-100;
-        flex-shrink: 0;
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-    }
-
-    &-qty {
-        position: absolute;
-        bottom: -4px;
-        left: -4px;
-        min-width: 20px;
-        height: 20px;
-        border-radius: 10px;
-        background: $textColor;
-        color: $white;
-        font-size: 11px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 5px;
-    }
-
-    &-name {
-        flex: 1;
-        font-size: 13px;
+    &__title {
+        color: #787878;
         font-weight: 600;
-        color: $textColor;
-        line-height: 1.6;
-
-        .variation {
-            font-size: 11px;
-            color: $gray-500;
-        }
     }
 
-    &-subtotal {
-        font-size: 13px;
-        font-weight: 700;
-        color: $textColor;
-        white-space: nowrap;
-
-        .woocommerce-Price-currencySymbol {
-            font-size: 11px;
-        }
+    &__count {
+        color: $ckOrange;
+        font-weight: 800;
     }
 }
 
-.review-order__totals {
-    border-top: 1px solid $gray-100;
-    padding-top: 14px;
-    margin-bottom: 16px;
+.checkout-summary-card {
+    background: $white;
+    border: 2px solid $ckLine;
+    border-radius: 25px;
+    padding: 30px 26px 40px;
+}
+
+// Invoice totals rows (mockup: dark labels/values, red discount, bold total)
+.pzh-invoice-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+
+    .cart-total-row {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.3;
+        color: #333;
+
+        &__label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
+            svg {
+                width: 20px;
+                height: 15px;
+                flex-shrink: 0;
+            }
+        }
+
+        &--discount {
+            color: #DC3C3C;
+
+            span {
+                color: #DC3C3C;
+            }
+        }
+
+        &--total {
+            font-size: 20px;
+            font-weight: 800;
+            padding-top: 0;
+            margin-top: 0;
+
+            span:last-child {
+                color: $textColor;
+            }
+        }
+    }
 }
 
 .review-order__actions {
-    .woocommerce-terms-and-conditions-wrapper {
-        margin-bottom: 12px;
-        font-size: 12px;
-        color: $gray-600;
+    margin-top: 36px;
 
-        .checkbox {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-    }
-
-    .place-order-btn {
+    .pzh-invoice-cta {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 14px 24px;
-        font-size: 15px;
-        border-radius: 14px !important;
+        width: 326px;
+        max-width: 100%;
+        margin: 0 auto;
+        height: 50px;
+        padding: 0 24px;
+        background: $white;
+        color: $ckOrange;
+        border: 2px solid $ckOrange;
+        border-radius: 999px;
+        font-size: 24px;
+        font-weight: 700;
+        font-family: $fontFamily;
+        cursor: pointer;
+        opacity: 1;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $ckOrange;
+            color: $white;
+        }
     }
 }
 
@@ -1140,9 +1339,10 @@
 }
 
 // ============================================================================
-// Checkout Map (Neshan)
+// Checkout Map (Neshan) — modal + search + zoom control
 // ============================================================================
 
+// Address-map block (still used by the dashboard add-address modal)
 .checkout-map-block {
     margin-top: 6px;
 
@@ -1173,6 +1373,7 @@
     }
 }
 
+// Base map box (also used by the dashboard add-address modal)
 .checkout-map {
     height: 280px;
     border-radius: 14px;
@@ -1196,7 +1397,292 @@
     }
 }
 
-// Custom map pin (matches the design's orange pin)
+// --- Map modal (mockup: 1180px card on a 20% overlay) ---
+.pzh-map-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(0, 0, 0, 0.20);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 60px 16px;
+
+    &[hidden] {
+        display: none;
+    }
+}
+
+.pzh-map-modal {
+    background: $white;
+    border-radius: 25px;
+    width: 1180px;
+    max-width: 100%;
+    padding: 70px 70px 53px;
+    position: relative;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+
+    @media (max-width: $bp-md - 1px) {
+        padding: 24px;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 19px;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 20px;
+        font-weight: 800;
+        color: $ckOrange;
+
+        svg {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+    }
+
+    &__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #141414;
+
+        svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        &:hover {
+            color: $ckOrange;
+        }
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    // Map area (916px wide in the mockup, no border/radius)
+    &__map {
+        width: 916px;
+        max-width: 100%;
+        height: 499px;
+        margin: 0 auto;
+        border: none;
+        border-radius: 0;
+
+        @media (max-width: $bp-md - 1px) {
+            height: 380px;
+        }
+    }
+
+    &__footer {
+        // CTA sits at the map's LEFT edge (mockup): flex-end in RTL = left
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 52px;
+        padding-inline-end: calc((100% - 916px) / 2);
+    }
+
+    &__cta {
+        max-width: 100%;
+        min-height: 50px;
+        padding: 0 5rem;
+        border: none;
+        border-radius: 999px;
+        background: $ckOrange;
+        color: $white;
+        font-size: 20px;
+        font-weight: 700;
+        font-family: $fontFamily;
+        cursor: pointer;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: darken($ckOrange, 6%);
+        }
+    }
+}
+
+// --- Search bar in the modal ---
+.pzh-map-search {
+    position: relative;
+    width: 100%;
+    margin-bottom: 40px;
+
+    &__icon {
+        position: absolute;
+        left: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: 32px;
+        color: #2D2D2D;
+        pointer-events: none;
+        z-index: 1;
+
+        @media (max-width: $bp-md - 1px) {
+            left: 20px;
+        }
+    }
+
+    input {
+        width: 100%;
+        height: 72px;
+        border: 2px solid $ckLine;
+        border-radius: 36px;
+        // left 88px = the magnifier side; right 24px = placeholder inset
+        padding: 0 24px 0 88px;
+        font-size: 20px;
+        font-family: $fontFamily;
+        color: $textColor;
+        transition: border-color $transition-fast;
+
+        &::placeholder {
+            color: #787878;
+            opacity: 1;
+        }
+
+        &:focus {
+            border-color: $ckOrange;
+            outline: none;
+        }
+    }
+
+    &__results {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        left: 0;
+        background: $white;
+        border: 2px solid $ckLine;
+        border-radius: 16px;
+        overflow: hidden;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);
+    }
+
+    &__item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        text-align: right;
+        padding: 12px 18px;
+        background: none;
+        border: none;
+        border-bottom: 1px solid $ckLine;
+        cursor: pointer;
+        font-family: $fontFamily;
+        font-size: 14px;
+        color: $textColor;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: $gray-100;
+        }
+
+        i {
+            color: $ckOrange;
+            margin-top: 3px;
+        }
+    }
+
+    &__item-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__item-title {
+        font-weight: 700;
+    }
+
+    &__item-addr {
+        font-size: 12px;
+        color: $gray-600;
+    }
+
+    &__empty {
+        padding: 14px 18px;
+        font-size: 14px;
+        color: $gray-600;
+    }
+}
+
+// --- Custom zoom control (mockup: one white box: + / − / locate) ---
+.pzh-map-zoom {
+    background: $white;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 36px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+    &__btn {
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: $white;
+        border-bottom: 1px solid #F0F0F0;
+        font-size: 18px;
+        line-height: 1;
+        color: $gray-700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: $fontFamily;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: $gray-100;
+        }
+    }
+
+    &__locate::before {
+        content: '';
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 10px solid $gray-700;
+    }
+}
+
+// Flush the zoom control to the map's top-right corner (mockup)
+.checkout-map .leaflet-top.leaflet-right {
+    .leaflet-control {
+        margin-top: 0;
+        margin-right: 0;
+    }
+}
+
+// Custom map pin (mockup: purple lollipop — ring head with white core)
 .pzh-map-pin {
     background: none;
     border: none;
@@ -1204,33 +1690,32 @@
     .pzh-map-pin__inner {
         position: relative;
         width: 34px;
+        height: 48px;
+    }
+
+    .pin-head {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 34px;
         height: 34px;
+        border-radius: 50% 50% 50% 0;
+        transform: translateX(-50%) rotate(-45deg);
+        background: #6528B8;
+        border: 3px solid $white;
+        box-shadow: 0 3px 10px rgba($black, 0.3);
+    }
 
-        .pin-head {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 26px;
-            height: 26px;
-            border-radius: 50% 50% 50% 0;
-            transform: translateX(-50%) rotate(-45deg);
-            background: $siteOrange;
-            border: 3px solid $white;
-            box-shadow: 0 3px 10px rgba($black, 0.3);
-        }
-
-        .pin-dot {
-            position: absolute;
-            top: 7px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: $white;
-            z-index: 2;
-        }
+    .pin-dot {
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: $white;
+        z-index: 2;
     }
 }
 
@@ -1407,10 +1892,6 @@
     }
 
     .cart-summary-card {
-        padding: 16px;
-    }
-
-    .checkout-step {
         padding: 16px;
     }
 }

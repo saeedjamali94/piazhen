@@ -1863,7 +1863,11 @@ function pzh_cart_totals_html() {
             <?php if (WC()->cart->needs_shipping()): ?>
                 <div class="cart-total-row">
                     <span><?php _e('هزینه ارسال', 'piazhen'); ?></span>
-                    <span class="cart-shipping-note"><?php _e('در مرحله بعد محاسبه می‌شود', 'piazhen'); ?></span>
+                    <?php if (pzh_free_delivery_active()): ?>
+                        <span><?php _e('رایگان', 'piazhen'); ?></span>
+                    <?php else: ?>
+                        <span class="cart-shipping-note"><?php _e('در مرحله بعد محاسبه می‌شود', 'piazhen'); ?></span>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 
@@ -1962,22 +1966,350 @@ add_action('wp_ajax_pzh_cart_ajax', 'pzh_cart_ajax');
 add_action('wp_ajax_nopriv_pzh_cart_ajax', 'pzh_cart_ajax');
 
 /**
- * Add a live-updating shipping methods fragment to checkout AJAX updates
- * (the shipping step lives in the form column, outside the default fragments)
+ * ============================================================================
+ * Checkout redesign (mockup: Shipping information1/2/3.png)
+ * Shipping choice cards (حضوری تحویل میگیرم / ارسال شود) + method cards +
+ * address form, all re-rendered by the checkout AJAX fragment so the pickup /
+ * ship choice can swap the whole form column.
+ * ============================================================================
  */
-function pzh_checkout_shipping_fragment($fragments) {
-    ob_start();
-    wc_cart_totals_shipping_html();
-    $shipping_html = ob_get_clean();
 
-    if (!trim($shipping_html)) {
-        $shipping_html = '<p class="shipping-methods-note">' . esc_html__('برای مشاهده روش‌های ارسال، آدرس خود را تکمیل کنید.', 'piazhen') . '</p>';
+/** Shipping methods posted by update_checkout (null when absent). */
+function pzh_checkout_posted_shipping() {
+    if (isset($_POST['shipping_method']) && is_array($_POST['shipping_method'])) {
+        return wc_clean($_POST['shipping_method']);
+    }
+    if (!empty($_POST['post_data'])) {
+        parse_str(wp_unslash($_POST['post_data']), $post);
+        if (!empty($post['shipping_method']) && is_array($post['shipping_method'])) {
+            return wc_clean($post['shipping_method']);
+        }
+    }
+    return null;
+}
+
+/** Is حضوری تحویل میگیرم (local pickup) chosen?
+ * The pickup/ship choice is tracked explicitly (posted pzh_ship_mode or
+ * session) because the post/courier rates only exist once the address is
+ * filled — before that, local_pickup is the only rate and can't be used to
+ * infer the choice.
+ */
+function pzh_checkout_is_pickup() {
+    $mode = null;
+    if (!empty($_POST['post_data'])) {
+        parse_str(wp_unslash($_POST['post_data']), $post);
+        if (!empty($post['pzh_ship_mode'])) {
+            $mode = $post['pzh_ship_mode'];
+        }
+    }
+    if ($mode === null && isset($_POST['pzh_ship_mode'])) {
+        $mode = wc_clean($_POST['pzh_ship_mode']);
+    }
+    if ($mode === null) {
+        $mode = WC()->session ? WC()->session->get('pzh_ship_mode') : null;
+    }
+    // Fall back to the chosen WC method (covers a refresh after picking pickup)
+    if ($mode === null || $mode === '') {
+        $chosen = (array) WC()->session->get('chosen_shipping_methods');
+        foreach ($chosen as $method) {
+            if ($method && strpos($method, 'local_pickup') === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return $mode === 'pickup';
+}
+
+/**
+ * Persist the posted pickup/ship choice into the session and keep WC's
+ * chosen_shipping_methods consistent with it — otherwise the invoice's
+ * shipping row and the cart totals keep a stale method (the pickup/ship
+ * radios are not always in the DOM, so the posted shipping_method alone
+ * can't be relied on).
+ *
+ * @param string $posted_data urlencoded form data from update_order_review.
+ */
+function pzh_checkout_remember_ship_mode($posted_data) {
+    parse_str($posted_data, $post);
+    if (empty($post['pzh_ship_mode']) || !in_array($post['pzh_ship_mode'], array('pickup', 'ship'), true)) {
+        return;
+    }
+    $mode = $post['pzh_ship_mode'];
+    WC()->session->set('pzh_ship_mode', $mode);
+
+    // Top-level posted methods (WC merges these into the session right
+    // after this hook, so anything we set now only sticks when not posted).
+    $posted_methods = isset($_POST['shipping_method']) ? wc_clean(wp_unslash($_POST['shipping_method'])) : array();
+    $has_pickup_posted = false;
+    foreach ((array) $posted_methods as $m) {
+        if (is_string($m) && strpos($m, 'local_pickup') === 0) {
+            $has_pickup_posted = true;
+            break;
+        }
     }
 
-    $fragments['#pzh-shipping-methods'] = $shipping_html;
+    $chosen = (array) WC()->session->get('chosen_shipping_methods');
+    $chosen0 = isset($chosen[0]) ? $chosen[0] : '';
+
+    if ($mode === 'pickup') {
+        // The pickup radio may not be in the DOM (ship rates need the
+        // address) — pin the session to pickup so the totals stay free
+        // shipping and the invoice row shows it.
+        if (!$has_pickup_posted && (!$chosen0 || strpos($chosen0, 'local_pickup') !== 0)) {
+            WC()->session->set('chosen_shipping_methods', array(pzh_checkout_pickup_rate_id()));
+        }
+    } else {
+        // Drop a stale pickup choice so the totals use the ship rates
+        // (WC falls back to the default rate when nothing is chosen).
+        if (!$has_pickup_posted && $chosen0 && strpos($chosen0, 'local_pickup') === 0) {
+            WC()->session->set('chosen_shipping_methods', array());
+        }
+    }
+}
+add_action('woocommerce_checkout_update_order_review', 'pzh_checkout_remember_ship_mode');
+
+/** Address line shown on the حضوری تحویل میگیرم card (from the method settings). */
+function pzh_pickup_address_line() {
+    foreach (WC_Shipping_Zones::get_zones() as $zone) {
+        foreach ($zone['shipping_methods'] as $method) {
+            if ($method->id === 'local_pickup' && $method->is_enabled()) {
+                $addr = (string) $method->get_option('pickup_address');
+                if ($addr) {
+                    return $addr;
+                }
+            }
+        }
+    }
+    return 'خیابان جمهوری، بعد از ولیعصر، پاساژ علائدین آرایشی، طبقه همکف، واحد ۲۳';
+}
+
+/** Non-pickup shipping rates of the first package, in display order. */
+function pzh_checkout_ship_rates() {
+    $rates = array();
+    $packages = WC()->shipping->get_packages();
+    if (!empty($packages[0]['rates'])) {
+        foreach ($packages[0]['rates'] as $rate) {
+            if (strpos($rate->get_id(), 'local_pickup') === 0) {
+                continue;
+            }
+            $rates[] = $rate;
+        }
+    }
+    return $rates;
+}
+
+/** Local-pickup rate id (from the packages, falling back to the zone config). */
+function pzh_checkout_pickup_rate_id() {
+    $packages = WC()->shipping->get_packages();
+    if (!empty($packages[0]['rates'])) {
+        foreach ($packages[0]['rates'] as $rate) {
+            if (strpos($rate->get_id(), 'local_pickup') === 0) {
+                return $rate->get_id();
+            }
+        }
+    }
+    // Rates may not exist yet (no address) — find the enabled pickup instance
+    foreach (WC_Shipping_Zones::get_zones() as $zone) {
+        foreach ($zone['shipping_methods'] as $method) {
+            if ($method->id === 'local_pickup' && $method->is_enabled()) {
+                return $method->get_rate_id();
+            }
+        }
+    }
+    return 'local_pickup';
+}
+
+/** Subtitle under a shipping-method card title (mockup copy). */
+function pzh_ship_method_subtitle($rate) {
+    $id = $rate->get_method_id();
+    if ($id === 'WC_Courier_Method') {
+        return 'ارسال همان روز';
+    }
+    if ($id === 'Tapin_Pishtaz_Method') {
+        return '۳ تا ۵ روز کاری';
+    }
+    return '';
+}
+
+/** Inline SVG icon for a shipping-method card. */
+function pzh_ship_method_icon($rate) {
+    $id = $rate->get_method_id();
+    // Delivery scooter
+    if ($id === 'WC_Courier_Method') {
+        return '<svg viewBox="0 0 50 25" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19h27"/><path d="M24 19v-5h-6l-3-4H5v9"/><rect x="13" y="6" width="11" height="8" rx="1"/><path d="M30 14l4-5h6v10h-4"/><circle cx="10" cy="19" r="3"/><circle cx="38" cy="19" r="3"/></svg>';
+    }
+    // Parcel with a down arrow
+    if ($id === 'Tapin_Pishtaz_Method') {
+        return '<svg viewBox="0 0 36 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="28" height="24" rx="2"/><path d="M4 12h28"/><path d="M18 16v8M14.5 20.5L18 24l3.5-3.5"/></svg>';
+    }
+    // Generic box
+    return '<svg viewBox="0 0 36 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="28" height="24" rx="2"/><path d="M4 12h28"/></svg>';
+}
+
+/**
+ * Render the dynamic part of the checkout form column: shipping choice cards,
+ * contact fields, shipping-method cards + radios and the address form.
+ * Rendered on page load and again for the update_checkout AJAX fragment.
+ */
+function pzh_render_checkout_dynamic() {
+    $checkout     = WC()->checkout();
+    $fields       = $checkout->get_checkout_fields('billing');
+    $order_fields = $checkout->get_checkout_fields('order');
+    $is_pickup    = pzh_checkout_is_pickup();
+    $rates        = pzh_checkout_ship_rates();
+    $pickup_id    = pzh_checkout_pickup_rate_id();
+
+    $chosen    = (array) WC()->session->get('chosen_shipping_methods');
+    // The checked radio must match the active mode: pickup radio when pickup
+    // is chosen, one of the ship rates otherwise.
+    $chosen_id = '';
+    if ($is_pickup) {
+        $chosen_id = $pickup_id;
+    } else {
+        if (!empty($chosen[0]) && $chosen[0] !== $pickup_id) {
+            $chosen_id = $chosen[0];
+        }
+        if ($chosen_id === '' && $rates) {
+            $chosen_id = $rates[0]->get_id();
+        }
+    }
+    $ship_method_id = $rates ? $rates[0]->get_id() : '';
+
+    $addr_value = (string) $checkout->get_value('billing_address_1');
+    ?>
+
+    <div id="pzh-checkout-dynamic">
+
+        <input type="hidden" name="pzh_ship_mode" id="pzh-ship-mode" value="<?php echo $is_pickup ? 'pickup' : 'ship'; ?>" />
+
+        <!-- Shipping choice: حضوری تحویل میگیرم / ارسال شود -->
+        <div class="pzh-ship-choice">
+            <button type="button" class="pzh-ship-choice__card<?php echo $is_pickup ? ' is-selected' : ''; ?>" data-mode="pickup" data-method-id="<?php echo esc_attr($pickup_id); ?>">
+                <span class="pzh-ship-choice__main">
+                    <svg viewBox="0 0 40 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 8h32"/>
+                        <path d="M6 12c2.4 2.2 5.6 2.2 8 0 2.4-2.2 5.6-2.2 8 0 2.4 2.2 5.6 2.2 8 0"/>
+                        <path d="M4 17v12h32V17"/>
+                        <path d="M16 17v12M24 17v12M4 23h32"/>
+                    </svg>
+                    <span><?php esc_html_e('حضوری تحویل می‌گیرم', 'piazhen'); ?></span>
+                </span>
+                <span class="pzh-ship-choice__sub"><?php echo esc_html(pzh_pickup_address_line()); ?></span>
+            </button>
+
+            <button type="button" class="pzh-ship-choice__card<?php echo !$is_pickup ? ' is-selected' : ''; ?>" data-mode="ship" data-method-id="<?php echo esc_attr($ship_method_id); ?>">
+                <span class="pzh-ship-choice__main">
+                    <svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 8v12H2v-7h8.5L14 8h5"/>
+                        <rect x="19" y="6" width="19" height="14" rx="1"/>
+                        <circle cx="9" cy="23" r="3"/>
+                        <circle cx="30" cy="23" r="3"/>
+                    </svg>
+                    <span><?php esc_html_e('ارسال شود', 'piazhen'); ?></span>
+                </span>
+                <span class="pzh-ship-choice__sub">
+                    <?php if ($is_pickup): ?>
+                        <span><?php esc_html_e('انتخاب آدرس', 'piazhen'); ?></span>
+                    <?php else: ?>
+                        <span class="pzh-ship-choice__addr" id="pzh-ship-addr"><?php echo $addr_value ? esc_html($addr_value) : esc_html__('آدرس مشتری', 'piazhen'); ?></span>
+                        <span class="pzh-ship-choice__add"><?php esc_html_e('افزودن آدرس', 'piazhen'); ?></span>
+                    <?php endif; ?>
+                </span>
+            </button>
+        </div>
+
+        <!-- Contact fields -->
+        <div class="pzh-fields-grid pzh-contact-grid">
+            <?php
+            $contact_keys = $is_pickup
+                ? array('billing_first_name', 'billing_last_name', 'billing_national_id', 'billing_phone')
+                : array('billing_first_name', 'billing_last_name', 'billing_phone', 'billing_email');
+            foreach ($contact_keys as $key) {
+                if (!isset($fields[$key])) continue;
+                woocommerce_form_field($key, $fields[$key], $checkout->get_value($key));
+            }
+            ?>
+        </div>
+
+        <?php if (!$is_pickup): ?>
+
+        <!-- Shipping methods: heading always shows in ship mode; the cards
+             and radios appear once استان/شهر produce the rates -->
+        <div class="pzh-ship-methods">
+            <div class="pzh-ship-methods__head">
+                <span class="pzh-ship-methods__title"><?php esc_html_e('انتخاب روش ارسال', 'piazhen'); ?><span class="required">*</span></span>
+                <span class="pzh-ship-methods__note"><?php echo pzh_free_delivery_active() ? esc_html__('هزینه ارسال این سفارش رایگان است', 'piazhen') : esc_html__('هزینه ارسال به عهده مشتری', 'piazhen'); ?></span>
+            </div>
+
+            <?php if ($rates): ?>
+            <div class="pzh-ship-methods__cards">
+                <?php foreach (array_slice($rates, 0, 2) as $i => $rate): ?>
+                <button type="button" class="pzh-ship-methods__card<?php echo ($rate->get_id() === $chosen_id) ? ' is-selected' : ''; ?>" data-rate-index="<?php echo (int) $i; ?>">
+                    <span class="pzh-ship-methods__icon"><?php echo pzh_ship_method_icon($rate); ?></span>
+                    <span class="pzh-ship-methods__text">
+                        <span class="pzh-ship-methods__name"><?php echo esc_html($rate->get_label()); ?></span>
+                        <span class="pzh-ship-methods__desc"><?php echo esc_html(pzh_ship_method_subtitle($rate)); ?></span>
+                    </span>
+                </button>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- WC radios stay in the DOM (hidden when pickup is chosen) so
+                 the option cards can check one and trigger update_checkout -->
+            <ul id="shipping_method" class="pzh-ship-methods__radios<?php echo $is_pickup ? ' pzh-hidden-radios' : ''; ?>">
+                <?php foreach ($rates as $i => $rate): ?>
+                <li>
+                    <input type="radio" name="shipping_method[0]" data-index="0" id="shipping_method_0_<?php echo (int) $i; ?>" value="<?php echo esc_attr($rate->get_id()); ?>" <?php checked($rate->get_id(), $chosen_id); ?> class="shipping_method" />
+                    <label for="shipping_method_0_<?php echo (int) $i; ?>"><?php echo esc_html($rate->get_label()); ?></label>
+                </li>
+                <?php endforeach; ?>
+                <li class="pzh-radio-pickup">
+                    <input type="radio" name="shipping_method[0]" data-index="0" id="shipping_method_0_pickup" value="<?php echo esc_attr($pickup_id); ?>" <?php checked($pickup_id, $chosen_id); ?> class="shipping_method" />
+                    <label for="shipping_method_0_pickup"><?php esc_html_e('حضوری تحویل می‌گیرم', 'piazhen'); ?></label>
+                </li>
+            </ul>
+            <?php else: ?>
+            <p class="shipping-methods-note"><?php esc_html_e('برای مشاهده روش‌های ارسال، آدرس خود را تکمیل کنید.', 'piazhen'); ?></p>
+            <?php endif; ?>
+        </div>
+
+        <!-- Address form -->
+        <div class="pzh-fields-grid pzh-address-grid">
+            <?php
+            $address_keys = array('billing_postcode', 'billing_state', 'billing_city', 'billing_address_1');
+            foreach ($address_keys as $key) {
+                if (!isset($fields[$key])) continue;
+                woocommerce_form_field($key, $fields[$key], $checkout->get_value($key));
+            }
+            if (!empty($order_fields['order_comments'])) {
+                woocommerce_form_field('order_comments', $order_fields['order_comments'], $checkout->get_value('order_comments'));
+            }
+            ?>
+        </div>
+
+        <?php endif; ?>
+
+        <?php if (isset($fields['billing_country'])): ?>
+            <?php woocommerce_form_field('billing_country', $fields['billing_country'], $checkout->get_value('billing_country')); ?>
+        <?php endif; ?>
+        <input type="hidden" name="billing_latitude" id="billing-latitude" value="<?php echo esc_attr($checkout->get_value('billing_latitude')); ?>" />
+        <input type="hidden" name="billing_longitude" id="billing-longitude" value="<?php echo esc_attr($checkout->get_value('billing_longitude')); ?>" />
+    </div>
+    <?php
+}
+
+/**
+ * Refresh the checkout form column on update_checkout AJAX so the pickup/ship
+ * choice re-renders the contact + shipping + address sections server-side.
+ */
+function pzh_checkout_dynamic_fragment($fragments) {
+    ob_start();
+    pzh_render_checkout_dynamic();
+    $fragments['#pzh-checkout-dynamic'] = ob_get_clean();
     return $fragments;
 }
-add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
+add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_dynamic_fragment');
 
 /**
  * The checkout design has a single address form, so the shop ships to the
@@ -2010,7 +2342,8 @@ function pzh_neshan_api_key() {
 }
 
 /**
- * Checkout fields: hide company, force country to IR, add the محله field
+ * Checkout fields: hide company, force country to IR, add the محله field,
+ * and apply the checkout redesign labels / placeholders from the mockup.
  */
 function pzh_checkout_fields($fields) {
     // Country is always Iran (hidden field)
@@ -2026,7 +2359,8 @@ function pzh_checkout_fields($fields) {
     // No company field in the design
     unset($fields['billing']['billing_company']);
 
-    // محله (district) — plain text; the map can fill it via reverse geocoding
+    // محله (district) — kept in the field list so the map geocoder can fill
+    // it, but the mockup doesn't render it; it is dropped from the UI.
     if (!isset($fields['billing']['billing_district'])) {
         $fields['billing']['billing_district'] = array(
             'label'       => __('محله', 'piazhen'),
@@ -2039,9 +2373,199 @@ function pzh_checkout_fields($fields) {
         );
     }
 
+    $is_pickup = function_exists('pzh_checkout_is_pickup') ? pzh_checkout_is_pickup() : false;
+
+    // کد ملی — only shown (and required) for حضوری تحویل می‌گیرم
+    $fields['billing']['billing_national_id'] = array(
+        'label'       => __('کد ملی', 'piazhen'),
+        'type'        => 'text',
+        'required'    => $is_pickup,
+        'class'       => array('form-row-first'),
+        'clear'       => true,
+        'priority'    => 45,
+        'input_class' => array('input-ltr'),
+        'custom_attributes' => array(
+            'dir'         => 'ltr',
+            'maxlength'   => '10',
+            'inputmode'   => 'numeric',
+        ),
+    );
+
+    // Mockup labels / placeholders
+    $labels = array(
+        'billing_first_name' => array('label' => __('نام', 'piazhen'),           'placeholder' => __('نام', 'piazhen')),
+        'billing_last_name'  => array('label' => __('نام خانوادگی', 'piazhen'), 'placeholder' => __('نام خانوادگی', 'piazhen')),
+        'billing_phone'      => array('label' => __('شماره تماس', 'piazhen'),   'placeholder' => '۰۹'),
+        'billing_email'      => array('label' => __('ایمیل', 'piazhen'),        'placeholder' => 'example@mail.com'),
+        'billing_postcode'   => array('label' => __('کد پستی', 'piazhen')),
+        'billing_state'      => array('label' => __('استان', 'piazhen')),
+        'billing_city'       => array('label' => __('شهر', 'piazhen')),
+        'billing_address_1'  => array('label' => __('آدرس', 'piazhen'),         'type' => 'textarea', 'placeholder' => 'خیابان،کوچه، پلاک، واحد...'),
+    );
+    foreach ($labels as $key => $args) {
+        if (!isset($fields['billing'][$key])) continue;
+        foreach ($args as $k => $v) {
+            $fields['billing'][$key][$k] = $v;
+        }
+    }
+
+    // ایمیل is optional in the design (no asterisk)
+    $fields['billing']['billing_email']['required'] = false;
+
+    // Latin / numeric inputs render left-aligned like the mockup
+    foreach (array('billing_phone', 'billing_email', 'billing_postcode') as $key) {
+        if (isset($fields['billing'][$key])) {
+            $fields['billing'][$key]['input_class'] = array('input-ltr');
+            $fields['billing'][$key]['custom_attributes']['dir'] = 'ltr';
+        }
+    }
+
+    // Address stack placement: کد پستی | استان / شهر | (آدرس full width).
+    // The address-field class must stay — WC uses it to refresh rates.
+    if (isset($fields['billing']['billing_postcode'])) {
+        $fields['billing']['billing_postcode']['class'] = array('form-row-first', 'address-field');
+        $fields['billing']['billing_postcode']['clear'] = true;
+    }
+    if (isset($fields['billing']['billing_state'])) {
+        $fields['billing']['billing_state']['class'] = array('form-row-last', 'address-field');
+        unset($fields['billing']['billing_state']['clear']);
+    }
+    if (isset($fields['billing']['billing_city'])) {
+        $fields['billing']['billing_city']['class'] = array('form-row-first', 'address-field');
+        $fields['billing']['billing_city']['clear'] = true;
+    }
+    if (isset($fields['billing']['billing_address_1'])) {
+        $fields['billing']['billing_address_1']['class'] = array('form-row-wide', 'address-field');
+    }
+
+    // Contact grid placement
+    if (isset($fields['billing']['billing_phone'])) {
+        $fields['billing']['billing_phone']['class'] = array('form-row-first');
+        $fields['billing']['billing_phone']['clear'] = true;
+    }
+    if (isset($fields['billing']['billing_email'])) {
+        $fields['billing']['billing_email']['class'] = array('form-row-last');
+    }
+    if (isset($fields['billing']['billing_first_name'])) {
+        $fields['billing']['billing_first_name']['class'] = array('form-row-first');
+        $fields['billing']['billing_first_name']['clear'] = true;
+    }
+    if (isset($fields['billing']['billing_last_name'])) {
+        $fields['billing']['billing_last_name']['class'] = array('form-row-last');
+    }
+
+    // توضیحات (order notes) per the mockup
+    if (isset($fields['order']['order_comments'])) {
+        $fields['order']['order_comments'] = array(
+            'label'       => __('توضیحات', 'piazhen'),
+            'type'        => 'textarea',
+            'placeholder' => __('بنویسید...', 'piazhen'),
+            'required'    => false,
+            'class'       => array('form-row-wide'),
+            'clear'       => true,
+            'priority'    => 200,
+        );
+    }
+
+    // Address fields are only required when the order is shipped
+    if ($is_pickup) {
+        foreach (array('billing_address_1', 'billing_address_2', 'billing_city', 'billing_state', 'billing_postcode') as $key) {
+            if (isset($fields['billing'][$key])) {
+                $fields['billing'][$key]['required'] = false;
+            }
+        }
+    }
+
     return $fields;
 }
 add_filter('woocommerce_checkout_fields', 'pzh_checkout_fields', 30);
+
+/** Checkout CTA label from the mockup. */
+add_filter('woocommerce_order_button_text', function () {
+    return __('ثبت اطلاعات و پرداخت', 'piazhen');
+});
+
+/**
+ * WC hooks woocommerce_checkout_payment onto woocommerce_checkout_order_review
+ * (priority 20), so the payment section would render inside the invoice card.
+ * The redesign renders the payment section (hidden) in the form column only.
+ */
+function pzh_checkout_unhook_payment_from_review() {
+    remove_action('woocommerce_checkout_order_review', 'woocommerce_checkout_payment', 20);
+}
+add_action('init', 'pzh_checkout_unhook_payment_from_review');
+
+/** Persist the کد ملی field (not a core WC address prop) on the order. */
+function pzh_checkout_save_national_id($order, $data) {
+    if (!empty($data['billing_national_id'])) {
+        $order->update_meta_data('billing_national_id', sanitize_text_field($data['billing_national_id']));
+    }
+}
+add_action('woocommerce_checkout_create_order', 'pzh_checkout_save_national_id', 10, 2);
+
+/**
+ * AJAX: search the map for a place (Neshan API with key, Nominatim fallback)
+ * for the checkout map modal's search bar.
+ */
+function pzh_map_search() {
+    check_ajax_referer('pzh_ajax_nonce', 'nonce');
+
+    $term = isset($_POST['term']) ? sanitize_text_field(wp_unslash($_POST['term'])) : '';
+    $lat  = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
+    $lng  = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
+
+    if (mb_strlen($term) < 2) {
+        wp_send_json_success(array('results' => array()));
+    }
+
+    $results = array();
+    $key     = pzh_neshan_api_key();
+
+    if ($key) {
+        $url  = 'https://api.neshan.org/v1/search?term=' . rawurlencode($term) . '&lat=' . $lat . '&lng=' . $lng;
+        $resp = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array('Api-Key' => $key),
+        ));
+
+        if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+            $body = json_decode(wp_remote_retrieve_body($resp), true);
+            if (!empty($body['items']) && is_array($body['items'])) {
+                foreach (array_slice($body['items'], 0, 6) as $item) {
+                    if (empty($item['location'])) continue;
+                    $results[] = array(
+                        'title'   => isset($item['title']) ? $item['title'] : '',
+                        'address' => isset($item['address']) ? $item['address'] : '',
+                        'lat'     => isset($item['location']['y']) ? $item['location']['y'] : 0,
+                        'lng'     => isset($item['location']['x']) ? $item['location']['x'] : 0,
+                    );
+                }
+            }
+        }
+    } else {
+        $url  = 'https://nominatim.openstreetmap.org/search?format=jsonv2&q=' . rawurlencode($term) . '&accept-language=fa&countrycodes=ir&limit=6';
+        $resp = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array('User-Agent' => 'Piazhen-Theme/1.0 (localhost)'),
+        ));
+
+        if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+            $body = json_decode(wp_remote_retrieve_body($resp), true);
+            foreach ((array) $body as $item) {
+                $results[] = array(
+                    'title'   => isset($item['display_name']) ? $item['display_name'] : '',
+                    'address' => isset($item['display_name']) ? $item['display_name'] : '',
+                    'lat'     => isset($item['lat']) ? floatval($item['lat']) : 0,
+                    'lng'     => isset($item['lon']) ? floatval($item['lon']) : 0,
+                );
+            }
+        }
+    }
+
+    wp_send_json_success(array('results' => $results));
+}
+add_action('wp_ajax_pzh_map_search', 'pzh_map_search');
+add_action('wp_ajax_nopriv_pzh_map_search', 'pzh_map_search');
 
 /**
  * AJAX: reverse geocode map coordinates via Neshan (requires the API key)
@@ -2133,7 +2657,6 @@ function pzh_checkout_save_map_coords($order_id, $posted) {
     }
 }
 add_action('woocommerce_checkout_update_order_meta', 'pzh_checkout_save_map_coords', 20, 2);
-add_filter('woocommerce_update_order_review_fragments', 'pzh_checkout_shipping_fragment');
 
 // ============================================================================
 // Auth: Login / Registration with SMS OTP (Melipayamak) — custom AJAX, no plugins
@@ -3245,6 +3768,40 @@ function pzh_free_delivery_data() {
         'product_ids' => array_values(array_filter(array_map('absint', (array) get_option('pzh_free_delivery_products', array())))),
     );
 }
+
+/**
+ * Is the cart over the free-delivery threshold? (Theme setting
+ * "ارسال رایگان" — compared against the cart subtotal, the same value the
+ * cart progress bar uses.)
+ */
+function pzh_free_delivery_active() {
+    $threshold = absint(get_option('pzh_free_delivery_threshold', 5000000));
+    if ($threshold < 1) {
+        return false;
+    }
+    return (float) WC()->cart->get_subtotal() >= $threshold;
+}
+
+/**
+ * When the threshold is reached, zero the real shipping cost of every rate
+ * (local pickup is already free) so the cart AND checkout totals — and the
+ * order itself — are actually free, not just the progress bar.
+ */
+function pzh_free_delivery_zero_rates($rates, $package) {
+    if (!pzh_free_delivery_active()) {
+        return $rates;
+    }
+    foreach ($rates as $rate) {
+        if (strpos($rate->get_id(), 'local_pickup') === 0) {
+            continue;
+        }
+        if (0 < $rate->get_cost()) {
+            $rate->set_cost(0);
+        }
+    }
+    return $rates;
+}
+add_filter('woocommerce_package_rates', 'pzh_free_delivery_zero_rates', 20, 2);
 
 /**
  * Render the free-delivery progress bar + suggested products (cart page top)

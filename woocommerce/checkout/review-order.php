@@ -1,6 +1,6 @@
 <?php
 /**
- * Checkout Order Review (custom design: items + totals + place order button)
+ * Checkout Order Review (mockup invoice card: totals + outlined orange CTA)
  *
  * @package Piazhen
  */
@@ -11,40 +11,10 @@ if (!defined('ABSPATH')) {
 ?>
 <div class="review-order pzh-review-order woocommerce-checkout-review-order-table">
 
-    <!-- Items -->
-    <div class="review-order__items">
-        <?php
-        do_action('woocommerce_review_order_before_cart_contents');
-
-        foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
-            $_product = apply_filters('woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key);
-            if ($_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters('woocommerce_checkout_cart_item_visible', true, $cart_item, $cart_item_key)) {
-                ?>
-                <div class="review-order__item">
-                    <div class="review-order__item-image">
-                        <?php echo $_product->get_image('pzh_product_thumb'); ?>
-                        <span class="review-order__item-qty"><?php echo pzh_fa_num($cart_item['quantity']); ?></span>
-                    </div>
-                    <div class="review-order__item-name">
-                        <?php echo wp_kses_post(apply_filters('woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key)); ?>
-                        <?php echo wc_get_formatted_cart_item_data($cart_item); ?>
-                    </div>
-                    <div class="review-order__item-subtotal">
-                        <?php echo apply_filters('woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal($_product, $cart_item['quantity']), $cart_item, $cart_item_key); ?>
-                    </div>
-                </div>
-                <?php
-            }
-        }
-
-        do_action('woocommerce_review_order_after_cart_contents');
-        ?>
-    </div>
-
     <!-- Totals -->
-    <div class="review-order__totals">
+    <div class="review-order__totals pzh-invoice-rows">
         <div class="cart-total-row">
-            <span><?php _e('مبلغ کل کالاها', 'piazhen'); ?></span>
+            <span><?php _e('قیمت محصولات', 'piazhen'); ?></span>
             <span><?php wc_cart_totals_subtotal_html(); ?></span>
         </div>
 
@@ -64,21 +34,45 @@ if (!defined('ABSPATH')) {
 
         <?php if (WC()->cart->needs_shipping()): ?>
             <div class="cart-total-row cart-total-row--shipping">
-                <span><?php _e('هزینه ارسال', 'piazhen'); ?></span>
+                <span class="cart-total-row__label">
+                    <?php _e('هزینه ارسال', 'piazhen'); ?>
+                    <svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 8v12H2v-7h8.5L14 8h5"/>
+                        <rect x="19" y="6" width="19" height="14" rx="1"/>
+                        <circle cx="9" cy="23" r="3"/>
+                        <circle cx="30" cy="23" r="3"/>
+                    </svg>
+                </span>
                 <span>
                     <?php
                     $chosen = WC()->session->get('chosen_shipping_methods');
-                    $label  = '';
-                    if (!empty($chosen)) {
-                        $packages = WC()->shipping->get_packages();
-                        foreach ($packages as $i => $package) {
-                            foreach ($package['rates'] as $rate) {
-                                if ($chosen[$i] === $rate->id) {
-                                    $label = wc_cart_totals_shipping_method_label($rate);
-                                    break 2;
+                    $chosen_id = !empty($chosen[0]) ? $chosen[0] : '';
+                    // A stale pickup choice in ship mode must not show here
+                    if ($chosen_id && !pzh_checkout_is_pickup() && strpos($chosen_id, 'local_pickup') === 0) {
+                        $chosen_id = '';
+                    }
+                    $label = '';
+                    $packages = WC()->shipping->get_packages();
+                    if (!empty($packages[0]['rates'])) {
+                        foreach ($packages[0]['rates'] as $rate) {
+                            if (strpos($rate->get_id(), 'local_pickup') === 0) continue;
+                            // No choice yet: default to the first ship rate
+                            // (same default the WC totals use)
+                            if ($chosen_id === '' || $chosen_id === $rate->get_id()) {
+                                if (0 < $rate->get_cost()) {
+                                    // Full label includes the price; strip the
+                                    // PWS image so it stays plain text
+                                    $full = preg_replace('/<img[^>]*>/', '', wc_cart_totals_shipping_method_label($rate));
+                                    $label = trim(wp_strip_all_tags($full));
+                                } else {
+                                    $label = __('رایگان', 'piazhen');
                                 }
+                                break;
                             }
                         }
+                    }
+                    if ($label === '' && $chosen_id && strpos($chosen_id, 'local_pickup') === 0) {
+                        $label = __('رایگان', 'piazhen');
                     }
                     echo $label ? esc_html($label) : '<span class="muted-note">' . esc_html__('انتخاب نشده', 'piazhen') . '</span>';
                     ?>
@@ -87,16 +81,22 @@ if (!defined('ABSPATH')) {
         <?php endif; ?>
 
         <div class="cart-total-row cart-total-row--total">
-            <span><?php _e('مبلغ قابل پرداخت', 'piazhen'); ?></span>
+            <span><?php _e('مجموع سبد خرید:', 'piazhen'); ?></span>
             <span><?php wc_cart_totals_order_total_html(); ?></span>
         </div>
     </div>
 
-    <!-- Place order (in the summary card, per design) -->
+    <!-- Place order (outlined orange pill, per the mockup — the mockup has no
+         terms checkbox in the invoice card, so terms.php is intentionally not
+         rendered here) -->
     <div class="review-order__actions">
-        <?php wc_get_template('checkout/terms.php'); ?>
         <?php do_action('woocommerce_review_order_before_submit'); ?>
-        <?php echo apply_filters('woocommerce_order_button_html', '<button type="submit" class="mainBtn mainBtn--yellow w-100 place-order-btn" name="woocommerce_checkout_place_order" id="place_order" value="' . esc_attr($order_button_text) . '" data-value="' . esc_attr($order_button_text) . '">' . esc_html($order_button_text) . '</button>'); ?>
+        <?php
+        // payment.php normally defines $order_button_text, but this template
+        // renders the button itself (the mockup CTA lives in the invoice card)
+        $order_button_text = apply_filters('woocommerce_order_button_text', __('ثبت اطلاعات و پرداخت', 'piazhen'));
+        echo apply_filters('woocommerce_order_button_html', '<button type="submit" class="pzh-invoice-cta" name="woocommerce_checkout_place_order" id="place_order" value="' . esc_attr($order_button_text) . '" data-value="' . esc_attr($order_button_text) . '">' . esc_html($order_button_text) . '</button>');
+        ?>
         <?php do_action('woocommerce_review_order_after_submit'); ?>
     </div>
 

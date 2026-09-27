@@ -1,6 +1,10 @@
 <?php
 /**
- * Checkout Form (custom design)
+ * Checkout Form (mockup: Shipping information1/2/3.png)
+ *
+ * Right column: shipping choice cards + contact + shipping method + address.
+ * Left column: invoice card (totals + CTA). The Neshan map lives in a modal
+ * opened from the "افزودن آدرس" link.
  *
  * @package Piazhen
  */
@@ -17,16 +21,6 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 }
 ?>
 
-<!-- Breadcrumb + Title -->
-<nav class="cart-breadcrumb py-3">
-    <div class="breadcrumb-trail">
-        <a href="<?php echo esc_url(home_url('/')); ?>"><?php _e('خانه', 'piazhen'); ?></a>
-        <span class="breadcrumb-delimiter">/</span>
-        <span><?php _e('تسویه حساب', 'piazhen'); ?></span>
-    </div>
-</nav>
-<h1 class="cart-title"><?php _e('تسویه حساب', 'piazhen'); ?></h1>
-
 <form name="checkout" method="post" class="checkout woocommerce-checkout"
       action="<?php echo esc_url(wc_get_checkout_url()); ?>"
       enctype="multipart/form-data"
@@ -34,7 +28,7 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 
     <div class="pzh-checkout-layout">
 
-        <!-- ============ Form column (steps) ============ -->
+        <!-- ============ Form column ============ -->
         <div class="pzh-checkout-form">
 
             <?php if ($checkout->get_checkout_fields()): ?>
@@ -49,51 +43,25 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 
             <?php endif; ?>
 
-            <?php $has_shipping = WC()->cart->needs_shipping(); ?>
-            <?php if ($has_shipping): ?>
-                <!-- Step 3: Shipping method (updates via checkout AJAX fragment) -->
-                <div class="checkout-step">
-                    <div class="checkout-step__head">
-                        <span class="checkout-step__num">3</span>
-                        <h4 class="checkout-step__title"><?php _e('روش ارسال', 'piazhen'); ?></h4>
-                    </div>
-                    <div class="checkout-step__body">
-                        <div id="pzh-shipping-methods">
-                            <?php
-                            ob_start();
-                            wc_cart_totals_shipping_html();
-                            $shipping_html = ob_get_clean();
-                            if (trim($shipping_html)) {
-                                echo $shipping_html;
-                            } else {
-                                echo '<p class="shipping-methods-note">' . esc_html__('برای مشاهده روش‌های ارسال، آدرس خود را تکمیل کنید.', 'piazhen') . '</p>';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Step 4: Payment method -->
-            <div class="checkout-step">
-                <div class="checkout-step__head">
-                    <span class="checkout-step__num"><?php echo $has_shipping ? 4 : 3; ?></span>
-                    <h4 class="checkout-step__title"><?php _e('روش پرداخت', 'piazhen'); ?></h4>
-                </div>
-                <div class="checkout-step__body">
-                    <?php do_action('woocommerce_review_order_before_payment'); ?>
-                    <?php woocommerce_checkout_payment(); ?>
-                    <?php do_action('woocommerce_review_order_after_payment'); ?>
-                </div>
+            <?php
+            // Only one gateway (زرین‌پال) is configured and the mockup has no
+            // payment step — keep the radios + nonce in the DOM, hidden.
+            ?>
+            <?php do_action('woocommerce_review_order_before_payment'); ?>
+            <div class="pzh-payment-hidden">
+                <?php woocommerce_checkout_payment(); ?>
             </div>
+            <?php do_action('woocommerce_review_order_after_payment'); ?>
 
         </div>
 
-        <!-- ============ Order summary column ============ -->
+        <!-- ============ Invoice column ============ -->
         <div class="pzh-checkout-summary">
+            <div class="pzh-invoice-head">
+                <span class="pzh-invoice-head__title"><?php _e('صورت حساب', 'piazhen'); ?></span>
+                <span class="pzh-invoice-head__count"><?php echo pzh_fa_num(WC()->cart->get_cart_contents_count()) . ' ' . __('محصول', 'piazhen'); ?></span>
+            </div>
             <div class="checkout-summary-card">
-                <h4 class="checkout-summary-card__title"><?php _e('خلاصه سفارش', 'piazhen'); ?></h4>
-
                 <div id="order_review" class="woocommerce-checkout-review-order">
                     <?php do_action('woocommerce_checkout_order_review'); ?>
                 </div>
@@ -102,5 +70,44 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
 
     </div>
 </form>
+
+<!-- ============ Neshan map modal (افزودن آدرس) ============ -->
+<div class="pzh-map-modal-overlay" id="checkout-map-modal" hidden>
+    <div class="pzh-map-modal" role="dialog" aria-modal="true" aria-label="<?php esc_attr_e('افزودن آدرس', 'piazhen'); ?>">
+
+        <div class="pzh-map-modal__header">
+            <div class="pzh-map-modal__title">
+                <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="17" cy="17" r="14"/>
+                    <path d="M17 9.5v15M9.5 17h15"/>
+                </svg>
+                <span><?php _e('افزودن آدرس', 'piazhen'); ?></span>
+            </div>
+            <button type="button" class="pzh-map-modal__close" id="checkout-map-modal-close" aria-label="<?php esc_attr_e('بستن', 'piazhen'); ?>">
+                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                    <path d="M4 4l24 24M28 4L4 28"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="pzh-map-modal__body">
+            <div class="pzh-map-search">
+                <svg class="pzh-map-search__icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="14" cy="14" r="9"/>
+                    <path d="M21 21l7 7"/>
+                </svg>
+                <input type="text" id="checkout-map-search" placeholder="<?php esc_attr_e('جست‌وجو آدرس', 'piazhen'); ?>" autocomplete="off" />
+                <div class="pzh-map-search__results" id="checkout-map-search-results"></div>
+            </div>
+
+            <div id="checkout-map-modal-map" class="checkout-map pzh-map-modal__map"></div>
+
+            <div class="pzh-map-modal__footer">
+                <button type="button" class="pzh-map-modal__cta" id="checkout-map-modal-apply"><?php _e('ثبت آدرس و ادامه', 'piazhen'); ?></button>
+            </div>
+        </div>
+
+    </div>
+</div>
 
 <?php do_action('woocommerce_after_checkout_form', $checkout); ?>

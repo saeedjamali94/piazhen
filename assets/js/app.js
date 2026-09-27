@@ -80,7 +80,10 @@ var PZH_STR = {
     show_less:             'بستن ...',
     map_click_hint:        'روی نقشه کلیک کنید تا آدرس از موقعیت انتخابشده پر شود.',
     both_addresses_set:    'هر دو آدرس ثبت شدهاند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.',
-    add_to_cart_short:     'خطا در افزودن به سبد.'
+    add_to_cart_short:     'خطا در افزودن به سبد.',
+    no_results:            'نتیجه‌ای یافت نشد.',
+    map_pin_first:         'ابتدا موقعیت را روی نقشه انتخاب کنید.',
+    locate_error:          'مکان شما در دسترس نیست.'
 };
 
 /**
@@ -95,7 +98,8 @@ function pzhStr(key) {
  * Address map (Neshan SDK with key / Leaflet + OSM fallback) with a pin and
  * AJAX reverse geocoding that fills the address fields:
  * opts: { containerId, barId, latId, lngId, addressFieldId, plaqueFieldId,
- *         unitFieldId, cityFieldId, stateFieldId, districtFieldId }
+ *         unitFieldId, cityFieldId, stateFieldId, districtFieldId,
+ *         customZoom (bool), onPlace (fn) }
  */
 function pzhInitAddressMap(opts) {
     var $mapEl = $('#' + opts.containerId);
@@ -114,14 +118,14 @@ function pzhInitAddressMap(opts) {
             traffic: false,
             center: mapCenter,
             zoom: mapZoom,
-            zoomControl: true,
+            zoomControl: !opts.customZoom,
             scrollWheelZoom: false
         });
     } else {
         map = L.map(opts.containerId, {
             center: mapCenter,
             zoom: mapZoom,
-            zoomControl: true,
+            zoomControl: !opts.customZoom,
             attributionControl: false,
             scrollWheelZoom: false
         });
@@ -131,14 +135,20 @@ function pzhInitAddressMap(opts) {
     var pinIcon = L.divIcon({
         className: 'pzh-map-pin',
         html: '<div class="pzh-map-pin__inner"><span class="pin-head"></span><span class="pin-dot"></span></div>',
-        iconSize: [34, 34],
-        iconAnchor: [17, 32]
+        iconSize: [34, 48],
+        iconAnchor: [17, 46]
     });
 
     var marker = null;
     var $bar = $('#' + opts.barId);
     var $lat = $('#' + opts.latId);
     var $lng = $('#' + opts.lngId);
+
+    // Mockup: the map shows a pin at its center before any click — visual
+    // only (no geocoding / field filling until the user actually picks a spot)
+    if (opts.defaultPin && !$lat.val() && !$lng.val()) {
+        marker = L.marker(map.getCenter(), { icon: pinIcon }).addTo(map);
+    }
 
     function placePin(latlng, animate, overwrite) {
         if (marker) {
@@ -163,36 +173,38 @@ function pzhInitAddressMap(opts) {
                 nonce: pzh_options.nonce
             },
             success: function (resp) {
-                if (resp && resp.success && resp.data.geocoded && resp.data.address) {
-                    $bar.html('<i class="fa-solid fa-location-dot" style="color:#F26A26"></i> ' + resp.data.address);
+                var data = (resp && resp.success && resp.data) ? resp.data : null;
+                if (opts.onPlace) opts.onPlace(data);
+                if (data && data.geocoded && data.address) {
+                    $bar.html('<i class="fa-solid fa-location-dot" style="color:#F26A26"></i> ' + data.address);
 
                     // آدرس — main address text
                     if (opts.addressFieldId) {
                         var $addr = $('#' + opts.addressFieldId);
-                        if ($addr.length && (overwrite || !$addr.val())) $addr.val(resp.data.address);
+                        if ($addr.length && (overwrite || !$addr.val())) $addr.val(data.address);
                     }
 
                     // پلاک and واحد — filled separately when available
-                    if (opts.plaqueFieldId && resp.data.plaque) {
+                    if (opts.plaqueFieldId && data.plaque) {
                         var $plaque = $('#' + opts.plaqueFieldId);
-                        if ($plaque.length && (overwrite || !$plaque.val())) $plaque.val(resp.data.plaque);
+                        if ($plaque.length && (overwrite || !$plaque.val())) $plaque.val(data.plaque);
                     }
-                    if (opts.unitFieldId && resp.data.unit) {
+                    if (opts.unitFieldId && data.unit) {
                         var $unit = $('#' + opts.unitFieldId);
-                        if ($unit.length && (overwrite || !$unit.val())) $unit.val(resp.data.unit);
+                        if ($unit.length && (overwrite || !$unit.val())) $unit.val(data.unit);
                     }
 
                     // شهر — text input
-                    if (opts.cityFieldId && resp.data.city) {
+                    if (opts.cityFieldId && data.city) {
                         var $city = $('#' + opts.cityFieldId);
-                        if ($city.length && (overwrite || !$city.val())) $city.val(resp.data.city);
+                        if ($city.length && (overwrite || !$city.val())) $city.val(data.city);
                     }
 
                     // استان — select, matched by option text (PWS uses numeric codes)
-                    if (opts.stateFieldId && resp.data.state) {
+                    if (opts.stateFieldId && data.state) {
                         var $state = $('#' + opts.stateFieldId);
                         if ($state.length && $state.is('select') && (overwrite || !$state.val())) {
-                            var wanted = resp.data.state.trim();
+                            var wanted = data.state.trim();
                             $state.find('option').each(function () {
                                 if ($(this).text().trim() === wanted) {
                                     $state.val($(this).val());
@@ -203,18 +215,51 @@ function pzhInitAddressMap(opts) {
                     }
 
                     // محله
-                    if (opts.districtFieldId && resp.data.district) {
+                    if (opts.districtFieldId && data.district) {
                         var $dist = $('#' + opts.districtFieldId);
-                        if ($dist.length && (overwrite || !$dist.val())) $dist.val(resp.data.district);
+                        if ($dist.length && (overwrite || !$dist.val())) $dist.val(data.district);
                     }
                 } else {
                     $bar.html(pzhStr('location_set'));
                 }
             },
             error: function () {
+                if (opts.onPlace) opts.onPlace(null);
                 $bar.html(pzhStr('location_set'));
             }
         });
+    }
+
+    // Mockup zoom control: one white box with +, − and a locate button
+    if (opts.customZoom) {
+        var zoomBox = L.control({ position: 'topright' });
+        zoomBox.onAdd = function () {
+            var div = L.DomUtil.create('div', 'pzh-map-zoom');
+            div.innerHTML =
+                '<button type="button" class="pzh-map-zoom__btn" data-zoom="in" aria-label="بزرگ‌نمایی">+</button>' +
+                '<button type="button" class="pzh-map-zoom__btn" data-zoom="out" aria-label="کوچک‌نمایی">−</button>' +
+                '<button type="button" class="pzh-map-zoom__btn pzh-map-zoom__locate" aria-label="موقعیت من"></button>';
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.on(div, 'click', function (e) {
+                var btn = e.target.closest('button');
+                if (!btn) return;
+                if (btn.dataset.zoom === 'in') {
+                    map.zoomIn();
+                } else if (btn.dataset.zoom === 'out') {
+                    map.zoomOut();
+                } else if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function (pos) {
+                        var ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                        map.setView(ll, Math.max(map.getZoom(), 15));
+                        placePin(ll, true, false);
+                    }, function () {
+                        pzhToast(pzhStr('locate_error'), 'error');
+                    });
+                }
+            });
+            return div;
+        };
+        zoomBox.addTo(map);
     }
 
     map.on('click', function (e) {
@@ -1589,20 +1634,153 @@ $(document).ready(function () {
     pzhCheckoutSummaryOrder();
 
     // ========================================================================
-    // Checkout Map (Neshan SDK with API key, or Leaflet + OSM fallback)
+    // Checkout — shipping choice cards + method cards + Neshan map modal
     // ========================================================================
-    var $checkoutMap = $('#checkout-map');
+    var $checkoutModal = $('#checkout-map-modal');
 
-    if ($checkoutMap.length && typeof L !== 'undefined') {
-        pzhInitAddressMap({
-            containerId: 'checkout-map',
-            barId: 'checkout-map-address',
-            latId: 'billing-latitude',
-            lngId: 'billing-longitude',
-            addressFieldId: 'billing_address_1',
-            cityFieldId: 'billing_city',
-            stateFieldId: 'billing_state',
-            districtFieldId: 'billing_district'
+    if ($checkoutModal.length) {
+        var checkoutMap = null;
+        var $mapSearchInput = $('#checkout-map-search');
+        var $mapSearchResults = $('#checkout-map-search-results');
+        var searchTimer = null;
+        var searchSeq = 0;
+
+        function openCheckoutMapModal() {
+            $checkoutModal.prop('hidden', false).show();
+            if (!checkoutMap) {
+                checkoutMap = pzhInitAddressMap({
+                    containerId: 'checkout-map-modal-map',
+                    barId: '',
+                    latId: 'billing-latitude',
+                    lngId: 'billing-longitude',
+                    addressFieldId: 'billing_address_1',
+                    cityFieldId: 'billing_city',
+                    stateFieldId: 'billing_state',
+                    districtFieldId: 'billing_district',
+                    customZoom: true,
+                    defaultPin: true,
+                    onPlace: function (data) {
+                        var $addrLine = $('#pzh-ship-addr');
+                        if ($addrLine.length && data && data.geocoded && data.address) {
+                            $addrLine.text(data.address);
+                        }
+                    }
+                });
+            } else {
+                checkoutMap.refresh();
+            }
+        }
+
+        // Shipping choice cards: set the mode, check the matching WC radio
+        // when it exists (ship rates only exist once the address is filled),
+        // then refresh the fragment.
+        $(document.body).on('click', '.pzh-ship-choice__card', function (e) {
+            // "افزودن آدرس" opens the map modal instead of selecting the card
+            if ($(e.target).closest('.pzh-ship-choice__add').length) return;
+
+            var $card = $(this);
+            if ($card.hasClass('is-selected')) return;
+
+            var mode = $card.data('mode');
+            var methodId = $card.data('method-id');
+            var $radio = $('#shipping_method input[name="shipping_method[0]"][value="' + methodId + '"]');
+
+            $('#pzh-ship-mode').val(mode);
+            if ($radio.length) {
+                $radio.prop('checked', true);
+            }
+            $(document.body).trigger('update_checkout');
+        });
+
+        // Shipping method cards mirror their radio (WC itself listens to the
+        // radio changes delegated on the form and triggers update_checkout)
+        $(document.body).on('click', '.pzh-ship-methods__card', function () {
+            var $radio = $('#shipping_method_0_' + $(this).data('rate-index'));
+            if ($radio.length && !$radio.prop('checked')) {
+                $radio.prop('checked', true);
+                $(document.body).trigger('update_checkout');
+            }
+        });
+
+        // Open / close the map modal
+        $(document.body).on('click', '.pzh-ship-choice__add', function () {
+            openCheckoutMapModal();
+        });
+
+        $('#checkout-map-modal-close').on('click', function () {
+            $checkoutModal.hide().prop('hidden', true);
+        });
+
+        $checkoutModal.on('click', function (e) {
+            if (e.target === this) $checkoutModal.hide().prop('hidden', true);
+        });
+
+        // Map search (debounced; Neshan API or Nominatim fallback)
+        $mapSearchInput.on('input', function () {
+            var term = $(this).val().trim();
+            clearTimeout(searchTimer);
+            if (term.length < 2) {
+                $mapSearchResults.empty().hide();
+                return;
+            }
+            searchTimer = setTimeout(function () {
+                var seq = ++searchSeq;
+                var center = checkoutMap ? checkoutMap.map.getCenter() : null;
+                $.ajax({
+                    url: pzh_options.ajax_url,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'pzh_map_search',
+                        term: term,
+                        lat: center ? center.lat : 0,
+                        lng: center ? center.lng : 0,
+                        nonce: pzh_options.nonce
+                    },
+                    success: function (resp) {
+                        if (seq !== searchSeq) return;
+                        var html = '';
+                        if (resp && resp.success && resp.data.results && resp.data.results.length) {
+                            $.each(resp.data.results, function (i, r) {
+                                html += '<button type="button" class="pzh-map-search__item" data-lat="' + r.lat + '" data-lng="' + r.lng + '">' +
+                                    '<i class="fa-solid fa-location-dot"></i>' +
+                                    '<span class="pzh-map-search__item-text">' +
+                                    '<span class="pzh-map-search__item-title">' + r.title + '</span>' +
+                                    (r.address && r.address !== r.title ? '<span class="pzh-map-search__item-addr">' + r.address + '</span>' : '') +
+                                    '</span>' +
+                                    '</button>';
+                            });
+                        } else {
+                            html = '<div class="pzh-map-search__empty">' + pzhStr('no_results') + '</div>';
+                        }
+                        $mapSearchResults.html(html).show();
+                    },
+                    error: function () {
+                        if (seq === searchSeq) $mapSearchResults.empty().hide();
+                    }
+                });
+            }, 350);
+        });
+
+        $mapSearchResults.on('click', '.pzh-map-search__item', function () {
+            var lat = parseFloat($(this).data('lat'));
+            var lng = parseFloat($(this).data('lng'));
+            if (isFinite(lat) && isFinite(lng) && checkoutMap) {
+                checkoutMap.place(L.latLng(lat, lng), true, true);
+                $mapSearchResults.empty().hide();
+            }
+        });
+
+        // Modal CTA: the pin's reverse geocoding already filled the fields
+        $('#checkout-map-modal-apply').on('click', function () {
+            var lat = $('#billing-latitude').val();
+            var lng = $('#billing-longitude').val();
+            if (!lat || !lng) {
+                pzhToast(pzhStr('map_pin_first'), 'error');
+                return;
+            }
+            $checkoutModal.hide().prop('hidden', true);
+            pzhToast(pzhStr('location_set'));
         });
     }
 
