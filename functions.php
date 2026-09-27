@@ -19,6 +19,9 @@ define('SITE_URL', get_site_url());
 // Load site settings (admin panel + helper functions)
 require get_template_directory() . '/inc/settings.php';
 
+// Load Instagram feed (newest posts of the shop's account, transient-cached)
+require get_template_directory() . '/inc/instagram.php';
+
 // ============================================================================
 // Theme Setup
 // ============================================================================
@@ -4018,7 +4021,8 @@ function pzh_menu_item_has_product_cat_children($item, $menu_id) {
 
 /**
  * Build the mega menu panel from the nav menu hierarchy:
- * 4 balanced, right-aligned text columns (bold headers + gray links).
+ * 3 balanced, right-aligned text columns (bold headers + gray links)
+ * + a 4th brands column (2-col logo tile grid, loaded dynamically).
  */
 function pzh_build_mega_menu_panel($item, $menu_id) {
     $map = pzh_get_menu_item_children_map($menu_id);
@@ -4034,14 +4038,26 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
         return '';
     }
 
-    // Distribute into 4 columns, balancing the row count per column
-    $columns = array(array(), array(), array(), array());
-    $weights = array(0, 0, 0, 0);
+    // Distribute into 3 text columns, balancing the row count per column
+    $columns = array(array(), array(), array());
+    $weights = array(0, 0, 0);
     foreach ($categories as $cat) {
         $weight = 1 + count($cat['subs']); // header + its links
         $target = array_search(min($weights), $weights, true);
         $columns[$target][] = $cat;
         $weights[$target] += $weight;
+    }
+
+    // Brands column: same dynamic source as the homepage grid (up to 8),
+    // linked to the "همه برندها" category archive.
+    $brands     = pzh_get_brands();
+    $brands_cat = pzh_get_brands_category();
+    $brands_url = SITE_URL;
+    if ($brands_cat && !is_wp_error($brands_cat)) {
+        $brands_link = get_term_link($brands_cat);
+        if (!is_wp_error($brands_link)) {
+            $brands_url = $brands_link;
+        }
     }
 
     ob_start();
@@ -4069,6 +4085,27 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
                     <?php endforeach; ?>
                 </div>
             <?php endforeach; ?>
+
+            <?php if (!empty($brands)): ?>
+                <div class="mega-menu__col mega-menu__col--brands">
+                    <a class="mega-menu__header" href="<?php echo esc_url($brands_url); ?>">
+                        <?php _e('برندها', 'piazhen'); ?>
+                    </a>
+                    <div class="mega-menu__brands">
+                        <?php foreach ($brands as $brand): ?>
+                            <a class="mega-menu__brand" href="<?php echo esc_url($brand['link']); ?>"
+                               title="<?php echo esc_attr($brand['name']); ?>">
+                                <?php if (!empty($brand['image'])): ?>
+                                    <img src="<?php echo esc_url($brand['image']); ?>"
+                                         alt="<?php echo esc_attr($brand['name']); ?>" loading="lazy">
+                                <?php else: ?>
+                                    <span class="mega-menu__brand-name"><?php echo esc_html($brand['name']); ?></span>
+                                <?php endif; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -4078,6 +4115,14 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
 // ============================================================================
 // WooCommerce AJAX Cart Fragments
 // ============================================================================
+
+// QA helper: ?pzh_mega=1 keeps mega panels visible (headless design screenshots)
+add_filter('body_class', function ($classes) {
+    if (isset($_GET['pzh_mega'])) {
+        $classes[] = 'pzh-show-mega';
+    }
+    return $classes;
+});
 add_filter('woocommerce_add_to_cart_fragments', 'pzh_cart_fragments');
 function pzh_cart_fragments($fragments) {
     ob_start();

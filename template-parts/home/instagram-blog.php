@@ -3,6 +3,8 @@
  * Homepage: Blog + Instagram section (per home-end.png)
  * Two 50/50 cards — blog (right) & Instagram (left) — each a 1-per-view
  * dots-only carousel: image + headline + excerpt.
+ * The Instagram card shows the newest posts of the shop's Instagram account
+ * (see inc/instagram.php), linking each slide to the post on instagram.com.
  *
  * @package Piazhen
  */
@@ -15,18 +17,14 @@ $blog_query = new WP_Query(array(
     'order'          => 'DESC',
 ));
 
-// Instagram posts (category 'instagram'); fall back to latest posts
-$instagram_query = new WP_Query(array(
-    'post_type'      => 'post',
-    'posts_per_page' => 6,
-    'category_name'  => 'instagram',
-    'orderby'        => 'date',
-    'order'          => 'DESC',
-));
-if (!$instagram_query->have_posts()) {
+// Instagram posts — newest posts of the shop's account (inc/instagram.php).
+// Falls back to local 'instagram'-category posts when the feed is unavailable.
+$instagram_posts = pzh_instagram_feed(6);
+if (empty($instagram_posts)) {
     $instagram_query = new WP_Query(array(
         'post_type'      => 'post',
         'posts_per_page' => 6,
+        'category_name'  => 'instagram',
         'orderby'        => 'date',
         'order'          => 'DESC',
     ));
@@ -74,17 +72,43 @@ if (!$instagram_query->have_posts()) {
                 </div>
             </div>
 
-            <!-- Instagram card (left) -->
+            <!-- Instagram card (left) — live feed from instagram.com/piazhen -->
             <div class="col-md-6">
                 <div class="home-end-card">
                     <div class="home-end-card__head">
-                        <h3 class="home-end-card__title"><?php _e('اینستاگرام', 'piazhen'); ?></h3>
+                        <h3 class="home-end-card__title">
+                            <a href="<?php echo esc_url(pzh_instagram_profile_url()); ?>" target="_blank" rel="noopener"><?php _e('اینستاگرام', 'piazhen'); ?></a>
+                        </h3>
                         <span class="home-end-card__icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
                         </span>
                     </div>
 
-                    <?php if ($instagram_query->have_posts()): ?>
+                    <?php if (!empty($instagram_posts)): ?>
+                        <div class="swiper home-end-instagram-swiper">
+                            <div class="swiper-wrapper">
+                                <?php foreach ($instagram_posts as $instagram_post):
+                                    $ig_caption = trim($instagram_post['caption']);
+                                    if (!$ig_caption) {
+                                        $ig_caption = __('مشاهده پست در اینستاگرام', 'piazhen');
+                                    }
+                                ?>
+                                    <div class="swiper-slide">
+                                        <a href="<?php echo esc_url($instagram_post['url']); ?>" class="home-end-slide" target="_blank" rel="noopener">
+                                            <div class="home-end-slide__image">
+                                                <img src="<?php echo esc_url($instagram_post['image']); ?>" alt="<?php echo esc_attr(pzh_instagram_username()); ?> در اینستاگرام" loading="lazy">
+                                            </div>
+                                            <h4 class="home-end-slide__title"><?php echo esc_html(wp_trim_words($ig_caption, 8, '…')); ?></h4>
+                                            <p class="home-end-slide__excerpt">
+                                                <?php echo esc_html(wp_trim_words($ig_caption, 28, '…')); ?>
+                                            </p>
+                                        </a>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="home-end-dots home-end-instagram-dots"></div>
+                        </div>
+                    <?php elseif (isset($instagram_query) && $instagram_query->have_posts()): ?>
                         <div class="swiper home-end-instagram-swiper">
                             <div class="swiper-wrapper">
                                 <?php while ($instagram_query->have_posts()): $instagram_query->the_post();
@@ -106,9 +130,13 @@ if (!$instagram_query->have_posts()) {
                             <div class="home-end-dots home-end-instagram-dots"></div>
                         </div>
                     <?php else: ?>
-                        <p class="home-end-card__empty"><?php _e('پستی برای نمایش وجود ندارد.', 'piazhen'); ?></p>
+                        <p class="home-end-card__empty">
+                            <?php _e('پست جدیدی برای نمایش وجود ندارد.', 'piazhen'); ?>
+                            <br>
+                            <a href="<?php echo esc_url(pzh_instagram_profile_url()); ?>" target="_blank" rel="noopener"><?php _e('ما را در اینستاگرام دنبال کنید', 'piazhen'); ?></a>
+                        </p>
                     <?php endif; ?>
-                    <?php wp_reset_postdata(); ?>
+                    <?php if (isset($instagram_query)) { wp_reset_postdata(); } ?>
                 </div>
             </div>
 

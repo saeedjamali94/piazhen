@@ -467,6 +467,7 @@
         justify-content: flex-start; // RTL → starts from the right edge
         gap: 110px;
         padding: 0 60px;
+        flex-wrap: wrap; // narrower panels: brands col wraps instead of spilling outside
     }
 
     &__col {
@@ -514,6 +515,54 @@
             }
         }
     }
+
+    // Brands column (4th col): 2-col grid of 125px square logo tiles per design
+    &__col--brands {
+        flex: 0 0 auto;
+    }
+
+    &__brands {
+        display: grid;
+        grid-template-columns: repeat(2, 125px);
+        gap: 33px;
+    }
+
+    &__brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 125px;
+        height: 125px;
+        border: 1px solid rgba(20, 20, 20, 0.2); // #D0D0D0 over white, per design
+        border-radius: 15px;
+        transition: border-color $transition-fast, box-shadow $transition-fast;
+
+        &:hover {
+            border-color: $siteYellow;
+            box-shadow: $shadow-sm;
+
+            .mega-menu__brand-name {
+                color: $siteOrange;
+            }
+        }
+
+        img {
+            max-width: 97%;
+            max-height: 44%; // logos float small inside the tile, per design
+            object-fit: contain;
+        }
+    }
+
+    &__brand-name {
+        padding: 0 14px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #121212;
+        line-height: 1.8;
+        text-align: center;
+        overflow-wrap: break-word; // long Latin tokens wrap instead of clipping
+        transition: color $transition-fast;
+    }
 }
 
 // Show mega menu on hover (desktop only)
@@ -523,6 +572,13 @@
         visibility: visible;
         transform: translateX(-50%) translateY(0);
     }
+}
+
+// QA helper: ?pzh_mega=1 forces every mega panel visible (headless screenshots)
+.pzh-show-mega .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
 }
 
 // ============================================================================

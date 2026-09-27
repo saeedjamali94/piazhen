@@ -32,7 +32,7 @@ get_header(); ?>
     <?php get_template_part('template-parts/home/features'); ?>
 
     <!-- Instagram + Blog (two-column section with carousels) -->
-    <?php get_template_part('template-parts/home/instagram', 'blog'); ?>
+    <?php get_template_part("template-parts/home/instagram", "blog"); ?>
 
 </main>
 

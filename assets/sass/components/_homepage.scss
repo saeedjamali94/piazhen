@@ -255,11 +255,7 @@
 
     &__icon {
         flex-shrink: 0;
-        width: 52px;
-        height: 52px;
         border-radius: 50%;
-        background: rgba($siteYellow, 0.2);
-        color: $siteYellowDark;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -387,6 +383,9 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    // Grid items default to min-width: auto — let the card shrink below its
+    // content's min-content width so it stays inside its grid track.
+    min-width: 0;
 
     &__image {
         position: relative;
@@ -598,6 +597,9 @@
         line-height: 1.7;
         cursor: pointer;
         transition: background $transition-fast, transform $transition-fast;
+        // Cap the pill at the card width — on narrow desktop columns a long
+        // price must not poke out of the card.
+        max-width: 100%;
 
         svg {
             width: 16px;
@@ -628,12 +630,44 @@
             }
         }
     }
+
+    // Pill label (price text on desktop): truncate with an ellipsis when the
+    // pill is capped by max-width on a narrow column instead of overflowing.
+    &__add-text {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 @keyframes heartPop {
     0% { transform: scale(1); }
     50% { transform: scale(1.3); }
     100% { transform: scale(1); }
+}
+
+// 4-column archive at the lg breakpoint (960px container → ~162px columns):
+// the pill's default padding + icon + price don't fit that column, so tighten
+// it here. ≥xl columns are ~196px and keep the roomier pill. Also trims the
+// bottom row padding so the pill keeps its horizontal breathing room.
+@media (min-width: $bp-lg) and (max-width: $bp-xl - 1px) {
+    .product-card {
+        &__bottom {
+            padding: 12px 10px 2px;
+        }
+
+        &__add {
+            padding: 8px 16px;
+            font-size: 13px;
+            gap: 6px;
+
+            svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
+    }
 }
 
 @keyframes btnSpin {
@@ -971,6 +1005,16 @@
             font-weight: 800;
             color: #1c1c1c;
             margin: 0;
+
+            // The Instagram card title links to the profile — keep the same look
+            a {
+                color: inherit;
+                text-decoration: none;
+
+                &:hover {
+                    color: #ef9f38;
+                }
+            }
         }
 
         &__icon {
@@ -984,6 +1028,14 @@
             padding: 48px 20px;
             color: $gray-500;
             font-size: 14px;
+
+            a {
+                display: inline-block;
+                margin-top: 8px;
+                color: #ef9f38;
+                font-weight: 700;
+                text-decoration: none;
+            }
         }
     }
 

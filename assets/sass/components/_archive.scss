@@ -672,7 +672,10 @@
 
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    // minmax(0, 1fr): 1fr tracks default to a minimum of min-content, so one
+    // long unbreakable title would push its column (and the last column) past
+    // the container edge. minmax(0, …) keeps all four columns equal.
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
 
     @media (max-width: $bp-lg) {

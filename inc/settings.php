@@ -53,6 +53,9 @@ function pzh_settings_defaults($tab) {
             'sms_sender'   => '50002710072167',
             'sms_pattern'  => '186253',
         ),
+        'instagram' => array(
+            'instagram_username' => 'piazhen',
+        ),
     );
 
     return isset($defaults[$tab]) ? $defaults[$tab] : array();
@@ -384,10 +387,24 @@ function pzh_render_text_field($tab, $key, $label, $type = 'text', $description 
  * Save handler for a settings tab.
  */
 function pzh_save_settings_tab($tab, $field_types) {
-    if (!isset($_POST['pzh_' . $tab . '_save'])) {
+    if (!isset($_POST['pzh_' . $tab . '_save']) && !($tab === 'instagram' && isset($_POST['pzh_instagram_purge']))) {
         return;
     }
     if (!check_admin_referer('pzh_settings_' . $tab)) {
+        return;
+    }
+
+    // Purge button on the Instagram tab — clear the cache and fetch the
+    // newest posts right now so the admin sees the result immediately.
+    if ($tab === 'instagram' && isset($_POST['pzh_instagram_purge'])) {
+        pzh_instagram_clear_cache();
+        pzh_instagram_refresh_cache();
+        $feed = get_transient('pzh_instagram_feed');
+        if (is_array($feed) && !empty($feed)) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . sprintf(esc_html__('کش پاک شد و %d پست جدید از اینستاگرام دریافت شد.', 'piazhen'), count($feed)) . '</p></div>';
+        } else {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('کش پاک شد اما اتصال به اینستاگرام برقرار نشد. سرور باید به instagram.com دسترسی داشته باشد؛ تلاش بعدی خودکار انجام می‌شود.', 'piazhen') . '</p></div>';
+        }
         return;
     }
 
@@ -400,6 +417,12 @@ function pzh_save_settings_tab($tab, $field_types) {
     }
 
     update_option('pzh_settings_' . $tab, $new);
+
+    // Username may have changed — drop the cached feed so it refreshes now
+    if ($tab === 'instagram') {
+        pzh_instagram_clear_cache();
+    }
+
     echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('تنظیمات ذخیره شد.', 'piazhen') . '</p></div>';
 }
 
@@ -413,6 +436,7 @@ function pzh_admin_settings_render() {
         'images'  => __('تصاویر', 'piazhen'),
         'map'     => __('نقشه و API', 'piazhen'),
         'sms'     => __('پیامک', 'piazhen'),
+        'instagram' => __('اینستاگرام', 'piazhen'),
     );
 
     $current_tab = isset($_GET['tab']) && isset($tabs[$_GET['tab']]) ? $_GET['tab'] : 'general';
@@ -439,6 +463,9 @@ function pzh_admin_settings_render() {
         'sms' => array(
             'sms_username' => 'text', 'sms_password' => 'text',
             'sms_sender' => 'text', 'sms_pattern' => 'number',
+        ),
+        'instagram' => array(
+            'instagram_username' => 'text',
         ),
     );
 
@@ -502,6 +529,19 @@ function pzh_admin_settings_render() {
                             pzh_render_text_field('sms', 'sms_password', __('رمز سرویس پیامک', 'piazhen'), 'text', '', 'ltr');
                             pzh_render_text_field('sms', 'sms_sender', __('شماره ارسال‌کننده', 'piazhen'), 'text', '', 'ltr');
                             pzh_render_text_field('sms', 'sms_pattern', __('شناسه الگو (bodyId)', 'piazhen'), 'number', '', 'ltr');
+                            break;
+
+                        case 'instagram':
+                            pzh_render_text_field('instagram', 'instagram_username', __('نام کاربری اینستاگرام', 'piazhen'), 'text', __('بدون @ — جدیدترین پست‌های همین حساب در کاروسل صفحه اصلی نمایش داده می‌شوند. سرور باید به instagram.com دسترسی داشته باشد.', 'piazhen'), 'ltr');
+                            ?>
+                            <tr>
+                                <th scope="row"><?php _e('کش فید', 'piazhen'); ?></th>
+                                <td>
+                                    <button type="submit" name="pzh_instagram_purge" class="button"><?php _e('پاکسازی کش اینستاگرام', 'piazhen'); ?></button>
+                                    <p class="description"><?php _e('فید هر ۶ ساعت به‌روز می‌شود؛ برای دریافت فوری پست‌های جدید، کش را پاک کنید.', 'piazhen'); ?></p>
+                                </td>
+                            </tr>
+                            <?php
                             break;
                     }
                     ?>
