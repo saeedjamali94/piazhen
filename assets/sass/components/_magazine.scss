@@ -145,7 +145,7 @@
     }
 }
 
-// Pagination: white dots + one elongated white active pill (design), no arrows
+// Pagination: orange dots + one elongated orange active pill, no arrows
 .mag-hero-pagination {
     display: flex;
     justify-content: center;
@@ -156,14 +156,14 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: rgba($white, 0.55);
+        background: $siteOrange;
         opacity: 1;
         transition: all $transition-fast;
 
         &-active {
             width: 24px;
             border-radius: 5px;
-            background: $white;
+            background: $siteOrange;
         }
     }
 }

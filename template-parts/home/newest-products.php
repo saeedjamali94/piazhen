@@ -30,7 +30,7 @@ $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_U
             ?>
         </div>
 
-        <div class="most-selling-swiper-wrapper position-relative">
+        <div class="most-selling-swiper-wrapper position-relative mb-5">
             <div class="swiper most-selling-swiper">
                 <div class="swiper-wrapper">
                     <?php while ($products_query->have_posts()): $products_query->the_post(); ?>

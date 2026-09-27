@@ -259,10 +259,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-
-        svg {
-            fill: $siteYellowDark;
-        }
     }
 
     &__badge {
@@ -321,6 +317,15 @@
 
 .home_products_sections {
     background: $white;
+}
+
+.home_newest , .home_on_sale {
+    padding: 3rem 1rem;
+    .innerLayer {
+        padding: 2rem;
+        background: rgb(181, 181, 181, 0.26);
+        border-radius: 25px;
+    }
 }
 
 // ============================================================================
@@ -416,10 +421,10 @@
     // Heart: gray circle, top-right (RTL start), white outline icon
     &__favorite {
         position: absolute;
-        top: 17px;
-        right: 12px;
-        width: 39px;
-        height: 39px;
+        top: 36px;
+        right: 36px;
+        width: 31px;
+        height: 31px;
         border-radius: 50%;
         background: #B2B2B2;
         border: none;
@@ -1092,7 +1097,7 @@
         }
     }
 
-    // Dots: pale peach inactive + solid orange active (no arrows)
+    // Dots: solid orange, elongated active pill (no arrows)
     .home-end-dots {
         display: flex;
         justify-content: center;
@@ -1103,14 +1108,16 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #f4cdb0;
+            background: $siteOrange;
             opacity: 1;
             margin: 0;
             transition: all $transition-fast;
         }
 
         .swiper-pagination-bullet-active {
-            background: #ef9f38;
+            width: 23px;
+            border-radius: 5px;
+            background: $siteOrange;
         }
     }
 }
