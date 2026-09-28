@@ -59,7 +59,7 @@ var PZH_STR = {
     login_success:         'ورود با موفقیت انجام شد.',
     compare_added:         'محصول به لیست مقایسه اضافه شد.',
     compare_removed:       'محصول از لیست مقایسه حذف شد.',
-    compare_limit:         'حداکثر ۴ محصول قابل مقایسه است.',
+    compare_limit:         'حداکثر ۲ محصول قابل مقایسه است.',
     wallet_insufficient:   'موجودی کیف پول برای انتقال کافی نیست.',
     coming_soon:           'این قابلیت بهزودی فعال میشود.',
     charge_amount:         'مبلغ شارژ را وارد کنید. (حداقل ۱۰,۰۰۰ تومان)',
@@ -81,6 +81,10 @@ var PZH_STR = {
     map_click_hint:        'روی نقشه کلیک کنید تا آدرس از موقعیت انتخابشده پر شود.',
     both_addresses_set:    'هر دو آدرس ثبت شدهاند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.',
     add_to_cart_short:     'خطا در افزودن به سبد.',
+    compare_title:         'مقایسه محصولات',
+    compare_clear:         'پاک کردن لیست مقایسه',
+    compare_close:         'بستن',
+    compare_empty:         'لیست مقایسه خالی است.',
     no_results:            'نتیجه‌ای یافت نشد.',
     map_pin_first:         'ابتدا موقعیت را روی نقشه انتخاب کنید.',
     locate_error:          'مکان شما در دسترس نیست.'
@@ -1618,22 +1622,6 @@ $(document).ready(function () {
     }
 
     // ========================================================================
-    // Checkout — mobile: move the summary card above the form for readability
-    // ========================================================================
-    function pzhCheckoutSummaryOrder() {
-        if ($(window).width() < 992) {
-            var $layout = $('.pzh-checkout-layout');
-            if ($layout.length && !$layout.hasClass('reordered')) {
-                $layout.addClass('reordered');
-                $layout.css('display', 'flex');
-                $layout.css('flex-direction', 'column');
-                $layout.find('.pzh-checkout-summary').css('order', '-1');
-            }
-        }
-    }
-    pzhCheckoutSummaryOrder();
-
-    // ========================================================================
     // Checkout — shipping choice cards + method cards + Neshan map modal
     // ========================================================================
     var $checkoutModal = $('#checkout-map-modal');
@@ -1669,6 +1657,13 @@ $(document).ready(function () {
             } else {
                 checkoutMap.refresh();
             }
+        }
+
+        // TEMP QA: report viewport + overflow via document.title
+        if (window.location.search.indexOf('pzh-overflow-check') !== -1) {
+            $(function () {
+                document.title = 'VW:' + window.innerWidth + '/SW:' + document.documentElement.scrollWidth + '/DPR:' + window.devicePixelRatio;
+            });
         }
 
         // Shipping choice cards: set the mode, check the matching WC radio
@@ -2605,21 +2600,62 @@ $(document).ready(function () {
         }
     });
 
-    // --- Compare Button ---
+    // --- Compare (localStorage list + floating bar → comparison page) ---
+    function pzhCompareList() {
+        try {
+            return JSON.parse(localStorage.getItem('pzh_compare') || '[]');
+        } catch (ex) {
+            return [];
+        }
+    }
+
+    function pzhSaveCompareList(list) {
+        try {
+            localStorage.setItem('pzh_compare', JSON.stringify(list));
+        } catch (ex) {}
+    }
+
+    function pzhComparePageUrl() {
+        return (window.pzh_options && pzh_options.compare_url) || pzh_options.site_url + '/compare/';
+    }
+
+    // Build the floating bar once
+    (function () {
+        $('body').append(
+            '<div class="pzh-compare-bar" id="pzh-compare-bar" hidden>' +
+            '<button type="button" class="pzh-compare-bar__view" id="pzh-compare-open">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/></svg>' +
+            '<span>' + pzhStr('compare_title') + ' (<span class="pzh-compare-bar__count">0</span>)</span>' +
+            '</button>' +
+            '<button type="button" class="pzh-compare-bar__clear" id="pzh-compare-clear" aria-label="' + pzhStr('compare_clear') + '" title="' + pzhStr('compare_clear') + '">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+            '</button>' +
+            '</div>'
+        );
+        pzhUpdateCompareBar();
+    })();
+
+    function pzhUpdateCompareBar() {
+        var count = pzhCompareList().length;
+        var $bar = $('#pzh-compare-bar');
+        if (!$bar.length) return;
+        if (count > 0) {
+            $bar.find('.pzh-compare-bar__count').text(count);
+            $bar.prop('hidden', false);
+        } else {
+            $bar.prop('hidden', true);
+        }
+    }
+
+    // Toggle on any compare button (cards + single product gallery)
     $(document).on('click', '.compare-btn', function (e) {
         e.preventDefault();
         var $btn = $(this);
-        var productId = $btn.data('product-id').toString();
-        var compareList = [];
-
-        try {
-            compareList = JSON.parse(localStorage.getItem('pzh_compare') || '[]');
-        } catch (ex) {
-            compareList = [];
-        }
+        var productId = String($btn.data('product-id'));
+        var compareList = pzhCompareList();
 
         if (compareList.indexOf(productId) === -1) {
-            if (compareList.length >= 4) {
+            if (compareList.length >= 2) {
                 pzhToast(pzhStr('compare_limit'), 'error');
                 return;
             }
@@ -2632,21 +2668,28 @@ $(document).ready(function () {
             pzhToast(pzhStr('compare_removed'));
         }
 
-        try {
-            localStorage.setItem('pzh_compare', JSON.stringify(compareList));
-        } catch (ex) {}
+        pzhSaveCompareList(compareList);
+        pzhUpdateCompareBar();
     });
 
-    // Restore compare button states
-    (function () {
-        var compareList = [];
-        try {
-            compareList = JSON.parse(localStorage.getItem('pzh_compare') || '[]');
-        } catch (ex) {}
-        compareList.forEach(function (id) {
-            $('.compare-btn[data-product-id="' + id + '"]').addClass('active');
-        });
-    })();
+    // Restore compare button states on load
+    pzhCompareList().forEach(function (id) {
+        $('.compare-btn[data-product-id="' + id + '"]').addClass('active');
+    });
+
+    // Open the comparison page with the current list
+    $(document).on('click', '#pzh-compare-open', function () {
+        var list = pzhCompareList();
+        window.location.href = pzhComparePageUrl() + (list.length ? '?ids=' + list.join(',') : '');
+    });
+
+    // Clear the whole list
+    $(document).on('click', '#pzh-compare-clear', function () {
+        pzhSaveCompareList([]);
+        $('.compare-btn.active').removeClass('active');
+        pzhUpdateCompareBar();
+        pzhToast(pzhStr('compare_removed'));
+    });
 
     // --- Related Products Swiper ---
     if ($('.related-products-swiper').length && typeof Swiper !== 'undefined') {

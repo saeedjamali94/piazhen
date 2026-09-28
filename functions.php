@@ -108,17 +108,18 @@ function piazhen_scripts() {
     }
 
     wp_localize_script('piazhen-js', 'pzh_options', array(
-        'theme_url'  => PZH_THEME_URI,
-        'ajax_url'   => admin_url('admin-ajax.php'),
-        'sprite_url' => pzh_sprite_url(),
-        'site_url'   => SITE_URL,
-        'nonce'      => wp_create_nonce('pzh_ajax_nonce'),
-        'is_rtl'     => is_rtl(),
-        'neshan_key' => pzh_neshan_api_key(),
-        'map_center' => apply_filters('pzh_map_center', array(pzh_map_defaults()['lat'], pzh_map_defaults()['lng'])),
-        'map_zoom'   => apply_filters('pzh_map_zoom', pzh_map_defaults()['zoom']),
-        'map_tiles'  => pzh_map_defaults()['tiles'],
-        'hui'        => pzh_js_strings(),
+        'theme_url'   => PZH_THEME_URI,
+        'ajax_url'    => admin_url('admin-ajax.php'),
+        'sprite_url'  => pzh_sprite_url(),
+        'site_url'    => SITE_URL,
+        'compare_url' => pzh_compare_page_url(),
+        'nonce'       => wp_create_nonce('pzh_ajax_nonce'),
+        'is_rtl'      => is_rtl(),
+        'neshan_key'  => pzh_neshan_api_key(),
+        'map_center'  => apply_filters('pzh_map_center', array(pzh_map_defaults()['lat'], pzh_map_defaults()['lng'])),
+        'map_zoom'    => apply_filters('pzh_map_zoom', pzh_map_defaults()['zoom']),
+        'map_tiles'   => pzh_map_defaults()['tiles'],
+        'hui'         => pzh_js_strings(),
     ));
 }
 add_action('wp_enqueue_scripts', 'piazhen_scripts');
@@ -247,6 +248,15 @@ function pzh_get_product_card_html($product_id) {
                     aria-label="<?php _e('افزودن به علاقه‌مندی', 'piazhen'); ?>">
                 <svg width="20" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+            </button>
+
+            <button class="product-card__compare compare-btn"
+                    data-product-id="<?php echo esc_attr($product_id); ?>"
+                    aria-label="<?php _e('افزودن به مقایسه', 'piazhen'); ?>"
+                    title="<?php _e('مقایسه', 'piazhen'); ?>">
+                <svg width="20" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/>
                 </svg>
             </button>
         </div>
@@ -1657,6 +1667,67 @@ function pzh_toggle_favorite() {
 }
 add_action('wp_ajax_pzh_toggle_favorite', 'pzh_toggle_favorite');
 add_action('wp_ajax_nopriv_pzh_toggle_favorite', 'pzh_toggle_favorite');
+
+/**
+ * Comparison page (page-compare.php template) — resolve its id, creating the
+ * page on first run so the floating compare bar always has a target URL.
+ * Also self-heals an existing «مقایسه محصول»/compare page whose template
+ * assignment is missing (e.g. a page created before the template shipped).
+ */
+function pzh_compare_page_id() {
+    $assign_template = function ($page_id) {
+        if ($page_id && get_page_template_slug($page_id) !== 'page-compare.php') {
+            update_post_meta($page_id, '_wp_page_template', 'page-compare.php');
+        }
+        update_option('pzh_compare_page_id', (int) $page_id);
+        return (int) $page_id;
+    };
+
+    $id = (int) get_option('pzh_compare_page_id');
+    if ($id && get_post_status($id) === 'publish') {
+        return $assign_template($id);
+    }
+
+    $pages = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-compare.php', 'number' => 1));
+    if ($pages) {
+        return $assign_template($pages[0]->ID);
+    }
+
+    $page = get_page_by_path('compare');
+    if ($page) {
+        return $assign_template($page->ID);
+    }
+
+    $found = new WP_Query(array(
+        'post_type'      => 'page',
+        'post_status'    => 'publish',
+        'title'          => __('مقایسه محصول', 'piazhen'),
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+    ));
+    if (!empty($found->posts)) {
+        return $assign_template($found->posts[0]);
+    }
+
+    $id = wp_insert_post(array(
+        'post_type'    => 'page',
+        'post_status'  => 'publish',
+        'post_title'   => __('مقایسه محصول', 'piazhen'),
+        'post_name'    => 'compare',
+        'post_content' => '',
+    ));
+    if ($id && !is_wp_error($id)) {
+        return $assign_template($id);
+    }
+    return (int) $id;
+}
+add_action('init', 'pzh_compare_page_id');
+
+/** URL of the comparison page. */
+function pzh_compare_page_url() {
+    $id = pzh_compare_page_id();
+    return $id ? get_permalink($id) : home_url('/compare/');
+}
 
 /**
  * AJAX Filter Products (custom, no plugins)

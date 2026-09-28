@@ -458,6 +458,40 @@
         }
     }
 
+    // Compare: gray circle beside the heart (to its left in RTL)
+    &__compare {
+        position: absolute;
+        top: 36px;
+        right: 76px;
+        width: 31px;
+        height: 31px;
+        border-radius: 50%;
+        background: #B2B2B2;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+        color: #FBFBFB;
+        transition: all $transition-fast;
+
+        svg {
+            width: 19px;
+            height: 18px;
+            stroke: currentColor;
+        }
+
+        &:hover {
+            transform: scale(1.08);
+        }
+
+        &.active {
+            background: $siteOrange;
+            color: $white;
+        }
+    }
+
     // Centered title, one line with ellipsis; hovering shows the full
     // title in a dark popover bubble (content comes from data-title attr).
     // Fixed height (flex: 0 0 auto + min-height on the link) so every card's
@@ -744,6 +778,28 @@
 
             &.active {
                 background: $white;
+            }
+        }
+
+        // Compare: white circle next to the heart on mobile
+        &__compare {
+            top: 8px;
+            right: auto;
+            left: 46px;
+            width: 30px;
+            height: 30px;
+            background: $white;
+            color: $gray-500;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+
+            svg {
+                width: 16px;
+                height: 15px;
+            }
+
+            &.active {
+                background: $siteOrange;
+                color: $white;
             }
         }
 
@@ -1289,3 +1345,71 @@
     }
 
 }
+
+// ============================================================================
+// Compare: floating bar + comparison modal
+// ============================================================================
+
+.pzh-compare-bar {
+    position: fixed;
+    bottom: 24px;
+    right: 50%;
+    transform: translateX(50%);
+    // above the modals (1200) so it never renders dimmed under an overlay
+    z-index: 1250;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #121212;
+    border-radius: 999px;
+    padding: 6px 8px 6px 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    font-family: $fontFamily;
+
+    &[hidden] {
+        display: none;
+    }
+
+    &__view {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: $siteOrange;
+        color: $white;
+        border: none;
+        border-radius: 999px;
+        padding: 9px 20px;
+        font-family: $fontFamily;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: darken($siteOrange, 6%);
+        }
+    }
+
+    &__count {
+        font-weight: 800;
+    }
+
+    &__clear {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: #9A9A9A;
+        cursor: pointer;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $white;
+        }
+    }
+}
+

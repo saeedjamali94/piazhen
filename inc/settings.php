@@ -200,7 +200,11 @@ function pzh_js_strings() {
         // Toasts / notifications
         'compare_added'        => __('محصول به لیست مقایسه اضافه شد.', 'piazhen'),
         'compare_removed'      => __('محصول از لیست مقایسه حذف شد.', 'piazhen'),
-        'compare_limit'        => __('حداکثر ۴ محصول قابل مقایسه است.', 'piazhen'),
+        'compare_limit'        => __('حداکثر ۲ محصول قابل مقایسه است.', 'piazhen'),
+        'compare_title'        => __('مقایسه محصولات', 'piazhen'),
+        'compare_clear'        => __('پاک کردن لیست مقایسه', 'piazhen'),
+        'compare_close'        => __('بستن', 'piazhen'),
+        'compare_empty'        => __('لیست مقایسه خالی است.', 'piazhen'),
         'wallet_insufficient'  => __('موجودی کیف پول برای انتقال کافی نیست.', 'piazhen'),
         'coming_soon'          => __('این قابلیت به‌زودی فعال می‌شود.', 'piazhen'),
         'charge_amount'        => __('مبلغ شارژ را وارد کنید. (حداقل ۱۰٬۰۰۰ تومان)', 'piazhen'),
