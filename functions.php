@@ -701,6 +701,17 @@ function pzh_get_product_filter_args($params, $base_tax_query = array(), $base_m
             $out['orderby']  = 'meta_value_num';
             $out['meta_key'] = '_price';
             $out['order']    = 'ASC';
+            // Exclude ناموجود from cheapest-first: stale low prices would
+            // otherwise float to the top of the list
+            if (!$params['in_stock']) {
+                if (empty($out['meta_query'])) {
+                    $out['meta_query'] = array();
+                }
+                $out['meta_query'][] = array(
+                    'key'   => '_stock_status',
+                    'value' => 'instock',
+                );
+            }
             break;
         case 'price-desc':
             $out['orderby']  = 'meta_value_num';
@@ -1074,7 +1085,7 @@ function pzh_get_cart_data() {
                             <?php echo $_product->get_image('pzh_product_thumb'); ?>
                         </div>
                         <div class="mini-cart__item-info">
-                            <span class="mini-cart__item-name"><?php echo $_product->get_name(); ?></span>
+                            <span class="mini-cart__item-name" data-title="<?php echo esc_attr($_product->get_name()); ?>"><?php echo $_product->get_name(); ?></span>
                             <span class="mini-cart__item-qty"><?php echo $cart_item['quantity']; ?> × <?php echo wc_price($_product->get_price()); ?></span>
                             <?php if (!empty($cart_item['variation'])): ?>
                                 <span class="mini-cart__item-variation">
@@ -1801,7 +1812,7 @@ function pzh_get_mini_cart() {
                             <?php echo $_product->get_image('pzh_product_thumb'); ?>
                         </div>
                         <div class="mini-cart__item-info">
-                            <span class="mini-cart__item-name"><?php echo $_product->get_name(); ?></span>
+                            <span class="mini-cart__item-name" data-title="<?php echo esc_attr($_product->get_name()); ?>"><?php echo $_product->get_name(); ?></span>
                             <span class="mini-cart__item-qty"><?php echo $cart_item['quantity']; ?> × <?php echo wc_price($_product->get_price()); ?></span>
                         </div>
                         <button class="mini-cart__remove" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">

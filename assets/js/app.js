@@ -447,6 +447,31 @@ $(document).ready(function () {
         }
     });
 
+    // Mini-cart tile: full-name hint bubble on hover (the dropdown panel clips
+    // absolutely-positioned children, so the bubble is fixed to the viewport)
+    $(document).on('mouseenter', '.mini-cart__item-name', function () {
+        var $name = $(this);
+        if ($name.data('title-hint')) return;
+        var title = $name.attr('data-title');
+        if (!title || title === $name.text().trim()) return;
+        var rect = this.getBoundingClientRect();
+        var $tip = $('<div class="pzh-title-hint">' + title + '</div>').appendTo('body');
+        $name.data('title-hint', $tip);
+        $tip.css({
+            // overlap the name by 2px so moving onto the bubble doesn't flicker
+            top: rect.top + 2,
+            left: rect.left + rect.width / 2
+        }).addClass('show');
+    });
+
+    $(document).on('mouseleave', '.mini-cart__item-name', function () {
+        var $tip = $(this).data('title-hint');
+        if ($tip) {
+            $tip.remove();
+            $(this).removeData('title-hint');
+        }
+    });
+
     // Remove from cart (delegated)
     $(document).on('click', '.mini-cart__remove', function (e) {
         e.preventDefault();
@@ -569,74 +594,42 @@ $(document).ready(function () {
 
     if ($filterForm.length) {
 
-        // --- Price Range: dual-handle slider ↔ number inputs sync ---
-        var $priceMin    = $filterForm.find('#price-min');
-        var $priceMax    = $filterForm.find('#price-max');
-        var $sliderMin   = $filterForm.find('#price-range-min');
-        var $sliderMax   = $filterForm.find('#price-range-max');
-        var $sliderWrap  = $filterForm.find('.price-range__slider-wrapper');
-        var $priceDisplay= $filterForm.find('.price-range__display');
+        // --- Price Range: dual-handle slider (no number inputs per the mockup) ---
+        var $sliderMin    = $filterForm.find('#price-range-min');
+        var $sliderMax    = $filterForm.find('#price-range-max');
+        var $priceLabelMin = $filterForm.find('#price-range-min-label');
+        var $priceLabelMax = $filterForm.find('#price-range-max-label');
+        var $priceDisplay = $filterForm.find('.price-range__display');
         var sliderMinAttr = parseFloat($sliderMin.attr('min')) || 0;
         var sliderMaxAttr = parseFloat($sliderMax.attr('max')) || 50000000;
-        var sliderRange   = sliderMaxAttr - sliderMinAttr || 1;
         var priceTimeout;
-
-        // CSS color values for the track (must match SCSS)
-        var $grayTrack   = '#dee2e6';   // $gray-300
-        var $activeTrack = '#FBCA38';   // $siteYellow
 
         // Clamp a value between min and max
         function clamp(val, lo, hi) {
             return Math.max(lo, Math.min(hi, val));
         }
 
-        // Update the colored track between the two thumbs
-        function updateSliderTrack() {
-            var minV = parseFloat($sliderMin.val()) || sliderMinAttr;
-            var maxV = parseFloat($sliderMax.val()) || sliderMaxAttr;
-            if (minV > maxV) { var t = minV; minV = maxV; maxV = t; }
-            var pctMin = clamp(((minV - sliderMinAttr) / sliderRange) * 100, 0, 100);
-            var pctMax = clamp(((maxV - sliderMinAttr) / sliderRange) * 100, 0, 100);
-            $sliderWrap.css('background',
-                'linear-gradient(to left, ' +
-                $grayTrack + ' 0%, ' + $grayTrack + ' ' + (100 - pctMax) + '%, ' +
-                $activeTrack + ' ' + (100 - pctMax) + '%, ' + $activeTrack + ' ' + (100 - pctMin) + '%, ' +
-                $grayTrack + ' ' + (100 - pctMin) + '%, ' + $grayTrack + ' 100%)'
-            );
-        }
+        var priceFmt = function (v) { return Number(v).toLocaleString('fa-IR'); };
 
-        // "از X تا Y تومان" label under the slider
+        // Update the min/max labels above the track + the readout below
         function updatePriceDisplay() {
-            if (!$priceDisplay.length) return;
-            var minV = parseFloat($priceMin.val()) || sliderMinAttr;
-            var maxV = parseFloat($priceMax.val()) || sliderMaxAttr;
-            var fmt = function (v) { return Number(v).toLocaleString('fa-IR'); };
-            $priceDisplay.text('از ' + fmt(minV) + ' تا ' + fmt(maxV) + ' تومان');
-        }
-
-        // Sync number inputs → range sliders
-        function syncSlidersFromInputs() {
-            var minV = clamp(parseFloat($priceMin.val()) || sliderMinAttr, sliderMinAttr, sliderMaxAttr);
-            var maxV = clamp(parseFloat($priceMax.val()) || sliderMaxAttr, sliderMinAttr, sliderMaxAttr);
-            if (minV > maxV) { var t = minV; minV = maxV; maxV = t; }
-            $sliderMin.val(minV);
-            $sliderMax.val(maxV);
-            updateSliderTrack();
-            updatePriceDisplay();
-        }
-
-        // Sync range sliders → number inputs
-        function syncInputsFromSliders() {
             var minV = clamp(parseFloat($sliderMin.val()) || sliderMinAttr, sliderMinAttr, sliderMaxAttr);
             var maxV = clamp(parseFloat($sliderMax.val()) || sliderMaxAttr, sliderMinAttr, sliderMaxAttr);
-            if (parseFloat($sliderMin.val()) > parseFloat($sliderMax.val())) {
+            if ($priceLabelMin.length) $priceLabelMin.text(priceFmt(minV));
+            if ($priceLabelMax.length) $priceLabelMax.text(priceFmt(maxV));
+            if ($priceDisplay.length) {
+                $priceDisplay.text('از ' + priceFmt(minV) + ' تا ' + priceFmt(maxV) + ' تومان');
+            }
+        }
+
+        // Keep the two handles from crossing each other
+        function syncSliders() {
+            var minV = clamp(parseFloat($sliderMin.val()) || sliderMinAttr, sliderMinAttr, sliderMaxAttr);
+            var maxV = clamp(parseFloat($sliderMax.val()) || sliderMaxAttr, sliderMinAttr, sliderMaxAttr);
+            if (minV > maxV) {
                 $sliderMin.val(maxV);
                 $sliderMax.val(minV);
-                var t = minV; minV = maxV; maxV = t;
             }
-            $priceMin.val(minV || '');
-            $priceMax.val(maxV >= sliderMaxAttr ? '' : maxV);
-            updateSliderTrack();
             updatePriceDisplay();
         }
 
@@ -646,14 +639,11 @@ $(document).ready(function () {
             priceTimeout = setTimeout(function () { pzhApplyFilters(1, false); }, 500);
         }
 
-        // Slider / input listeners
-        if ($sliderMin.length) $sliderMin.on('input', function () { syncInputsFromSliders(); triggerPriceFilter(); });
-        if ($sliderMax.length) $sliderMax.on('input', function () { syncInputsFromSliders(); triggerPriceFilter(); });
-        if ($priceMin.length)   $priceMin.on('input', function () { syncSlidersFromInputs(); triggerPriceFilter(); });
-        if ($priceMax.length)   $priceMax.on('input', function () { syncSlidersFromInputs(); triggerPriceFilter(); });
+        // Slider listeners
+        if ($sliderMin.length) $sliderMin.on('input', function () { syncSliders(); triggerPriceFilter(); });
+        if ($sliderMax.length) $sliderMax.on('input', function () { syncSliders(); triggerPriceFilter(); });
 
-        // Initial track + display render
-        if ($sliderMin.length && $sliderMax.length) updateSliderTrack();
+        // Initial display render
         updatePriceDisplay();
 
         // --- Collect current filter state from the sidebar inputs ---
@@ -669,11 +659,13 @@ $(document).ready(function () {
             });
 
             return {
-                sort:       $filterForm.find('input[name="sort"]:checked').val() || 'popularity',
+                // The sort pills live in the toolbar, OUTSIDE the .archive-filters
+                // form — read them globally
+                sort:       $('input[name="sort"]:checked').val() || 'popularity',
                 brands:     $filterForm.find('input[name="brands[]"]:checked').map(function () { return $(this).val(); }).get(),
                 in_stock:   $filterForm.find('input[name="in_stock"]:checked').val() || '',
-                min_price:  $priceMin.val() || 0,
-                max_price:  $priceMax.val() || 0,
+                min_price:  $sliderMin.val() || 0,
+                max_price:  $sliderMax.val() || 0,
                 attributes: attributes
             };
         }
@@ -751,8 +743,8 @@ $(document).ready(function () {
             pzhApplyFilters(1, false);
         });
 
-        // --- Sort radio buttons ---
-        $filterForm.on('change', 'input[name="sort"]', function () {
+        // --- Sort radio buttons (in the toolbar, outside the filter form) ---
+        $(document).on('change', 'input[name="sort"]', function () {
             pzhApplyFilters(1, true);
         });
 
@@ -766,13 +758,10 @@ $(document).ready(function () {
         $(document).on('click', '.reset-filters-btn, .clear-all-filters', function (e) {
             e.preventDefault();
             $filterForm.find('input[type="checkbox"]').prop('checked', false);
-            $filterForm.find('#price-min').val('');
-            $filterForm.find('#price-max').val('');
             if ($sliderMin.length) $sliderMin.val(sliderMinAttr);
             if ($sliderMax.length) $sliderMax.val(sliderMaxAttr);
-            if (typeof updateSliderTrack === 'function') updateSliderTrack();
-            updatePriceDisplay();
-            $filterForm.find('input[name="sort"][value="popularity"]').prop('checked', true);
+            if (typeof updatePriceDisplay === 'function') updatePriceDisplay();
+            $('input[name="sort"][value="popularity"]').prop('checked', true);
             pzhApplyFilters(1, true);
         });
 

@@ -400,58 +400,56 @@
 }
 
 // ============================================================================
-// Price Range (dual-handle slider)
+// Price Range (price-range.png mockup: bare labels + solid orange track +
+// white handles + gray readout)
 // ============================================================================
 
+// The mockup's widget title (this group only — other filter groups unchanged)
+#price-filter-group .filter-group__title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1;
+    // base rule gives 10px; the mockup's ink gap title→labels is ~38px
+    margin-bottom: 36px;
+}
+
 .price-range {
-    &__inputs {
-        margin-bottom: 14px;
-
-        input[type="number"] {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid $gray-300;
-            border-radius: 10px;
-            font-size: 13px;
-            font-family: $fontFamily;
-            text-align: center;
-
-            &:focus {
-                border-color: $siteYellow;
-                outline: none;
-            }
-
-            &::placeholder {
-                font-size: 11px;
-                color: $gray-500;
-            }
-
-            // Hide number spinners
-            &::-webkit-outer-spin-button,
-            &::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-            }
-            -moz-appearance: textfield;
-            appearance: textfield;
-        }
-    }
-
-    &__separator {
+    // Bare min (right) / max (left) numbers above the track
+    &__labels {
         display: flex;
         align-items: center;
-        color: $gray-500;
-        font-size: 14px;
+        justify-content: space-between;
+        // 9px + the 24px wrapper's 10px top half ≈ the mockup's 21px ink gap
+        margin-bottom: 9px;
     }
 
-    // Dual-range slider wrapper
+    &__label {
+        font-size: 18px;
+        // 500 = the Medium face (the font ships no 600; 600 resolves to Bold)
+        font-weight: 500;
+        color: #7A7A7A;
+        line-height: 1;
+    }
+
+    // Dual-range slider wrapper (the track is its ::before)
     &__slider-wrapper {
         position: relative;
-        height: 36px;
+        height: 24px;
         display: flex;
         align-items: center;
-        background: $gray-300;
-        border-radius: 2px;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 4px;
+            background: $siteOrange;
+            border-radius: 0;
+        }
     }
 
     &__slider {
@@ -472,15 +470,15 @@
             pointer-events: all;
             -webkit-appearance: none;
             appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: $siteYellow;
-            border: 3px solid $white;
-            box-shadow: $shadow-sm;
+            background: $white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.19);
             cursor: pointer;
             transition: transform $transition-fast;
-            margin-top: -9px;
+            margin-top: -6px;
             position: relative;
             z-index: 2;
 
@@ -489,67 +487,50 @@
             }
             &:active {
                 transform: scale(1.1);
-                box-shadow: 0 0 0 6px rgba($siteYellow, 0.2);
             }
         }
 
         &::-moz-range-thumb {
             pointer-events: all;
-            width: 22px;
-            height: 22px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: $siteYellow;
-            border: 3px solid $white;
-            box-shadow: $shadow-sm;
+            background: $white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.19);
             cursor: pointer;
         }
 
-        // Track: the colored bar between thumbs
+        // Track: transparent — the orange bar is the wrapper's ::before
         &::-webkit-slider-runnable-track {
             height: 4px;
-            border-radius: 2px;
+            background: transparent;
         }
 
         &::-moz-range-track {
             height: 4px;
-            border-radius: 2px;
+            background: transparent;
         }
 
-        // Min slider: thumb on the left, track is the left portion
+        // Min slider on top so its thumb wins when the handles overlap
         &--min {
             z-index: 3;
-
-            &::-webkit-slider-runnable-track {
-                background: $gray-200;
-            }
-            &::-moz-range-track {
-                background: $gray-200;
-            }
         }
 
-        // Max slider: transparent track, thumb on the right
         &--max {
             z-index: 2;
-
-            &::-webkit-slider-runnable-track {
-                background: transparent;
-            }
-            &::-moz-range-track {
-                background: transparent;
-            }
         }
     }
 
-    // "از X تا Y تومان" label
+    // «از X تا Y تومان» readout (right-aligned, gray — mockup style)
     &__display {
-        margin-top: 12px;
-        padding: 8px 12px;
-        background: rgba($siteYellow, 0.12);
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: 600;
-        color: $gray-700;
-        text-align: center;
+        // 10px + the wrapper's 10px bottom half ≈ the mockup's 20px ink gap
+        margin-top: 10px;
+        font-size: 18px;
+        font-weight: 500;
+        color: #777;
+        line-height: 1;
+        text-align: right;
     }
 }
 

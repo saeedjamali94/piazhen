@@ -651,9 +651,7 @@
 // ============================================================================
 
 .mini-cart {
-    padding: 16px;
-
-    &__items {
+    padding: 16px;    &__items {
         list-style: none;
         margin: 0;
         padding: 0;
@@ -702,6 +700,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: default;
         }
 
         &-qty {
@@ -1476,5 +1475,48 @@ body {
             pointer-events: auto;
             transition: opacity $transition-base ease, visibility 0s;
         }
+    }
+}
+
+// ============================================================================
+// Mini-cart tile name hint (fixed bubble — the dropdown panel clips
+// absolutely-positioned children, so the bubble lives at the viewport level;
+// styled to match the product-card title hint)
+// ============================================================================
+
+.pzh-title-hint {
+    position: fixed;
+    z-index: 1201;
+    background: rgba(#1c1c1c, 0.95);
+    color: $white;
+    font-family: $fontFamily;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.9;
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 12px;
+    max-width: 280px;
+    min-width: 90px;
+    white-space: normal;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    transform: translate(-50%, -100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity $transition-fast;
+
+    // Arrow pointing down at the name
+    &::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: rgba(#1c1c1c, 0.95);
+    }
+
+    &.show {
+        opacity: 1;
     }
 }

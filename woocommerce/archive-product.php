@@ -205,16 +205,14 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
                         </label>
                     </div>
 
-                    <!-- Price Range Filter -->
+                    <!-- Price Range Filter (price-range.png mockup: bare min/max
+                         labels + solid orange track + white handles) -->
                     <div class="filter-group" id="price-filter-group">
-                        <h4 class="filter-group__title"><?php _e('محدوده قیمت', 'piazhen'); ?></h4>
+                        <h4 class="filter-group__title"><?php _e('قیمت', 'piazhen'); ?></h4>
                         <div class="price-range">
-                            <div class="price-range__inputs d-flex gap-2">
-                                <input type="number" id="price-min" class="mainInput" placeholder="<?php _e('حداقل', 'piazhen'); ?>"
-                                       value="<?= $val_min; ?>" min="<?= $prices['min']; ?>" max="<?= $prices['max']; ?>" step="1000">
-                                <span class="price-range__separator">-</span>
-                                <input type="number" id="price-max" class="mainInput" placeholder="<?php _e('حداکثر', 'piazhen'); ?>"
-                                       value="<?= $val_max; ?>" min="<?= $prices['min']; ?>" max="<?= $prices['max']; ?>" step="1000">
+                            <div class="price-range__labels">
+                                <span class="price-range__label" id="price-range-min-label"><?= pzh_fa_num(number_format($val_min, 0, '.', '٬')); ?></span>
+                                <span class="price-range__label" id="price-range-max-label"><?= pzh_fa_num(number_format($val_max, 0, '.', '٬')); ?></span>
                             </div>
                             <div class="price-range__slider-wrapper">
                                 <input type="range" id="price-range-min" class="price-range__slider price-range__slider--min"
