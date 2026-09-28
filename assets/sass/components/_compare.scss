@@ -1,0 +1,417 @@
+@use "../global/variables" as *;
+
+// ============================================================================
+// Compare page (comparison.png — مقایسه محصول)
+// ============================================================================
+
+.pzh-cmp {
+    font-family: $fontFamily;
+    // The mockup's content is flush with the container box edges
+    // (Bootstrap's .container carries a 12px inner padding)
+    margin-inline: -12px;
+    padding: 30px 0 99px;
+
+    // H1: مقایسه محصول · ۲ محصول (right-aligned)
+    &__title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0 0 40px;
+        font-size: 24px;
+        font-weight: 700;
+        color: $siteOrange;
+        line-height: 1;
+    }
+
+    &__dot {
+        font-size: 24px;
+        font-weight: 700;
+        color: #818181;
+    }
+
+    &__count {
+        font-size: 18px;
+        font-weight: 400;
+        color: #828282;
+    }
+
+    // Product card row: right-aligned (RTL), fixed 444px cards
+    &__cards {
+        display: flex;
+        justify-content: flex-start;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    // Specs heading
+    &__specs-title {
+        margin: 48px 0 25px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #121212;
+    }
+
+    // Specs grid: N product columns (475px) + label column (342px), gutters
+    &__specs {
+        display: grid;
+        gap: 20px 14px;
+        justify-content: flex-start;
+    }
+
+    // Closing copy (right-aligned)
+    &__copy {
+        margin-top: 87px;
+
+        h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #121212;
+        }
+
+        h3 {
+            margin: 36.5px 0 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #414141;
+        }
+
+        p {
+            margin: 25px 0 0;
+            font-size: 18px;
+            font-weight: 400;
+            color: #414141;
+            line-height: 1.8;
+        }
+    }
+}
+
+// --- Product card slot ---
+.pzh-cmp-card {
+    width: 444px;
+    height: 671px;
+    background: $white;
+    border: 2px solid #F0F0F0;
+    border-radius: 22px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    &__image-area {
+        position: relative;
+        flex: 0 0 366px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__image {
+        width: 362px;
+        height: 207px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+    }
+
+    // Circle-X remove (top-right)
+    &__remove {
+        position: absolute;
+        top: 17px;
+        right: 22px;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: none;
+        border: none;
+        color: $siteOrange;
+        cursor: pointer;
+        z-index: 2;
+
+        svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+        }
+    }
+
+    &__divider {
+        flex: 0 0 2px;
+        background: #F0F0F0;
+    }
+
+    &__info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 30px 40.5px;
+    }
+
+    // Two centered title lines (the mockup line gap comes from a tight
+    // leading — 1.3 keeps the whole info stack inside the 671px card)
+    &__name {
+        margin: 0 0 36px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #414141;
+        line-height: 1.3;
+        text-align: center;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    // Green price pill (auto top margin keeps the bottom rhythm exact;
+    // 8px padding keeps the pill at the mockup's 42px height with the
+    // smaller 26px font)
+    &__price {
+        margin-top: auto;
+        background: $success;
+        border-radius: 999px;
+        padding: 11px 34px;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+        color: #0D2E13;
+
+        del {
+            font-size: 17px;
+            font-weight: 500;
+            opacity: 0.7;
+            margin-inline-end: 6px;
+        }
+    }
+
+    // Outlined مشاهده و خرید
+    &__buy {
+        margin-top: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 305px;
+        max-width: 100%;
+        height: 54px;
+        background: $white;
+        border: 2px solid $siteOrange;
+        border-radius: 999px;
+        color: $siteOrange;
+        font-size: 19px;
+        font-weight: 700;
+        font-family: $fontFamily;
+        text-decoration: none;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $siteOrange;
+            color: $white;
+        }
+    }
+
+    // --- Empty slot ---
+    &--empty {
+        .pzh-cmp-card__image-area {
+            align-items: center;
+        }
+
+        .pzh-cmp-card__info {
+            padding-top: 36.25px;
+        }
+    }
+
+    // Focus/crosshair icon
+    &__focus {
+        width: 210px;
+        height: 210px;
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    // Skeleton bars
+    &__bar {
+        width: 323px;
+        max-width: 100%;
+        height: 24px;
+        background: #F0F0F0;
+        border-radius: 0;
+
+        + .pzh-cmp-card__bar {
+            margin-top: 21.25px;
+        }
+
+        &:nth-child(2) {
+            margin-top: 21.25px;
+        }
+
+        &:nth-child(3) {
+            margin-top: 38.25px;
+        }
+    }
+
+    // Solid orange افزودن محصول
+    &__add {
+        margin-top: 37.25px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 305px;
+        max-width: 100%;
+        height: 54px;
+        background: $siteOrange;
+        border: none;
+        border-radius: 999px;
+        color: $white;
+        font-size: 19px;
+        font-weight: 700;
+        font-family: $fontFamily;
+        text-decoration: none;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: darken($siteOrange, 6%);
+        }
+    }
+}
+
+// --- Specs cells ---
+.pzh-cmp-spec {
+    border-radius: 10px;
+    min-height: 59.75px;
+    display: flex;
+    align-items: center;
+    padding: 12px 36px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #3E3E3E;
+    background: #F0F0F0;
+
+    &--label {
+        padding-right: 29px;
+        padding-left: 36px;
+        font-weight: 700;
+        color: #393939;
+        background: #D9D9D9;
+    }
+
+    // Row 1: yellow label + gray product cells, bold dark text
+    &.is-first {
+        background: #D9D9D9;
+        font-weight: 700;
+        color: #393939;
+    }
+
+    &.pzh-cmp-spec--label.is-first {
+        background: #FACA38;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+}
+
+// --- Responsive ---
+@media (max-width: $bp-lg - 1px) {
+    .pzh-cmp-card {
+        width: 100%;
+        height: auto;
+    }
+
+    // Keep the designed 475/342px columns (set inline per product count)
+    // and scroll horizontally instead of reflowing the comparison table
+    .pzh-cmp__specs {
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+}
+
+@media (max-width: $bp-sm) {
+    .pzh-cmp {
+        margin-inline: 0;
+
+        &__title {
+            font-size: 20px;
+        }
+
+        &__dot {
+            font-size: 20px;
+        }
+
+        &__count {
+            font-size: 16px;
+        }
+
+        &__specs-title {
+            font-size: 19px;
+            margin: 36px 0 18px;
+        }
+
+        &__copy {
+            margin-top: 56px;
+
+            h2 { font-size: 20px; }
+            h3 { font-size: 17px; margin-top: 24px; }
+            p { font-size: 15px; margin-top: 18px; }
+        }
+    }
+
+    .pzh-cmp-card {
+        &__image-area {
+            flex-basis: 280px;
+        }
+
+        &__info {
+            padding: 24px 20px 30px;
+        }
+
+        &__name {
+            font-size: 19px;
+        }
+
+        &__price {
+            font-size: 17px;
+            padding: 11px 26px;
+        }
+
+        &__buy,
+        &__add {
+            font-size: 17px;
+            height: 48px;
+        }
+
+        &--empty .pzh-cmp-card__info {
+            padding-top: 24px;
+        }
+
+        &__bar {
+            width: 100%;
+        }
+
+        &__focus {
+            width: 160px;
+            height: 160px;
+        }
+    }
+
+    .pzh-cmp-spec {
+        font-size: 15px;
+        min-height: 46px;
+        padding: 10px 16px;
+    }
+}
+
+// The floating compare bar links to this very page — hide it here so it
+// doesn't overlay the content
+body.page-template-page-compare .pzh-compare-bar {
+    display: none;
+}
