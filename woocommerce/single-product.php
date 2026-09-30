@@ -193,7 +193,8 @@ while (have_posts()): the_post();
                         <!-- Specs Column (renders right in RTL) -->
                         <div class="product-info__specs-col">
                             <?php
-                            // Quick info panels: brand, product type (category), then specs — up to 4
+                            // Quick info panels: brand, product type (category), then specs.
+                            // The first 3 show; the rest hides behind the toggler button.
                             $panel_pool = array();
                             if ($brand_name) {
                                 $panel_pool[__('برند', 'piazhen')] = $brand_name;
@@ -207,17 +208,15 @@ while (have_posts()): the_post();
                                 foreach ($excerpt_specs as $excerpt_label => $excerpt_value) {
                                     $panel_pool[$excerpt_label] = $excerpt_value;
                                 }
-                                $info_panels    = $panel_pool;
-                                $has_more_specs = false;
                             } else {
                                 foreach ($specs as $spec_label => $spec_value) {
                                     if (!isset($panel_pool[$spec_label])) {
                                         $panel_pool[$spec_label] = $spec_value;
                                     }
                                 }
-                                $info_panels    = array_slice($panel_pool, 0, 4, true);
-                                $has_more_specs = count($panel_pool) > 4;
                             }
+                            $info_panels  = array_slice($panel_pool, 0, 3, true);
+                            $extra_panels = array_slice($panel_pool, 3, null, true);
                             ?>
                             <?php if (!empty($info_panels)): ?>
                                 <div class="product-info__panels">
@@ -227,9 +226,19 @@ while (have_posts()): the_post();
                                             <span class="info-panel__value"><?php echo esc_html(pzh_fa_num($panel_value)); ?></span>
                                         </div>
                                     <?php endforeach; ?>
+                                    <?php foreach ($extra_panels as $panel_label => $panel_value): ?>
+                                        <div class="info-panel info-panel--extra">
+                                            <span class="info-panel__label"><?php echo esc_html(pzh_fa_num($panel_label)); ?></span>
+                                            <span class="info-panel__value"><?php echo esc_html(pzh_fa_num($panel_value)); ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                                <?php if ($has_more_specs): ?>
-                                    <a href="#section-specs" class="product-info__more"><?php _e('بیشتر', 'piazhen'); ?></a>
+                                <?php if (!empty($extra_panels)): ?>
+                                    <button type="button" class="product-info__more-toggle">
+                                        <span class="product-info__more-label"><?php _e('مشاهده ویژگی های بیشتر', 'piazhen'); ?></span>
+                                        <span class="product-info__more-label product-info__more-label--close"><?php _e('بستن ویژگی ها', 'piazhen'); ?></span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
                                 <?php endif; ?>
                             <?php endif; ?>
 

@@ -4261,49 +4261,116 @@ function pzh_post_reading_time($post_id = 0) {
  * Blog categories with post counts
  */
 function pzh_get_blog_categories() {
-    return get_categories(array('hide_empty' => true, 'orderby' => 'name', 'order' => 'ASC'));
+    return get_categories(array(
+        'hide_empty' => true,
+        'orderby'    => 'name',
+        'order'      => 'ASC',
+        'exclude'    => array(intval(get_option('default_category'))), // دسته‌بندی نشده
+    ));
+}
+
+/** URL of the magazine page (page-magazine.php template). */
+function pzh_magazine_page_url() {
+    $pages = get_pages(array('meta_key' => '_wp_page_template', 'meta_value' => 'page-magazine.php', 'number' => 1));
+    if ($pages) {
+        return get_permalink($pages[0]->ID);
+    }
+    return home_url('/blog/');
 }
 
 /**
- * A single magazine post card
+ * A single magazine post card (blog-page.png mockup: wide horizontal card —
+ * photo on the right with a yellow category badge above it, orange 2-line
+ * title, gray justified excerpt; no meta/read-more)
  */
 function pzh_render_post_card($post_id) {
     $post_id = intval($post_id);
     $categories = get_the_category($post_id);
     $cat_name   = !empty($categories) ? $categories[0]->name : '';
-    $thumb      = get_the_post_thumbnail_url($post_id, 'medium_large') ?: wc_placeholder_img_src('medium_large');
+    $thumb      = pzh_post_thumb_src($post_id, 'medium_large');
+    $excerpt    = wp_trim_words(wp_strip_all_tags(get_post_field('post_content', $post_id)), 40, '…');
     ?>
     <article class="mag-card">
-        <a href="<?php echo esc_url(get_permalink($post_id)); ?>" class="mag-card__image">
-            <img src="<?php echo esc_url($thumb); ?>" alt="<?php echo esc_attr(get_the_title($post_id)); ?>" loading="lazy">
-        </a>
-        <div class="mag-card__body">
+        <div class="mag-card__media">
             <?php if ($cat_name): ?>
                 <span class="mag-card__category"><?php echo esc_html($cat_name); ?></span>
             <?php endif; ?>
+            <a href="<?php echo esc_url(get_permalink($post_id)); ?>" class="mag-card__image">
+                <img src="<?php echo esc_url($thumb); ?>" alt="<?php echo esc_attr(get_the_title($post_id)); ?>" loading="lazy">
+            </a>
+        </div>
+        <div class="mag-card__body">
             <h3 class="mag-card__title">
                 <a href="<?php echo esc_url(get_permalink($post_id)); ?>"><?php echo esc_html(get_the_title($post_id)); ?></a>
             </h3>
-            <p class="mag-card__excerpt">
-                <?php echo esc_html(wp_trim_words(wp_strip_all_tags(get_post_field('post_content', $post_id)), 18, '…')); ?>
-            </p>
-            <div class="mag-card__meta">
-                <span class="mag-card__date">
-                    <i class="fa-regular fa-calendar"></i>
-                    <?php echo get_the_date('Y/m/d', $post_id); ?>
-                </span>
-                <span class="mag-card__read-time">
-                    <i class="fa-regular fa-clock"></i>
-                    <?php printf(__('%s دقیقه مطالعه', 'piazhen'), pzh_fa_num(pzh_post_reading_time($post_id))); ?>
-                </span>
-            </div>
-            <a href="<?php echo esc_url(get_permalink($post_id)); ?>" class="mag-card__more">
-                <?php _e('ادامه مطلب', 'piazhen'); ?>
-                <i class="fa-solid fa-arrow-left"></i>
-            </a>
+            <p class="mag-card__excerpt"><?php echo esc_html($excerpt); ?></p>
         </div>
     </article>
     <?php
+}
+
+/**
+ * Post thumbnail URL with a placeholder fallback: environments where the
+ * uploads were not copied (or the file is missing) must not 404.
+ */
+function pzh_post_thumb_src($post_id, $size = 'medium_large') {
+    $post_id = intval($post_id);
+    $tid     = get_post_thumbnail_id($post_id);
+    if ($tid) {
+        $file = get_attached_file($tid);
+        if ($file && file_exists($file)) {
+            $src = wp_get_attachment_image_url($tid, $size);
+            if ($src) {
+                return $src;
+            }
+        }
+    }
+    return wc_placeholder_img_src($size);
+}
+
+/**
+ * Magazine pagination (blog-page.png mockup: plain text numbers, orange
+ * قبلی/بعدی with chevrons, the active page a filled orange circle)
+ */
+function pzh_render_mag_pagination($page, $total_pages) {
+    if ($total_pages <= 1) return;
+
+    $page = max(1, intval($page));
+    echo '<nav class="mag-pagination" aria-label="' . esc_attr__('صفحه‌بندی', 'piazhen') . '">';
+
+    // بعدی (next)
+    if ($page < $total_pages) {
+        echo '<button class="mag-pagination__btn mag-pagination__btn--arrow" data-page="' . ($page + 1) . '">';
+        echo '<svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l4 4-4 4"/></svg>';
+        echo esc_html__('بعدی', 'piazhen');
+        echo '</button>';
+    }
+
+    // Page numbers with ellipses
+    $last_printed = -1;
+    for ($i = 1; $i <= $total_pages; $i++) {
+        if ($i === 1 || $i === $total_pages || abs($i - $page) <= 2) {
+            if ($i === $page) {
+                echo '<button class="mag-pagination__btn mag-pagination__btn--active" data-page="' . $i . '">' . pzh_fa_num($i) . '</button>';
+            } else {
+                echo '<button class="mag-pagination__btn" data-page="' . $i . '">' . pzh_fa_num($i) . '</button>';
+            }
+            $last_printed = $i;
+        } elseif ($last_printed !== $i - 1 && $last_printed !== -1) {
+            echo '<span class="mag-pagination__dots">…</span>';
+            $last_printed = -1;
+        }
+    }
+
+    // قبلی (prev)
+    if ($page > 1) {
+        echo '<button class="mag-pagination__btn mag-pagination__btn--arrow" data-page="' . ($page - 1) . '">';
+        echo esc_html__('قبلی', 'piazhen');
+        echo '<svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 2L2 6l4 4"/></svg>';
+        echo '</button>';
+    }
+
+    echo '</nav>';
 }
 
 /**
@@ -4322,7 +4389,7 @@ function pzh_render_magazine_grid($query, $page, $per_page) {
             pzh_render_post_card(get_the_ID());
         }
         echo '</div>';
-        pzh_render_pagination($page, $total_pages);
+        pzh_render_mag_pagination($page, $total_pages);
     } else {
         echo '<div class="mag-empty">';
         echo '<p>' . __('مقاله‌ای یافت نشد.', 'piazhen') . '</p>';

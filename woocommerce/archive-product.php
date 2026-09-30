@@ -122,8 +122,8 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
         </section>
 
         <div class="row g-4 align-items-start">
-            <!-- b. Sidebar with AJAX Filters -->
-            <aside class="col-lg-3">
+            <!-- b. Sidebar with AJAX Filters (drawer on mobile) -->
+            <aside class="col-lg-3 archive-sidebar">
                 <div class="archive-filters"
                      data-category-id="<?= esc_attr($category_id); ?>"
                      data-per-page="<?= esc_attr($per_page); ?>">
@@ -133,6 +133,9 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
                             <?php _e('فیلترها', 'piazhen'); ?>
                         </h3>
                         <button type="button" class="clear-all-filters"><?php _e('حذف همه', 'piazhen'); ?></button>
+                        <button type="button" class="archive-filters__close" aria-label="<?php esc_attr_e('بستن', 'piazhen'); ?>">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
                     </div>
 
                     <!-- Category Tree (links with counts) -->

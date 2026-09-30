@@ -845,12 +845,8 @@
 // ============================================================================
 
 @media (max-width: $bp-lg - 1px) {
-    // Filters collapse into a toggleable panel on mobile (JS toggles visibility)
-    aside.col-lg-3 {
-        order: -1;
-        width: 100%;
-    }
-
+    // The sidebar becomes a slide-in drawer (see .archive-sidebar rules below);
+    // the inner panel keeps its card look
     .archive-filters {
         position: static;
         border-radius: 12px;
@@ -875,6 +871,7 @@
 
         .mobile-filters-toggle {
             justify-content: center;
+            max-width: 100%;
         }
     }
 
@@ -1160,4 +1157,163 @@
 
 @keyframes spin {
     to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+// ============================================================================
+// Mobile: filters become a slide-in drawer (app-like menu)
+// ============================================================================
+
+.archive-filters__close {
+    display: none;
+}
+
+@media (max-width: $bp-lg - 1px) {
+    // The aside itself goes off-canvas so it leaves no gap in the page flow
+    .archive-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(340px, 88vw);
+        z-index: 1100;
+        margin: 0;
+        padding: 0;
+        transform: translateX(105%);
+        visibility: hidden;
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.35s;
+
+        &.open {
+            transform: translateX(0);
+            visibility: visible;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .archive-filters {
+            height: 100%;
+            overflow-y: auto;
+            border-radius: 0;
+            box-shadow: -10px 0 44px rgba($black, 0.16);
+        }
+    }
+
+    // Backdrop
+    body.filters-open::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 1090;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .archive-filters__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba($black, 0.05);
+        border: none;
+        color: $textColor;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background $transition-fast, color $transition-fast;
+
+        &:hover {
+            background: rgba($black, 0.12);
+            color: $siteOrange;
+        }
+    }
+}
+
+// ============================================================================
+// Mobile app-like tightening (smaller toolbar, pills, grid)
+// ============================================================================
+
+@media (max-width: $bp-sm) {
+    .archive-toolbar {
+        padding: 8px 10px;
+        margin-bottom: 14px;
+        border-radius: 10px;
+    }
+
+    .products-count-wrapper {
+        font-size: 11px;
+    }
+
+    .sort-radio {
+        span {
+            font-size: 11.5px;
+            padding: 5px 12px;
+        }
+    }
+
+    .mobile-filters-toggle {
+        font-size: 11.5px;
+        padding: 5px 12px;
+    }
+
+    .products-grid {
+        gap: 10px;
+    }
+
+    .products-pagination {
+        gap: 6px;
+
+        &__btn {
+            width: 32px;
+            height: 32px;
+            font-size: 12px;
+        }
+    }
+
+    .archive-head {
+        padding-bottom: 8px;
+    }
+
+    .archive-title {
+        font-size: 20px;
+    }
+}
+
+// Sticky action buttons at the drawer's bottom while scrolling (mobile)
+@media (max-width: $bp-lg - 1px) {
+    .archive-sidebar .filter-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: $white;
+        padding: 12px 0 16px;
+        margin-top: 12px;
+        border-top: 1px solid $gray-200;
+    }
+}
+
+// ============================================================================
+// Mobile: sort pills become a light swipeable strip (Swiper freeMode)
+// ============================================================================
+
+.sort-swiper {
+    display: block !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    padding: 4px 2px;
+    margin: -4px -2px;
+
+    // Soft edge fades so the strip reads as swipeable
+    mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+    }
+
+    .swiper-slide {
+        width: auto;
+        flex-shrink: 0;
+    }
+
+    .sort-radio span {
+        white-space: nowrap;
+    }
 }

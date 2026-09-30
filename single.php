@@ -77,8 +77,8 @@ while (have_posts()): the_post();
                 </footer>
             </article>
 
-            <!-- Sidebar (all magazine pages) -->
-            <?php get_template_part('template-parts/magazine/sidebar'); ?>
+            <!-- Sidebar: exactly the magazine page's left promo column -->
+            <?php get_template_part('template-parts/magazine/promo-column'); ?>
 
         </div>
 

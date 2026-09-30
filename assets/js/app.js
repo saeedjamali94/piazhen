@@ -752,6 +752,10 @@ $(document).ready(function () {
         $filterForm.on('click', '.apply-filters-btn', function (e) {
             e.preventDefault();
             pzhApplyFilters(1, true);
+            // Close the mobile drawer after applying
+            if ($filterAside.hasClass('open')) {
+                pzhCloseFilters();
+            }
         });
 
         // --- RESET / CLEAR ALL (works from sidebar and from empty-grid message) ---
@@ -772,27 +776,53 @@ $(document).ready(function () {
             pzhApplyFilters(page, true);
         });
 
-        // --- Mobile filter panel toggle ---
+        // --- Mobile filter drawer (the aside slides in off-canvas via CSS) ---
         var $filterAside = $filterForm.closest('aside');
-        function isMobile() { return $(window).width() < 992; }
 
-        // Hide the filter panel by default on mobile (desktop always visible)
-        if (isMobile()) {
-            $filterForm.hide();
+        function pzhCloseFilters() {
+            $filterAside.removeClass('open');
+            $('body').removeClass('filters-open');
+            $('.mobile-filters-toggle').removeClass('active');
         }
-        $(window).on('resize', function () {
-            if (isMobile()) {
-                if (!$filterAside.hasClass('open')) $filterForm.hide();
-            } else {
-                $filterForm.show();
+
+        $('.mobile-filters-toggle').on('click', function () {
+            $filterAside.addClass('open');
+            $('body').addClass('filters-open');
+            $(this).addClass('active');
+        });
+
+        $filterForm.find('.archive-filters__close').on('click', pzhCloseFilters);
+
+        // Backdrop click closes the drawer (the overlay is body::before)
+        $(document).on('click', function (e) {
+            if (e.target === document.body && $('body').hasClass('filters-open')) {
+                pzhCloseFilters();
             }
         });
 
-        $('.mobile-filters-toggle').on('click', function () {
-            $filterAside.toggleClass('open');
-            $filterForm.stop(true, true).slideToggle(250);
-            $(this).toggleClass('active');
+        // ESC closes the drawer
+        $(document).on('keyup', function (e) {
+            if ((e.key === 'Escape' || e.key === 'Esc') && $('body').hasClass('filters-open')) {
+                pzhCloseFilters();
+            }
         });
+
+        // --- Sort pills: light swipeable strip on mobile (Swiper freeMode) ---
+        var $sortOptions = $('.sort-options');
+        if ($sortOptions.length && $(window).width() < 992 && typeof Swiper !== 'undefined') {
+            $sortOptions.addClass('sort-swiper swiper');
+            $sortOptions.wrapInner('<div class="swiper-wrapper"></div>');
+            // Swiper requires the slides to carry the .swiper-slide class
+            $sortOptions.find('.sort-radio').addClass('swiper-slide');
+            new Swiper($sortOptions[0], {
+                freeMode: true,
+                slidesPerView: 'auto',
+                spaceBetween: 8,
+                touchReleaseOnEdges: true,
+                resistanceRatio: 0.6,
+                threshold: 5
+            });
+        }
 
         // --- Category tree expand/collapse ---
         $filterForm.on('click', '.category-tree__toggle', function () {
@@ -1122,6 +1152,60 @@ $(document).ready(function () {
             pzhCloseMobileMenu();
         }
     });
+
+    // ========================================================================
+    // Product info panels: «مشاهده ویژگی های بیشتر» toggler
+    // ========================================================================
+    $(document).on('click', '.product-info__more-toggle', function () {
+        $(this).closest('.product-info__specs-col').toggleClass('is-open');
+        $(this).toggleClass('is-open');
+    });
+
+    // ========================================================================
+    // Footer accordions (mobile): tapping a column title expands its links
+    // (desktop ignores the class — the lists always show there)
+    // ========================================================================
+    $(document).on('click', '.footer-col__title', function () {
+        $(this).closest('.footer-col').toggleClass('is-open');
+    });
+
+    // ========================================================================
+    // Bottom navigation (app-style): active tab + menu button opens the drawer
+    // ========================================================================
+    var $bottomNav = $('.bottomNav');
+    if ($bottomNav.length) {
+        // The site may live in a subdirectory (/piazhen/…) — compare the
+        // path RELATIVE to the site root
+        var sitePath = '/';
+        if (pzh_options && pzh_options.site_url) {
+            var m = String(pzh_options.site_url).match(/^https?:\/\/[^\/]+(\/.*)$/);
+            if (m && m[1]) sitePath = m[1].replace(/\/$/, '') || '/';
+        }
+        var relPath = window.location.pathname;
+        if (sitePath !== '/' && relPath.indexOf(sitePath) === 0) {
+            relPath = relPath.slice(sitePath.length) || '/';
+        }
+
+        var navActive = 'menu';
+        if (relPath === '/' || relPath === '') {
+            navActive = 'home';
+        } else if (/^\/shop\/|^\/product-category\/|^\/product-brand\/|^\/product\//.test(relPath)) {
+            navActive = 'shop';
+        } else if (/^\/cart\/|^\/checkout\//.test(relPath)) {
+            navActive = 'cart';
+        } else if (/^\/my-account\/|^\/login\/|^\/register\/|^\/auth\//.test(relPath)) {
+            navActive = 'account';
+        }
+        $bottomNav.find('[data-nav="' + navActive + '"]').addClass('is-active');
+
+        $bottomNav.find('[data-nav="menu"]').on('click', function () {
+            if ($mobileNav.hasClass('open')) {
+                pzhCloseMobileMenu();
+            } else {
+                pzhOpenMobileMenu();
+            }
+        });
+    }
 
     // Accordion: the chevron expands the submenu; the label still navigates
     $mobileNav.on('click', '.mob-toggle', function () {
@@ -2414,12 +2498,14 @@ $(document).ready(function () {
 
     if ($magazine.length) {
 
-        // Hero carousel (no arrows per the design — dots only)
+        // Hero carousel (no arrows per the design — dots only).
+        // rewind instead of loop: the loop clones offset the slide content
+        // in RTL, so the headline/CTA ended up off-centre.
         if (typeof Swiper !== 'undefined' && $magazine.find('.mag-hero-swiper').length) {
             new Swiper('.mag-hero-swiper', {
                 slidesPerView: 1,
                 spaceBetween: 0,
-                loop: true,
+                rewind: true,
                 autoplay: { delay: 4500, disableOnInteraction: false },
                 pagination: {
                     el: '.mag-hero-pagination',
@@ -2472,9 +2558,9 @@ $(document).ready(function () {
         }
 
         // Category pills
-        $magazine.on('click', '.mag-filter', function () {
+        $magazine.on('click', '.mag-tab', function () {
             currentCategory = parseInt($(this).data('category'), 10) || 0;
-            $magazine.find('.mag-filter').removeClass('active');
+            $magazine.find('.mag-tab').removeClass('active');
             $(this).addClass('active');
             loadMagazine(1, currentCategory, $('#mag-search').val().trim(), true, false);
         });
@@ -2491,7 +2577,7 @@ $(document).ready(function () {
         });
 
         // Pagination
-        $(document).on('click', '.mag-results .products-pagination__btn', function () {
+        $(document).on('click', '.mag-results .mag-pagination__btn', function () {
             var page = $(this).data('page');
             if (!page) return;
             loadMagazine(page, currentCategory, $('#mag-search').val().trim(), true, true);

@@ -235,3 +235,103 @@
         }
     }
 }
+
+// ============================================================================
+// Mobile: accordion footer columns + a shorter, tighter footer
+// ============================================================================
+
+.footer-col__chevron {
+    display: none;
+}
+
+@media (max-width: $bp-sm) {
+    // Column titles become accordion toggles
+    .footer-col__title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0;
+        padding: 12px 0;
+        cursor: pointer;
+        font-size: 15px;
+        user-select: none;
+    }
+
+    .footer-col__chevron {
+        display: flex;
+        color: #9A9A9A;
+        transition: transform $transition-fast;
+    }
+
+    .footer-col.is-open .footer-col__chevron {
+        transform: rotate(180deg);
+    }
+
+    .footer-col .footer-links,
+    .footer-col .footer-contact {
+        display: none;
+    }
+
+    .footer-col.is-open .footer-links,
+    .footer-col.is-open .footer-contact {
+        display: block;
+        padding-bottom: 10px;
+    }
+
+    // Smaller footer height
+    .siteFooter {
+        padding: 24px 0 16px;
+    }
+
+    .footer-grid {
+        gap: 2px;
+    }
+
+    .footer-col--about {
+        .footer-logo {
+            margin-bottom: 12px;
+
+            img {
+                max-width: 108px;
+            }
+        }
+
+        .footer-about-text {
+            font-size: 12.5px;
+            line-height: 1.7;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .footer-namad {
+            margin-top: 18px;
+        }
+    }
+
+    .footer-links li {
+        line-height: 30px;
+    }
+
+    .footer-contact li {
+        padding-bottom: 12px;
+        font-size: 12.5px;
+        line-height: 1.7;
+    }
+
+    .footer-bottom {
+        margin-top: 20px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        justify-items: center;
+
+        .footer-copyright {
+            font-size: 11px;
+        }
+    }
+
+    .footer-social {
+        gap: 24px;
+    }
+}

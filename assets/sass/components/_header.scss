@@ -1058,6 +1058,10 @@
     .mega-menu__grid {
         grid-template-columns: 1fr !important;
     }
+
+    .user-icon , .cart-icon {
+        font-size: 19px !important;
+    }
 }
 
 // ============================================================================
@@ -1518,5 +1522,90 @@ body {
 
     &.show {
         opacity: 1;
+    }
+}
+
+// ============================================================================
+// Bottom navigation (app-style, mobile only)
+// ============================================================================
+
+.bottomNav {
+    display: none;
+
+    @media (max-width: $bp-lg - 1px) {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1040;
+        display: flex;
+        align-items: stretch;
+        background: $white;
+        border-top: 1px solid #eef0f3;
+        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    &__item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px 7px;
+        background: none;
+        border: none;
+        color: #9aa0a8;
+        font-family: $fontFamily;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+
+        svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+        }
+
+        &.is-active {
+            color: $siteOrange;
+        }
+    }
+
+    &__icon-wrap {
+        position: relative;
+        display: flex;
+    }
+
+    &__badge {
+        position: absolute;
+        top: -6px;
+        left: -10px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: $siteOrange;
+        color: $white;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+// Lift the page above the bottom nav on mobile (the compare bar's own lift
+// lives in _homepage.scss after its base rule — that file imports later)
+@media (max-width: $bp-lg - 1px) {
+    body {
+        padding-bottom: 64px;
+    }
+    .siteHeader .logo a .heading-text {
+        font-size: 13px;
     }
 }

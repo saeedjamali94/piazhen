@@ -1,18 +1,11 @@
 @use "../global/variables" as *;
 
 // ============================================================================
-// Magazine (blog) page — hero carousel + AJAX filters/search
+// Magazine (blog) page — blog-page.png mockup
+// Left promo column + slider hero, category tabs, single-column wide cards
 // ============================================================================
 
-.pzh-magazine {
-    padding-bottom: 56px;
-    background: $gray-100;
-
-    .container {
-        max-width: 1320px;
-    }
-}
-
+// Shared with the single-post view
 .mag-breadcrumb {
     font-size: 13px;
     color: $gray-600;
@@ -20,13 +13,11 @@
     .breadcrumb-trail {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
     }
 
     a {
         color: $gray-600;
-        transition: color $transition-fast;
 
         &:hover {
             color: $siteOrange;
@@ -35,82 +26,218 @@
 
     .breadcrumb-delimiter {
         color: $gray-400;
-        margin: 0 4px;
     }
 }
 
-.mag-head {
-    margin-bottom: 22px;
+.mag-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
 
-    &__title {
-        font-size: 26px;
-        font-weight: 800;
-        color: #121212;
-        margin-bottom: 6px;
+    @media (max-width: $bp-lg - 1px) {
+        grid-template-columns: 1fr;
     }
 
-    &__subtitle {
-        font-size: 14px;
-        color: $gray-600;
+    &__main {
+        min-width: 0;
     }
 }
 
 // ============================================================================
-// Hero Carousel
+// Hero: promo column + slider
 // ============================================================================
 
 .mag-hero {
-    position: relative;
-    margin-bottom: 28px;
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    padding-top: 41px;
+    margin-bottom: 33px;
 
-    .swiper {
-        padding: 4px;
+    @media (max-width: $bp-md - 1px) {
+        flex-direction: column;
+        gap: 16px;
+        padding-top: 20px;
+    }
+
+    // Promo column goes LEFT of the slider (second in DOM); on mobile it
+    // stacks on top
+    @media (max-width: $bp-md - 1px) {
+        .mag-promo {
+            order: -1;
+        }
     }
 }
 
-// Full-bleed photo slide (per the Content.png design): centered white headline
-// directly on the photo + orange pill button; 1 slide per view, non-peeking.
-.mag-hero-slide {
-    position: relative;
-    aspect-ratio: 1.71 / 1;
-    border-radius: 28px;
-    overflow: hidden;
-    background-color: $gray-200;
-    background-size: cover;
-    background-position: center;
+// --- Left promo column: 3 yellow quick-links + search ---
+.mag-promo {
+    flex: 0 0 426px;
+    display: flex;
+    flex-direction: column;
+    gap: 41px;
 
-    // Soft bottom gradient so the centered text stays readable on any photo
-    &__overlay {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 26px;
-        padding: 24px 30px;
-        background: linear-gradient(180deg, rgba($black, 0.08) 0%, rgba($black, 0.22) 60%, rgba($black, 0.34) 100%);
+    @media (max-width: $bp-md - 1px) {
+        flex: none;
+        width: 100%;
+        gap: 14px;
     }
 
-    &__title {
-        max-width: 92%;
-        font-size: 28px;
+    &__link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 107px;
+        padding: 18px 25px 18px 30px;
+        background: #FACA38;
+        border-radius: 16px;
+        color: #1a1a1a;
+        text-decoration: none;
+        transition: transform $transition-fast;
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: $bp-md - 1px) {
+            min-height: 72px;
+        }
+    }
+
+    &__icon {
+        flex-shrink: 0;
+        display: flex;
+
+        svg {
+            width: 40px;
+            height: 40px;
+            stroke: currentColor;
+        }
+    }
+
+    &__label {
+        flex: 1;
+        font-size: 26px;
         font-weight: 800;
-        line-height: 1.6;
-        text-align: center;
+        line-height: 1.4;
+    }
+
+    &__arrow {
+        flex-shrink: 0;
+        display: flex;
+        color: rgba(#1a1a1a, 0.75);
+
+        svg {
+            width: 17px;
+            height: 17px;
+            stroke: currentColor;
+        }
+    }
+
+    // Hero search box
+    &__search {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 48px;
+        border: 1px solid #E1E1E1;
+        border-radius: 12px;
+        background: $white;
+
+        @media (max-width: $bp-md - 1px) {
+            margin-top: 8px;
+        }
+    }
+
+    &__search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9a9a9a;
+        pointer-events: none;
+    }
+
+    input {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
+        // RTL: text starts at the right (16px); the left 46px clears the icon
+        padding: 0 16px 0 46px;
+        font-family: $fontFamily;
+        font-size: 14px;
+        color: $textColor;
+
+        &::placeholder {
+            color: #7B7B7B;
+        }
+
+        &:focus {
+            outline: none;
+        }
+    }
+
+    // Invisible button overlaying the icon (the search triggers on
+    // input/Enter; the button just makes the icon clickable)
+    button {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 46px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        opacity: 0;
+    }
+}
+
+// --- Main column: image slider ---
+.mag-slider {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+
+.mag-hero-swiper {
+    height: 512px;
+    border-radius: 28px;
+    overflow: hidden;
+
+    @media (max-width: $bp-md - 1px) {
+        height: 280px;
+        border-radius: 20px;
+    }
+}
+
+.mag-hero-slide {
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px 40px 60px;
+
+    &__title {
+        max-width: 640px;
+        margin: 0 0 35px;
+        font-size: 40px;
+        font-weight: 800;
+        line-height: 1.5;
+        color: $white;
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 
         a {
-            color: $white;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-shadow: 0 2px 14px rgba($black, 0.4);
-            transition: opacity $transition-fast;
+            color: inherit;
+        }
 
-            &:hover {
-                opacity: 0.85;
-            }
+        @media (max-width: $bp-md - 1px) {
+            font-size: 22px;
+            margin-bottom: 18px;
         }
     }
 
@@ -118,287 +245,532 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 13px 46px;
+        width: 163px;
+        height: 50px;
+        background: #F36B2A;
         border-radius: 999px;
-        background: $siteOrange;
         color: $white;
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 700;
-        transition: all $transition-fast;
+        text-decoration: none;
+        transition: background $transition-fast;
 
         &:hover {
-            background: $siteOrangeDark;
-        }
-    }
-
-    @media (max-width: $bp-md - 1px) {
-        border-radius: 20px;
-
-        &__title {
-            font-size: 20px;
+            background: darken(#F36B2A, 6%);
         }
 
-        &__btn {
-            padding: 11px 34px;
-            font-size: 13px;
+        @media (max-width: $bp-md - 1px) {
+            width: 140px;
+            height: 42px;
+            font-size: 15px;
         }
     }
 }
 
-// Pagination: orange dots + one elongated orange active pill, no arrows
+// Slider dots: 8px circles, the active one an elongated pill
 .mag-hero-pagination {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    justify-content: center;
+    align-items: center;
     gap: 7px;
-    margin-top: 10px;
+    z-index: 5;
 
     .swiper-pagination-bullet {
         width: 8px;
         height: 8px;
-        border-radius: 50%;
-        background: $siteOrange;
-        opacity: 1;
+        border-radius: 999px;
+        background: $white;
+        opacity: 0.75;
+        margin: 0;
         transition: all $transition-fast;
+    }
 
-        &-active {
-            width: 24px;
-            border-radius: 5px;
-            background: $siteOrange;
-        }
+    .swiper-pagination-bullet-active {
+        width: 22px;
+        opacity: 1;
     }
 }
 
 // ============================================================================
-// Toolbar: category pills + search
+// Category tabs + posts live in the slider's column only — the left promo
+// column stays empty below the hero (blog-page.png)
 // ============================================================================
 
-.mag-toolbar {
+.mag-tabs,
+.mag-results {
+    margin-inline-end: 446px; // RTL inline-end = the physical left side
+
+    @media (max-width: $bp-md - 1px) {
+        margin-inline-end: 0;
+    }
+}
+
+.mag-tabs {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     flex-wrap: wrap;
     gap: 14px;
-    margin-bottom: 24px;
+    margin-bottom: 29px;
 
-    &__filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    &__search {
-        display: flex;
-        align-items: center;
-        background: $white;
-        border: 1px solid #F0F0F0;
-        border-radius: 50px;
-        overflow: hidden;
-        padding: 0 6px 0 14px;
+    @media (max-width: $bp-sm) {
+        gap: 8px;
+        margin-bottom: 18px;
     }
 }
 
-.mag-filter {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 22px;
-    border-radius: 50px;
-    border: 1.5px solid #F0F0F0;
+.mag-tab {
+    height: 50px;
+    padding: 0 34px;
     background: $white;
-    color: #121212;
-    font-size: 13.5px;
+    border: 1px solid #B27E66;
+    border-radius: 999px;
+    color: #F36B2A;
+    font-family: $fontFamily;
+    font-size: 22px;
     font-weight: 700;
+    line-height: 1;
     cursor: pointer;
     transition: all $transition-fast;
-    font-family: $fontFamily;
 
     &:hover {
-        border-color: #121212;
+        background: rgba(#F36B2A, 0.06);
     }
 
-    // Design: the active pill is DARK with white text
     &.active {
-        background: #121212;
-        border-color: #121212;
-        color: $white;
+        background: #F36B2A;
+        border-color: #F36B2A;
+        color: #FFF7EC;
     }
 
-    &__count {
-        font-size: 11px;
-        font-weight: 700;
-        background: rgba($black, 0.06);
-        border-radius: 20px;
-        padding: 1px 8px;
-
-        .mag-filter.active & {
-            background: rgba($white, 0.25);
-        }
-    }
-}
-
-// Search: a plain pill with an inline magnifier (per the design)
-.mag-search-input {
-    border: 0;
-    padding: 11px 12px;
-    font-size: 13.5px;
-    font-family: $fontFamily;
-    width: 220px;
-    background: transparent;
-
-    &:focus {
-        outline: none;
-    }
-
-    &::placeholder {
-        color: $gray-500;
-    }
-}
-
-.mag-search-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: transparent;
-    color: $gray-600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all $transition-fast;
-
-    &:hover {
-        color: #121212;
+    @media (max-width: $bp-sm) {
+        height: 40px;
+        padding: 0 22px;
+        font-size: 16px;
     }
 }
 
 // ============================================================================
-// Grid + cards
+// Post cards: single column of wide horizontal cards
 // ============================================================================
 
 .mag-results {
-    min-height: 200px;
+    position: relative;
     transition: opacity $transition-fast;
 
     &.loading {
-        opacity: 0.5;
+        opacity: 0.55;
         pointer-events: none;
     }
 }
 
 .mag-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 20px;
-
-    @media (max-width: $bp-lg - 1px) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: $bp-sm) {
-        grid-template-columns: 1fr;
-    }
 }
 
 .mag-card {
-    background: $white;
-    border: 1px solid #F0F0F0;
-    border-radius: 16px;
-    overflow: hidden;
     display: flex;
-    flex-direction: column;
-    transition: all $transition-base;
+    background: $white;
+    border: 2px solid #F0F0F0;
+    border-radius: 20px;
+    overflow: hidden;
+    min-height: 336px;
 
-    &:hover {
-        box-shadow: $shadow-md;
-        transform: translateY(-3px);
+    @media (max-width: $bp-md - 1px) {
+        flex-direction: column;
+    }
 
-        .mag-card__image img {
-            transform: scale(1.05);
+    // Media column (right in RTL): badge above the photo
+    &__media {
+        flex: 0 0 333px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 26px 20px 32px;
+
+        @media (max-width: $bp-md - 1px) {
+            flex: none;
+            width: 100%;
+            align-items: stretch;
+            padding: 14px 14px 0;
         }
+    }
+
+    &__category {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 22px;
+        height: 36px;
+        background: #FACA38;
+        border-radius: 14px;
+        color: #1a1a1a;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 10px;
     }
 
     &__image {
         display: block;
-        aspect-ratio: 16/9;
+        width: 293px;
+        height: 231px;
+        border-radius: 16px;
         overflow: hidden;
-        background: $gray-200;
 
         img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
             transition: transform 0.4s ease;
+        }
+
+        &:hover img {
+            transform: scale(1.04);
+        }
+
+        @media (max-width: $bp-md - 1px) {
+            width: 100%;
+            height: 200px;
         }
     }
 
     &__body {
+        flex: 1;
+        min-width: 0;
+        padding: 28px 0 28px 25px;
         display: flex;
         flex-direction: column;
-        flex: 1;
-        padding: 16px 18px 18px;
-    }
 
-    &__category {
-        font-size: 12px;
-        font-weight: 700;
-        color: $siteOrange;
-        margin-bottom: 8px;
+        @media (max-width: $bp-md - 1px) {
+            padding: 16px 16px 20px;
+        }
     }
 
     &__title {
-        font-size: 16px;
+        margin: 0 0 14px;
+        font-size: 24px;
         font-weight: 800;
-        line-height: 1.7;
-        margin-bottom: 8px;
+        line-height: 1.45;
 
         a {
-            color: #121212;
+            color: #F36B2A;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            transition: color $transition-fast;
+        }
 
-            &:hover {
-                color: $siteOrange;
-            }
+        @media (max-width: $bp-sm) {
+            font-size: 18px;
         }
     }
 
     &__excerpt {
-        font-size: 13px;
-        color: $gray-600;
-        line-height: 2;
-        margin-bottom: 12px;
+        margin: 0;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1.85;
+        color: #7B7B7B;
+        text-align: justify;
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 5;
         -webkit-box-orient: vertical;
         overflow: hidden;
+
+        @media (max-width: $bp-sm) {
+            font-size: 15px;
+            -webkit-line-clamp: 4;
+        }
+    }
+}
+
+.mag-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: $gray-600;
+    font-size: 15px;
+}
+
+// ============================================================================
+// Pagination (blog-page.png mockup)
+// ============================================================================
+
+.mag-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 42px;
+    direction: rtl;
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        padding: 6px 8px;
+        font-family: $fontFamily;
+        font-size: 20px;
+        font-weight: 600;
+        color: #000;
+        cursor: pointer;
+        line-height: 1;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: #F36B2A;
+        }
+
+        &--active {
+            width: 41px;
+            height: 41px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+            background: #F46D2D;
+            color: $white;
+
+            &:hover {
+                color: $white;
+                background: darken(#F46D2D, 6%);
+            }
+        }
+
+        &--arrow {
+            color: #F36B2A;
+
+            svg {
+                flex-shrink: 0;
+                stroke: currentColor;
+            }
+        }
+    }
+
+    &__dots {
+        color: #000;
+        font-size: 20px;
+        line-height: 1;
+        padding: 0 2px;
+    }
+
+    @media (max-width: $bp-sm) {
+        gap: 6px;
+        margin-top: 26px;
+
+        &__btn {
+            font-size: 15px;
+            padding: 4px 6px;
+
+            &--active {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        &__dots {
+            font-size: 15px;
+        }
+    }
+}
+
+// ============================================================================
+// Single post (single.php) + magazine sidebar — improved to match the new
+// magazine design language (orange #F36B2A / yellow #FACA38 / radius 20)
+// ============================================================================
+
+.pzh-single-post {
+    padding: 0 0 56px;
+
+    .mag-layout {
+        // Article + the magazine's 426px promo column as the sidebar
+        grid-template-columns: minmax(0, 1fr) 426px;
+        gap: 20px;
+
+        @media (max-width: $bp-lg - 1px) {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+}
+
+// --- Article ---
+.post-article {
+    background: $white;
+    border: 2px solid #F0F0F0;
+    border-radius: 20px;
+    padding: 34px 36px;
+    min-width: 0;
+
+    @media (max-width: $bp-sm) {
+        padding: 20px 16px;
+        border-width: 1px;
+        border-radius: 14px;
+    }
+
+    &__header {
+        margin-bottom: 24px;
+    }
+
+    &__category {
+        display: inline-flex;
+        align-items: center;
+        height: 36px;
+        padding: 0 22px;
+        background: #FACA38;
+        border-radius: 14px;
+        color: #1a1a1a;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1;
+        text-decoration: none;
+        margin-bottom: 16px;
+        transition: transform $transition-fast;
+
+        &:hover {
+            transform: translateY(-1px);
+        }
+    }
+
+    &__title {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.6;
+        color: #121212;
+        margin: 0 0 16px;
+
+        @media (max-width: $bp-sm) {
+            font-size: 21px;
+        }
     }
 
     &__meta {
         display: flex;
         align-items: center;
-        gap: 16px;
-        font-size: 11.5px;
-        color: $gray-500;
-        margin-bottom: 12px;
-        margin-top: auto;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 13px;
+        color: $gray-600;
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: $gray-100;
+            border-radius: 999px;
+            padding: 6px 14px;
+        }
 
         i {
-            margin-left: 4px;
-            color: $gray-400;
+            color: #F36B2A;
         }
     }
 
-    &__more {
+    &__thumb {
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 24px;
+
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    }
+
+    &__content {
+        font-size: 16px;
+        line-height: 2.2;
+        color: #3a3a3a;
+
+        h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #121212;
+            margin: 28px 0 12px;
+        }
+
+        h3 {
+            font-size: 19px;
+            font-weight: 800;
+            color: #121212;
+            margin: 22px 0 10px;
+        }
+
+        p {
+            margin-bottom: 14px;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        ul,
+        ol {
+            padding-right: 22px;
+            margin-bottom: 14px;
+
+            li {
+                margin-bottom: 6px;
+            }
+        }
+
+        blockquote {
+            margin: 18px 0;
+            padding: 14px 18px;
+            border-right: 4px solid #F36B2A;
+            background: rgba(#F36B2A, 0.06);
+            border-radius: 0 12px 12px 0;
+            color: $gray-700;
+        }
+
+        a {
+            color: #F36B2A;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+
+            th,
+            td {
+                border: 1px solid #F0F0F0;
+                padding: 10px 14px;
+                text-align: right;
+            }
+
+            th {
+                background: $gray-100;
+                font-weight: 700;
+                color: #121212;
+            }
+        }
+    }
+
+    &__footer {
+        margin-top: 28px;
+        padding-top: 18px;
+        border-top: 1px solid #F0F0F0;
+    }
+
+    &__back {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        font-size: 13px;
+        gap: 8px;
+        font-size: 14px;
         font-weight: 700;
-        color: $siteOrange;
+        color: #F36B2A;
+        text-decoration: none;
         transition: gap $transition-fast;
 
         i {
@@ -406,61 +778,16 @@
         }
 
         &:hover {
-            gap: 10px;
+            gap: 12px;
         }
     }
 }
 
-.mag-empty {
-    text-align: center;
-    padding: 56px 20px;
-    background: $white;
-    border: 1px solid #F0F0F0;
-    border-radius: 16px;
-    color: $gray-600;
-    font-size: 15px;
-}
-
-// Pagination reuses .products-pagination styles from the archive
-.mag-results .products-pagination {
-    margin-top: 28px;
-}
-
-// ============================================================================
-// Layout: main content + sidebar (all magazine pages)
-// ============================================================================
-
-.mag-layout {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 28px;
-    align-items: start;
-    margin-bottom: 40px;
-
-    @media (max-width: $bp-lg - 1px) {
-        grid-template-columns: 1fr;
-    }
-
-    // With the sidebar present, the grid stays 3 columns but tighter
-    &__main {
-        min-width: 0;
-
-        .mag-grid {
-            @media (max-width: $bp-xl - 1px) {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    }
-}
-
-// ============================================================================
-// Magazine Sidebar (per the magazine-side.svg design)
-// ============================================================================
-
+// --- Sidebar ---
 .mag-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 20px;
 
     @media (max-width: $bp-lg - 1px) {
         display: grid;
@@ -472,20 +799,21 @@
     }
 }
 
-// Gold card (#FBCA38, 24px radius, dark icon + text)
+// Gold cards (#FACA38 — the magazine's yellow, radius 16 like the promo links)
 .mag-side-card {
     display: flex;
     align-items: center;
     gap: 14px;
-    background: #FBCA38;
-    border-radius: 24px;
-    padding: 22px 24px;
-    min-height: 108px;
+    background: #FACA38;
+    border-radius: 16px;
+    padding: 20px 22px;
+    min-height: 100px;
+    text-decoration: none;
     transition: all $transition-fast;
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: $shadow-md;
+        box-shadow: 0 8px 20px rgba(#FACA38, 0.35);
     }
 
     &__icon {
@@ -508,7 +836,6 @@
         opacity: 0.7;
     }
 
-    // Social card: 3 square buttons on the right
     &--social {
         justify-content: flex-start;
 
@@ -539,7 +866,7 @@
         background: #121212;
 
         svg {
-            stroke: #FBCA38;
+            stroke: #FACA38;
         }
     }
 }
@@ -551,12 +878,12 @@
     border: 1px solid rgba(#B5B5B5, 0.6);
     border-radius: 32px;
     padding: 4px 6px 4px 18px;
-    min-height: 63px;
+    min-height: 60px;
     background: $white;
     transition: border-color $transition-fast;
 
     &:focus-within {
-        border-color: rgba(#B5B5B5, 1);
+        border-color: #F36B2A;
     }
 
     &__input {
@@ -588,134 +915,11 @@
         transition: all $transition-fast;
 
         &:hover {
-            background: rgba(#828282, 0.1);
-        }
-    }
-}
+            background: rgba(#F36B2A, 0.1);
 
-// ============================================================================
-// Single post
-// ============================================================================
-
-.pzh-single-post {
-    padding-bottom: 56px;
-    background: $gray-100;
-
-    .container {
-        max-width: 1320px;
-    }
-}
-
-.post-article {
-    background: $white;
-    border: 1px solid #F0F0F0;
-    border-radius: 20px;
-    padding: 30px 34px;
-    min-width: 0;
-
-    &__header {
-        margin-bottom: 20px;
-    }
-
-    &__category {
-        display: inline-block;
-        background: $siteOrange;
-        color: $white;
-        font-size: 13px;
-        font-weight: 700;
-        padding: 5px 16px;
-        border-radius: 50px;
-        margin-bottom: 14px;
-    }
-
-    &__title {
-        font-size: 24px;
-        font-weight: 800;
-        line-height: 1.7;
-        color: #121212;
-        margin-bottom: 12px;
-    }
-
-    &__meta {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 18px;
-        font-size: 12.5px;
-        color: $gray-500;
-
-        i {
-            margin-left: 5px;
-            color: $gray-400;
-        }
-    }
-
-    &__thumb {
-        border-radius: 14px;
-        overflow: hidden;
-        margin-bottom: 22px;
-
-        img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-    }
-
-    &__content {
-        font-size: 15px;
-        line-height: 2.3;
-        color: #3a3a3a;
-
-        h2, h3 {
-            font-size: 19px;
-            font-weight: 800;
-            color: #121212;
-            margin: 22px 0 10px;
-        }
-
-        p {
-            margin-bottom: 14px;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 12px;
-        }
-
-        ul, ol {
-            padding-right: 22px;
-            margin-bottom: 14px;
-
-            li {
-                margin-bottom: 6px;
+            svg {
+                stroke: #F36B2A;
             }
-        }
-
-        a {
-            color: $siteOrange;
-            font-weight: 600;
-        }
-    }
-
-    &__footer {
-        margin-top: 24px;
-        padding-top: 18px;
-        border-top: 1px solid #F0F0F0;
-    }
-
-    &__back {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13.5px;
-        font-weight: 700;
-        color: $siteOrange;
-        transition: gap $transition-fast;
-
-        &:hover {
-            gap: 12px;
         }
     }
 }

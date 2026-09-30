@@ -45,7 +45,7 @@ $hero = pzh_hero_banners();
                 <div class="col-12">
                     <div class="row g-4">
                         <?php foreach ($hero['bottom_cards'] as $card): ?>
-                            <div class="col-md-6">
+                            <div class="col-6 mt-sm-4 mt-2">
                                 <a class="heroSection__tile"
                                    href="<?= esc_url($card['link']); ?>"
                                    style="background-image: url('<?= esc_url($card['image']); ?>');">
@@ -61,8 +61,8 @@ $hero = pzh_hero_banners();
             </div>
 
             <!-- Two Stacked Photo Tiles -->
-            <div class="col-md-4">
-                <div class="d-flex flex-column gap-3 h-100">
+            <div class="col-md-4 mt-sm-4 mt-2">
+                <div class="d-flex flex-md-column gap-3 h-100">
                     <?php foreach ($hero['side_cards'] as $card): ?>
                         <a class="heroSection__tile heroSection__tile--fill"
                            href="<?= esc_url($card['link']); ?>"

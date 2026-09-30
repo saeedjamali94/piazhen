@@ -186,10 +186,10 @@
 
     // Title: orange, bold, 33px
     &__title {
-        font-size: 27px;
+        font-size: 24px;
         font-weight: 700;
         line-height: 1.6;
-        margin-bottom: 17px;
+        margin-bottom: 40px;
         color: $siteOrange;
     }
 
@@ -207,7 +207,7 @@
     // Two sub-columns, mirroring the mockup proportions (46% / gap / 46%)
     &__row {
         display: grid;
-        grid-template-columns: 46% 46%;
+        grid-template-columns: 41% 52%;
         justify-content: space-between;
     }
 
@@ -285,7 +285,7 @@
     border-radius: $cardRadius;
 
     &__label {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 700;
         color: #3F3F3F;
         // Long labels shrink and wrap so the value never gets pushed outside
@@ -296,9 +296,9 @@
     }
 
     &__value {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 700;
-        color: #F2854F;
+        color: $siteOrange;
         white-space: normal;
         line-height: 1.5;
         text-align: left;
@@ -1159,7 +1159,6 @@
             align-items: center;
             justify-content: space-between;
             padding: 16px 20px;
-            background: none;
             border: none;
             cursor: pointer;
             font-size: 15px;
@@ -1168,6 +1167,7 @@
             text-align: right;
             font-family: $fontFamily;
             transition: background $transition-fast;
+            background-color: $siteYellow;
 
             &:hover {
                 background: rgba($siteYellow, 0.05);
@@ -1177,7 +1177,6 @@
         &__icon {
             flex-shrink: 0;
             margin-right: 8px;
-            color: $gray-500;
             transition: transform $transition-base;
         }
 
@@ -1239,7 +1238,7 @@
     background: $white;
     padding: 12px 16px;
     box-shadow: 0 -4px 20px rgba($black, 0.1);
-    z-index: 100;
+    z-index: 10000;
     align-items: center;
     gap: 12px;
 
@@ -1287,7 +1286,7 @@
 
     .product-info {
         &__title {
-            font-size: 27px;
+            font-size: 23px;
         }
         &__subtitle {
             font-size: 22px;
@@ -1318,7 +1317,7 @@
 
     .variation-group--radio .variation-group__label,
     .variation-radio__text {
-        font-size: 20px;
+        font-size: 17px;
     }
 
     .add-to-cart-single {
@@ -1374,7 +1373,7 @@
     // Info: stack the two sub-columns (specs above controls)
     .product-info {
         &__title {
-            font-size: 22px;
+            font-size: 19px;
         }
         &__subtitle {
             font-size: 19px;
@@ -1412,7 +1411,7 @@
 
     .variation-group--radio .variation-group__label,
     .variation-radio__text {
-        font-size: 17px;
+        font-size: 12px;
     }
 
     .variation-radio__dot {
@@ -1437,7 +1436,7 @@
         padding: 32px 0;
 
         .section-heading {
-            font-size: 17px;
+            font-size: 14px;
         }
     }
 
@@ -1454,4 +1453,147 @@
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+// ============================================================================
+// Mobile app-like tightening (smaller elements on phones)
+// ============================================================================
+
+@media (max-width: $bp-sm) {
+    .product-gallery {
+        &__main {
+            border-radius: 20px;
+        }
+
+        &__thumb {
+            flex-basis: 64px;
+            border-radius: 12px;
+        }
+
+        &__actions {
+            top: 10px;
+            right: 10px;
+            gap: 8px;
+        }
+    }
+
+    .gallery-action-btn {
+        width: 34px;
+        height: 34px;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .product-info {
+        &__title {
+            font-size: 17px;
+        }
+
+        &__subtitle,
+        &__more {
+            font-size: 16px;
+        }
+
+        &__price {
+            font-size: 20px;
+        }
+    }
+
+    .info-panel {
+        min-height: 44px;
+        padding: 10px 14px;
+
+        &__label,
+        &__value {
+            font-size: 12px;
+        }
+    }
+
+    .variation-panel {
+        .variation-group__label,
+        .variation-group__selected,
+        .variation-radio__text {
+            font-size: 15px;
+        }
+    }
+
+    .add-to-cart-single {
+        width: 100%;
+        max-width: 260px;
+        font-size: 18px;
+        padding: 12px 24px;
+    }
+
+    .tab-nav-link {
+        padding: 7px 12px;
+        font-size: 11px;
+    }
+
+    .single-product-section .section-content {
+        font-size: 12px;
+    }
+    .single-product-section .section-heading {
+        font-size: 14px;
+    }
+    .product-description h3 , h2 , h4 , h5 ,h6 {
+        font-size: 14px;
+    }
+}
+
+
+// Extra spec panels stay hidden until the toggler opens them
+.info-panel--extra {
+    display: none;
+}
+
+.product-info__specs-col.is-open .info-panel--extra {
+    display: flex;
+}
+
+// «مشاهده ویژگی های بیشتر» toggler
+.product-info__more-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    justify-content: center;
+    box-shadow: 0 0 31px 14px #fff;
+    width: 247px;
+    margin: -15px auto 20px;
+    background: #ffffff;
+    border: 1.5px solid rgba($siteOrange, 0.45);
+    border-radius: 999px;
+    color: $siteOrange;
+    font-family: $fontFamily;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    svg {
+        flex-shrink: 0;
+        transition: transform $transition-fast;
+    }
+
+    .product-info__more-label--close {
+        display: none;
+    }
+
+    &.is-open {
+        svg {
+            transform: rotate(180deg);
+        }
+
+        .product-info__more-label {
+            display: none;
+        }
+
+        .product-info__more-label--close {
+            display: inline;
+        }
+    }
 }
