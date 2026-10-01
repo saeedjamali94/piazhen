@@ -1,0 +1,696 @@
+@use "../global/variables" as *;
+
+// ============================================================================
+// Contact page (contact.png — تماس با ما) — content per the comp, inside the
+// shared site header/footer.
+// ============================================================================
+
+$cnt-hairline: #E5E5E5;
+$cnt-border: #EEEEEE;
+$cnt-orange: #F26A26;
+$cnt-orange-deep: #F04B00;
+
+.pzh-cnt {
+    font-family: $fontFamily;
+    background: $white;
+    color: $textColor;
+    direction: rtl;
+    padding-bottom: 64px;
+
+    // Content gutter: 64px each side on the 1440 comp (1328px content)
+    &__wrap {
+        max-width: 1328px;
+        margin-inline: auto;
+        padding-inline: 64px;
+    }
+
+    // Honeypot — off-screen, invisible to humans
+    &__hp {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+    }
+
+    // =========================================================================
+    // Body copy
+    // =========================================================================
+    &__h1 {
+        margin: 50px 0 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: $textColor;
+        line-height: 1.6;
+    }
+
+    &__body {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 400;
+        color: #222;
+        line-height: 32px;
+        text-align: right;
+    }
+
+    &__h1 + &__p {
+        margin-top: 40px;
+    }
+
+    &__h2 + &__p {
+        margin-top: 40px;
+    }
+
+    &__p + &__p {
+        margin-top: 16px;
+    }
+
+    &__h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: $textColor;
+        line-height: 1.6;
+
+        &--gap-70 {
+            margin-top: 56px;
+        }
+
+        &--gap-50 {
+            margin-top: 44px;
+        }
+    }
+
+    // Orange branch lines (شعبه اول / شعبه دوم)
+    &__branch {
+        margin: 40px 0 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: $cnt-orange;
+        line-height: 1.6;
+
+        + .pzh-cnt__branch {
+            margin-top: 32px;
+        }
+    }
+
+    // =========================================================================
+    // Centered orange divider «تماس با ما» with flanking hairlines
+    // =========================================================================
+    &__divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 68px;
+
+        &-line {
+            height: 1px;
+            background: $cnt-hairline;
+
+            &--r {
+                width: 577px;
+            }
+
+            &--l {
+                width: 600px;
+            }
+        }
+
+        &-label {
+            margin: 0 18px;
+            font-size: 20px;
+            font-weight: 700;
+            color: $cnt-orange;
+            white-space: nowrap;
+        }
+    }
+
+    // =========================================================================
+    // Contact panel («راه‌های ارتباطی») + map
+    // =========================================================================
+    &__contact {
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 30px;
+        margin-top: 64px;
+    }
+
+    // --- White panel with the yellow header bar and 3 inner cards ---
+    &-panel {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 828.5px;
+        padding: 9px 9px 21px;
+        background: $white;
+        border: 2px solid $cnt-border;
+        border-radius: 24px;
+
+        &__bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 54px;
+            margin-bottom: 18px;
+            background: $siteYellow;
+            border-radius: 13px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #131311;
+        }
+
+        &__card {
+            margin-inline: 19px;
+            margin-bottom: 18px;
+            padding: 18px 24px;
+            background: $white;
+            border: 2px solid $cnt-border;
+            border-radius: 20px;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+
+            // آدرس card: taller (2 address lines)
+            &--address {
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
+
+            // شماره تماس card
+            &--phone {
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
+
+            // فضای مجازی card: title right + icons left
+            &--social {
+                padding-top: 14px;
+                padding-bottom: 14px;
+            }
+        }
+
+        &__card-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+
+        &__card-icon {
+            display: inline-flex;
+            align-items: center;
+            color: $cnt-orange-deep;
+
+            i {
+                font-size: 38px;
+                line-height: 1;
+            }
+
+            // Handset icon: the comp shows it rotated ≈45°
+            &--phone i {
+                font-size: 34px;
+                transform: rotate(45deg);
+            }
+        }
+
+        &__card-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: $cnt-orange-deep;
+            line-height: 1.4;
+        }
+
+        &__card-line {
+            margin: 0;
+            font-size: 19px;
+            font-weight: 400;
+            color: #666;
+            line-height: 38px;
+            text-align: right;
+
+            &--ltr {
+                direction: ltr;
+                text-align: left;
+            }
+        }
+
+        // فضای مجازی: title on the right, icons on the left
+        &__card--social &__card-head {
+            justify-content: space-between;
+        }
+
+        &__socials {
+            display: flex;
+            align-items: center;
+            gap: 36px;
+
+            a {
+                display: inline-flex;
+                color: #6E6E6E;
+                transition: color $transition-fast;
+
+                &:hover {
+                    color: $cnt-orange;
+                }
+            }
+
+            i {
+                font-size: 44px;
+                line-height: 1;
+            }
+        }
+    }
+
+    // --- Map (Neshan / Leaflet, same pattern as the checkout map) ---
+    &-map {
+        width: 469.5px;
+        height: 385.5px;
+        border-radius: 27px;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        background: #F4F2F2;
+
+        .leaflet-control-attribution {
+            display: none;
+        }
+
+        .leaflet-control-zoom a {
+            color: $textColor;
+        }
+    }
+
+    // =========================================================================
+    // Form heading «پاسخگوی شما هستیم» (orange, flanked by rules)
+    // =========================================================================
+    &-formhead {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        margin-top: 56px;
+        margin-bottom: 64px;
+
+        &__line {
+            height: 1px;
+            background: #F0F0F0;
+
+            &:first-child {
+                flex: 0 0 520.5px;
+            }
+
+            &:last-child {
+                flex: 0 0 492.5px;
+            }
+        }
+
+        &__title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            color: $cnt-orange-deep;
+            white-space: nowrap;
+        }
+    }
+
+    // =========================================================================
+    // Ticket form (2-col grid + textarea + submit pill)
+    // =========================================================================
+    &__form {
+        &-grid {
+            display: grid;
+            grid-template-columns: 399.5px 399.5px;
+            gap: 30.5px;
+            max-width: 829.5px;
+            margin-inline: auto;
+        }
+
+        // Actions row: same width as the grid, so the submit pill aligns
+        // with the grid's left column (the comp: button x309-634)
+        &-actions {
+            max-width: 829.5px;
+            margin-inline: auto;
+        }
+
+        &-message {
+            display: none;
+            margin: 14px auto 0;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.8;
+
+            &.is-success {
+                display: block;
+                background: rgba($success, 0.18);
+                color: #1d5c27;
+            }
+
+            &.is-error {
+                display: block;
+                background: rgba($danger, 0.1);
+                color: #a4262f;
+            }
+        }
+    }
+
+    &__field {
+        margin-bottom: 26px;
+
+        &-label {
+            display: block;
+            margin: 0 0 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #111;
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        // Required asterisk sits at the LEFT end of the right-aligned label
+        &-req {
+            color: $cnt-orange-deep;
+        }
+
+        &-input {
+            display: block;
+            width: 100%;
+            height: 56px;
+            padding: 0 18px;
+            background: $white;
+            border: 1px solid $cnt-border;
+            border-radius: 14px;
+            font-family: $fontFamily;
+            font-size: 15px;
+            font-weight: 400;
+            color: $textColor;
+            line-height: 54px;
+            text-align: right;
+            transition: border-color $transition-fast;
+
+            &::placeholder {
+                color: #8A8A8A;
+            }
+
+            &:focus {
+                outline: none;
+                border-color: $cnt-orange;
+            }
+
+            // LTR fields (phone / email): left-aligned value + placeholder
+            &--ltr {
+                direction: ltr;
+                text-align: left;
+            }
+
+            // Textarea
+            &--area {
+                height: 200px;
+                padding-top: 18px;
+                line-height: 1.8;
+                resize: vertical;
+            }
+        }
+
+        // Wide (textarea) row: extra spacing above the label
+        &--wide {
+            grid-column: 1 / -1;
+            margin-top: 12px;
+        }
+    }
+
+    // Select (same box as inputs; chevron at the left end)
+    &__select {
+        position: relative;
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-inline-end: 40px; // room for the chevron
+            color: #333;
+            cursor: pointer;
+        }
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            inset-inline-end: 20px;
+            width: 9px;
+            height: 9px;
+            margin-top: -7px;
+            border-inline-end: 2px solid #5D5D5D;
+            border-block-end: 2px solid #5D5D5D;
+            transform: rotate(45deg);
+            pointer-events: none;
+        }
+    }
+
+    &__submit {
+        display: block;
+        width: 300px;
+        height: 48px;
+        margin-top: 28px;
+        margin-inline-start: auto; // flush with the grid's left column (RTL end side)
+        background: $cnt-orange;
+        border: none;
+        border-radius: 999px;
+        color: $white;
+        font-family: $fontFamily;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 48px;
+        text-align: center;
+        cursor: pointer;
+        transition: background $transition-fast;
+
+        &:hover {
+            background: $siteOrangeDark;
+        }
+
+        &:disabled {
+            opacity: 0.65;
+            cursor: default;
+        }
+    }
+
+    // =========================================================================
+    // Responsive
+    // =========================================================================
+    @media (max-width: $bp-lg - 1px) {
+        &__wrap {
+            padding-inline: 24px;
+        }
+
+        &__divider {
+            &-line {
+                flex: 1;
+
+                &--r,
+                &--l {
+                    width: auto;
+                }
+            }
+        }
+
+        &__contact {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        &-panel {
+            width: 100%;
+            max-width: none;
+        }
+
+        &-map {
+            width: 100%;
+            height: 320px;
+        }
+
+        &-formhead {
+            &__line {
+                flex: 1;
+
+                &:first-child,
+                &:last-child {
+                    flex-basis: auto;
+                }
+            }
+        }
+
+        &__form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+    }
+
+    @media (max-width: $bp-sm) {
+        &__wrap {
+            padding-inline: 16px;
+        }
+
+        &__h1 {
+            margin-top: 28px;
+            font-size: 20px;
+        }
+
+        &__body {
+            font-size: 15px;
+            line-height: 26px;
+        }
+
+        &__h1 + &__p {
+            margin-top: 24px;
+        }
+
+        &__h2 + &__p {
+            margin-top: 28px;
+        }
+
+        &__h2 {
+            font-size: 18px;
+
+            &--gap-70 {
+                margin-top: 40px;
+            }
+
+            &--gap-50 {
+                margin-top: 32px;
+            }
+        }
+
+        &__branch {
+            margin-top: 28px;
+            font-size: 16px;
+
+            + .pzh-cnt__branch {
+                margin-top: 20px;
+            }
+        }
+
+        &__divider {
+            margin-top: 44px;
+
+            &-label {
+                margin: 0 12px;
+                font-size: 17px;
+            }
+        }
+
+        &__contact {
+            gap: 16px;
+            margin-top: 44px;
+        }
+
+        &-panel {
+            padding: 6px 6px 14px;
+
+            &__bar {
+                height: 46px;
+                margin-bottom: 14px;
+                font-size: 16px;
+            }
+
+            &__card {
+                margin-inline: 12px;
+                margin-bottom: 14px;
+                padding: 14px 16px;
+
+                &--address,
+                &--phone {
+                    padding-top: 16px;
+                    padding-bottom: 16px;
+                }
+
+                &--social {
+                    padding-top: 10px;
+                    padding-bottom: 10px;
+                }
+            }
+
+            &__card-head {
+                gap: 10px;
+                margin-bottom: 8px;
+            }
+
+            &__card-icon {
+                i {
+                    font-size: 32px;
+                }
+
+                &--phone i {
+                    font-size: 28px;
+                }
+            }
+
+            &__card-title {
+                font-size: 17px;
+            }
+
+            &__card-line {
+                font-size: 16px;
+                line-height: 30px;
+            }
+
+            &__socials {
+                gap: 22px;
+
+                i {
+                    font-size: 36px;
+                }
+            }
+        }
+
+        &-map {
+            height: 260px;
+            border-radius: 20px;
+        }
+
+        &-formhead {
+            gap: 12px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+
+            &__title {
+                font-size: 21px;
+            }
+        }
+
+        &__form-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        &__field {
+            margin-bottom: 18px;
+
+            &-label {
+                font-size: 15px;
+            }
+
+            &-input {
+                height: 52px;
+                font-size: 14px;
+                line-height: 50px;
+
+                &--area {
+                    height: 160px;
+                }
+            }
+
+            &--wide {
+                margin-top: 4px;
+            }
+        }
+
+        &__submit {
+            width: 100%;
+            height: 46px;
+            font-size: 17px;
+            line-height: 46px;
+            margin-top: 22px;
+        }
+    }
+}

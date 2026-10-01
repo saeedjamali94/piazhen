@@ -22,6 +22,9 @@ require get_template_directory() . '/inc/settings.php';
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';
 
+// Load Contact page (page bootstrap, AJAX form submission, admin inbox)
+require get_template_directory() . '/inc/contact.php';
+
 // ============================================================================
 // Theme Setup
 // ============================================================================
@@ -95,8 +98,8 @@ function piazhen_scripts() {
     wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.8', true);
     wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), pzh_asset_version('/assets/js/app.js'), true);
 
-    // Checkout map (Neshan SDK with API key, or plain Leaflet + OSM fallback)
-    if (is_checkout()) {
+    // Checkout + contact page map (Neshan SDK with API key, or plain Leaflet + OSM fallback)
+    if (is_checkout() || is_page_template('page-contact.php')) {
         if (pzh_neshan_api_key()) {
             // Official Neshan Leaflet SDK (Persian map tiles)
             wp_enqueue_style('leaflet-css', 'https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.css', array(), '1.0.8');

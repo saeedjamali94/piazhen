@@ -25,7 +25,10 @@ function pzh_settings_defaults($tab) {
             'sprite'      => SPRITE_URL,
         ),
         'contact' => array(
-            'phones'    => '۰۹۱۲ ۷۷۷ ۲۱ ۶۷ - ۰۹۱۲ ۰۴۳ ۴۹ ۴۳ - ۰۲۱ ۹۱۶۹۲۲۳۳',
+            'phones'    => '۰۹۱۲ ۷۷۷ ۲۱ ۶۷ - ۰۹۱۲ ۰۴۳ ۴۹ ۴۳ - ۰۲۱ ۹۱۶۹۲۲۳۲',
+            'emails'    => 'info@piazhen.ir',
+            'address'   => "خیابان جمهوری، بعد از ولیعصر، پاساژ علائدین آرایشی، طبقه\nهمکف، واحد ۲۲",
+            'hours'     => "شنبه تا چهارشنبه: ۹ صبح تا ۶ عصر\nپنجشنبه: ۹ صبح تا ۱ بعدازظهر\nجمعه: تعطیل",
             'whatsapp'  => '989127772167',
             'telegram'  => 'https://t.me/piazhen',
             'instagram' => 'https://instagram.com/piazhen',
@@ -227,6 +230,15 @@ function pzh_js_strings() {
         'map_click_hint'       => __('روی نقشه کلیک کنید تا آدرس از موقعیت انتخاب‌شده پر شود.', 'piazhen'),
         'both_addresses_set'   => __('هر دو آدرس ثبت شده‌اند؛ برای تغییر از «ویرایش آدرس» استفاده کنید.', 'piazhen'),
         'add_to_cart_short'    => __('خطا در افزودن به سبد.', 'piazhen'),
+        // Contact form (contact.png)
+        'contact_name_required'  => __('نام الزامی است.', 'piazhen'),
+        'contact_family_required' => __('نام خانوادگی الزامی است.', 'piazhen'),
+        'contact_phone_invalid'  => __('شماره تماس معتبر نیست. (مثال: 09123456789)', 'piazhen'),
+        'contact_email_invalid'  => __('ایمیل وارد شده معتبر نیست.', 'piazhen'),
+        'contact_subject_required' => __('لطفاً موضوع را انتخاب کنید.', 'piazhen'),
+        'contact_message_short'  => __('متن پیام خیلی کوتاه است.', 'piazhen'),
+        'contact_sending'        => __('در حال ارسال...', 'piazhen'),
+        'contact_send_error'     => __('خطا در ارسال پیام. لطفاً دوباره تلاش کنید.', 'piazhen'),
     ));
 }
 
@@ -309,6 +321,8 @@ function pzh_sanitize_setting($value, $type) {
                 return '';
             }
             return esc_url_raw($value);
+        case 'textarea':
+            return sanitize_textarea_field($value);
         default:
             return sanitize_text_field($value);
     }
@@ -388,6 +402,33 @@ function pzh_render_text_field($tab, $key, $label, $type = 'text', $description 
 }
 
 /**
+ * Render a multi-line textarea row (address / working hours).
+ */
+function pzh_render_textarea_field($tab, $key, $label, $description = '', $rows = 3, $dir = '') {
+    $value    = pzh_setting($tab, $key);
+    $dir_attr = $dir ? ' dir="' . esc_attr($dir) . '"' : '';
+    ?>
+    <tr>
+        <th scope="row">
+            <label for="pzh_<?php echo esc_attr($tab); ?>_<?php echo esc_attr($key); ?>">
+                <?php echo esc_html($label); ?>
+            </label>
+        </th>
+        <td>
+            <textarea id="pzh_<?php echo esc_attr($tab); ?>_<?php echo esc_attr($key); ?>"
+                      name="pzh_<?php echo esc_attr($tab); ?>[<?php echo esc_attr($key); ?>]"
+                      class="large-text"
+                      rows="<?php echo esc_attr($rows); ?>"
+                      <?php echo $dir_attr; ?>><?php echo esc_textarea($value); ?></textarea>
+            <?php if ($description): ?>
+                <p class="description"><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php
+}
+
+/**
  * Save handler for a settings tab.
  */
 function pzh_save_settings_tab($tab, $field_types) {
@@ -451,7 +492,8 @@ function pzh_admin_settings_render() {
             'logo' => 'image', 'login_cover' => 'image', 'sprite' => 'image',
         ),
         'contact' => array(
-            'phones' => 'text', 'whatsapp' => 'digits',
+            'phones' => 'text', 'emails' => 'textarea', 'address' => 'textarea', 'hours' => 'textarea',
+            'whatsapp' => 'digits',
             'telegram' => 'url', 'instagram' => 'url',
             'twitter' => 'url', 'linkedin' => 'url',
         ),
@@ -503,7 +545,10 @@ function pzh_admin_settings_render() {
                             break;
 
                         case 'contact':
-                            pzh_render_text_field('contact', 'phones', __('شماره‌های تماس', 'piazhen'), 'text', __('با همان قالب‌بندی دلخواه در فوتر نمایش داده می‌شود.', 'piazhen'), 'ltr');
+                            pzh_render_text_field('contact', 'phones', __('شماره‌های تماس', 'piazhen'), 'text', __('با خط تیره جدا کنید؛ هر شماره در یک خطِ کارت تماس نمایش داده می‌شود.', 'piazhen'), 'ltr');
+                            pzh_render_textarea_field('contact', 'emails', __('ایمیل‌ها', 'piazhen'), __('هر ایمیل در یک خط (اولین ایمیل، گیرنده پیام‌های فرم تماس است).', 'piazhen'), 2, 'ltr');
+                            pzh_render_textarea_field('contact', 'address', __('آدرس فروشگاه', 'piazhen'), __('هر خط، یک خط از آدرس در صفحه تماس با ما.', 'piazhen'), 3);
+                            pzh_render_textarea_field('contact', 'hours', __('ساعات کاری', 'piazhen'), __('هر روز در یک خط؛ در ستون کنار فرم تماس نمایش داده می‌شود.', 'piazhen'), 4);
                             pzh_render_text_field('contact', 'whatsapp', __('شماره واتساپ', 'piazhen'), 'text', __('فقط ارقام، بدون + یا فاصله (مثلاً 989127772167)', 'piazhen'), 'ltr');
                             pzh_render_text_field('contact', 'telegram', __('تلگرام', 'piazhen'), 'url');
                             pzh_render_text_field('contact', 'instagram', __('اینستاگرام', 'piazhen'), 'url');
