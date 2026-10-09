@@ -133,7 +133,7 @@ function pzhInitAddressMap(opts) {
             attributionControl: false,
             scrollWheelZoom: false
         });
-        L.tileLayer((window.pzh_options && pzh_options.map_tiles) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 5 }).addTo(map);
+        L.tileLayer((window.pzh_options && pzh_options.map_tiles) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, maxNativeZoom: 19, minZoom: 5, referrerPolicy: 'strict-origin-when-cross-origin' }).addTo(map);
     }
 
     var pinIcon = L.divIcon({
@@ -145,13 +145,26 @@ function pzhInitAddressMap(opts) {
 
     var marker = null;
     var $bar = $('#' + opts.barId);
-    var $lat = $('#' + opts.latId);
-    var $lng = $('#' + opts.lngId);
 
-    // Mockup: the map shows a pin at its center before any click — visual
-    // only (no geocoding / field filling until the user actually picks a spot)
-    if (opts.defaultPin && !$lat.val() && !$lng.val()) {
-        marker = L.marker(map.getCenter(), { icon: pinIcon }).addTo(map);
+    // The lat/lng inputs must be re-queried on every write: on the checkout
+    // they live inside the update_checkout fragment, so a fragment swap
+    // detaches the elements cached at init time (writes into the detached
+    // copies never reach the form).
+    function latLngInputs() {
+        return { lat: $('#' + opts.latId), lng: $('#' + opts.lngId) };
+    }
+
+    // Mockup: the map shows a pin at its center before any click. The pin IS
+    // a chosen location — fill the coordinates too, so applying the modal
+    // without an extra click works (only the address fields wait for a pick).
+    if (opts.defaultPin) {
+        var initial = latLngInputs();
+        if (!initial.lat.val() && !initial.lng.val()) {
+            var center = map.getCenter();
+            marker = L.marker(center, { icon: pinIcon }).addTo(map);
+            initial.lat.val(center.lat.toFixed(6));
+            initial.lng.val(center.lng.toFixed(6));
+        }
     }
 
     function placePin(latlng, animate, overwrite) {
@@ -162,8 +175,9 @@ function pzhInitAddressMap(opts) {
         }
         if (animate) map.panTo(latlng);
 
-        $lat.val(latlng.lat.toFixed(6));
-        $lng.val(latlng.lng.toFixed(6));
+        var live = latLngInputs();
+        live.lat.val(latlng.lat.toFixed(6));
+        live.lng.val(latlng.lng.toFixed(6));
         $bar.html('<span class="muted-note">' + pzhStr('loading_address') + '</span>');
 
         $.ajax({
@@ -198,23 +212,47 @@ function pzhInitAddressMap(opts) {
                         if ($unit.length && (overwrite || !$unit.val())) $unit.val(data.unit);
                     }
 
-                    // شهر — text input
-                    if (opts.cityFieldId && data.city) {
+                    // شهر — PWS select with numeric term-id options. Prefer the
+                    // id returned by the server; when the fresh select has no
+                    // options yet (state change still rendering), stash it and
+                    // re-apply after the next updated_checkout.
+                    if (opts.cityFieldId && (data.city_id || data.city)) {
                         var $city = $('#' + opts.cityFieldId);
-                        if ($city.length && (overwrite || !$city.val())) $city.val(data.city);
+                        if ($city.length && $city.is('select') && (overwrite || !$city.val())) {
+                            var cityVal = data.city_id ? String(data.city_id) : '';
+                            if (cityVal && $city.find('option[value="' + cityVal + '"]').length) {
+                                $city.val(cityVal).trigger('change');
+                            } else if (cityVal) {
+                                window.pzh_pending_city = cityVal;
+                            } else {
+                                // Fallback: match by option text
+                                var wantedCity = data.city.trim();
+                                $city.find('option').each(function () {
+                                    if ($(this).text().trim() === wantedCity) {
+                                        $city.val($(this).val()).trigger('change');
+                                        return false;
+                                    }
+                                });
+                            }
+                        }
                     }
 
-                    // استان — select, matched by option text (PWS uses numeric codes)
-                    if (opts.stateFieldId && data.state) {
+                    // استان — select, matched by term id or option text (PWS uses numeric codes)
+                    if (opts.stateFieldId && (data.state_id || data.state)) {
                         var $state = $('#' + opts.stateFieldId);
                         if ($state.length && $state.is('select') && (overwrite || !$state.val())) {
-                            var wanted = data.state.trim();
-                            $state.find('option').each(function () {
-                                if ($(this).text().trim() === wanted) {
-                                    $state.val($(this).val());
-                                    return false;
-                                }
-                            });
+                            var stateVal = data.state_id ? String(data.state_id) : '';
+                            if (stateVal && $state.find('option[value="' + stateVal + '"]').length) {
+                                $state.val(stateVal).trigger('change');
+                            } else {
+                                var wanted = data.state.trim();
+                                $state.find('option').each(function () {
+                                    if ($(this).text().trim() === wanted) {
+                                        $state.val($(this).val()).trigger('change');
+                                        return false;
+                                    }
+                                });
+                            }
                         }
                     }
 
@@ -271,14 +309,28 @@ function pzhInitAddressMap(opts) {
         placePin(e.latlng, false, true);
     });
 
-    if ($lat.val() && $lng.val()) {
-        placePin(L.latLng(parseFloat($lat.val()), parseFloat($lng.val())), false);
+    var existing = latLngInputs();
+    if (existing.lat.val() && existing.lng.val()) {
+        placePin(L.latLng(parseFloat(existing.lat.val()), parseFloat(existing.lng.val())), false);
     }
 
     return {
         map: map,
         refresh: function () { map.invalidateSize(); },
-        place: placePin
+        place: placePin,
+        // Re-place the pin at the map center and fill the coordinates
+        // without geocoding (used when a modal is reopened after a reset)
+        pinCenter: function () {
+            var c = map.getCenter();
+            if (marker) {
+                marker.setLatLng(c);
+            } else {
+                marker = L.marker(c, { icon: pinIcon }).addTo(map);
+            }
+            var live = latLngInputs();
+            live.lat.val(c.lat.toFixed(6));
+            live.lng.val(c.lng.toFixed(6));
+        }
     };
 }
 
@@ -1739,6 +1791,32 @@ $(document).ready(function () {
             });
         }
 
+        // PWS استان/شهر selects: the dynamic fragment re-renders them on
+        // every update_checkout, dropping the selectWoo enhancement — re-init
+        // after each swap and re-apply a city chosen from the map once its
+        // options exist (the city list renders with the chosen state).
+        function pzhReinitPwsSelects() {
+            if (!$.fn.selectWoo) return;
+            $('#billing_state, #billing_city').each(function () {
+                var $el = $(this);
+                if ($el.is(':visible') && !$el.data('select2')) {
+                    $el.selectWoo({ placeholder: $el.attr('data-placeholder') || '', width: '100%' });
+                }
+            });
+        }
+        $(document.body).on('updated_checkout', function () {
+            pzhReinitPwsSelects();
+
+            if (window.pzh_pending_city) {
+                var $city = $('#billing_city');
+                if ($city.find('option[value="' + window.pzh_pending_city + '"]').length) {
+                    $city.val(window.pzh_pending_city).trigger('change');
+                    window.pzh_pending_city = null;
+                }
+            }
+        });
+        pzhReinitPwsSelects();
+
         // Shipping choice cards: set the mode, check the matching WC radio
         // when it exists (ship rates only exist once the address is filled),
         // then refresh the fragment.
@@ -1763,6 +1841,7 @@ $(document).ready(function () {
         // Shipping method cards mirror their radio (WC itself listens to the
         // radio changes delegated on the form and triggers update_checkout)
         $(document.body).on('click', '.pzh-ship-methods__card', function () {
+            if ($(this).hasClass('pzh-ship-methods__card--pending')) return;
             var $radio = $('#shipping_method_0_' + $(this).data('rate-index'));
             if ($radio.length && !$radio.prop('checked')) {
                 $radio.prop('checked', true);
@@ -1850,6 +1929,48 @@ $(document).ready(function () {
             $checkoutModal.hide().prop('hidden', true);
             pzhToast(pzhStr('location_set'));
         });
+    }
+
+    // ========================================================================
+    // Checkout — invoice CTA placement (mobile: below the form fields)
+    // ========================================================================
+    function pzhPlaceInvoiceCta() {
+        var $layout  = $('.pzh-checkout-layout');
+        var $formCol = $layout.children('.pzh-checkout-form');
+        if (!$layout.length || !$formCol.length) return;
+
+        // Canonical copy = the one WC re-renders on each update_checkout
+        // (inside the .review-order fragment root). Fall back to any copy
+        // when the fragment was already emptied by a previous mobile move.
+        var $actions = $layout.find('.woocommerce-checkout-review-order-table > .review-order__actions').first();
+        if (!$actions.length) {
+            $actions = $layout.find('.review-order__actions').first();
+        }
+        if (!$actions.length) return;
+
+        if ($(window).width() < 992) {
+            // Mobile: the button sits below the form fields. It stays inside
+            // <form class="checkout">, so WC's submit flow is untouched.
+            $formCol.after($actions);
+        } else {
+            // Desktop: back inside the fragment root, after the totals (so
+            // the next fragment render replaces it instead of duplicating it)
+            $layout.find('.woocommerce-checkout-review-order-table .review-order__totals').after($actions);
+        }
+
+        // Drop every other copy (stale moves / orphaned fragment renders)
+        $layout.find('.review-order__actions').not($actions).remove();
+    }
+
+    if ($('.pzh-checkout-layout').length) {
+        pzhPlaceInvoiceCta();
+
+        // WC swaps the review-order fragment on update_checkout (ship mode
+        // change, address fill, …) — re-place the fresh button
+        $(document.body).on('updated_checkout', pzhPlaceInvoiceCta);
+
+        // Re-evaluate when the viewport crosses the breakpoint
+        $(window).on('resize', pzhDebounce(pzhPlaceInvoiceCta, 150));
     }
 
     // ========================================================================
@@ -2231,10 +2352,15 @@ $(document).ready(function () {
                     unitFieldId: 'dash-modal-unit',
                     cityFieldId: 'dash-modal-city',
                     stateFieldId: 'dash-modal-state',
-                    districtFieldId: null
+                    districtFieldId: null,
+                    defaultPin: true
                 });
             } else {
+                // The form was reset above — put the pin back at the map
+                // center and refill the coordinates so a save without a new
+                // click still carries a valid location.
                 dashAddressMap.refresh();
+                dashAddressMap.pinCenter();
             }
         });
 

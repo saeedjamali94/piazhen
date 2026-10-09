@@ -21,6 +21,7 @@ $phones        = pzh_phones();
 $address_lines = pzh_contact_card_lines('address');
 $social        = pzh_social_links();
 $subjects      = pzh_contact_subjects();
+$map           = pzh_map_defaults();
 ?>
 
 <main class="pzh-cnt">
@@ -64,7 +65,20 @@ $subjects      = pzh_contact_subjects();
         <!-- ============ Map (Neshan / OSM) + contact panel ============ -->
         <section class="pzh-cnt__contact">
             <!-- Map first in DOM = right column in RTL -->
-            <div id="pzh-cnt-map" class="pzh-cnt-map" aria-label="<?php esc_attr_e('موقعیت فروشگاه روی نقشه', 'piazhen'); ?>"></div>
+            <div class="pzh-cnt-mapcol">
+                <div id="pzh-cnt-map" class="pzh-cnt-map" aria-label="<?php esc_attr_e('موقعیت فروشگاه روی نقشه', 'piazhen'); ?>"></div>
+
+                <!-- Shop address card under the map + directions link -->
+                <div class="pzh-cnt-map__addr">
+                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                    <span><?php echo esc_html(implode('، ', $address_lines)); ?></span>
+                    <a class="pzh-cnt-map__route"
+                       href="<?php echo esc_url('https://www.google.com/maps/dir/?api=1&destination=' . $map['lat'] . ',' . $map['lng']); ?>"
+                       target="_blank" rel="noopener">
+                        <?php _e('مسیریابی', 'piazhen'); ?>
+                    </a>
+                </div>
+            </div>
 
             <!-- White «راه‌های ارتباطی» panel -->
             <div class="pzh-cnt-panel">
@@ -202,7 +216,12 @@ $subjects      = pzh_contact_subjects();
     };
 
     // ---- Shop map (Neshan with API key, plain Leaflet + OSM otherwise) ----
-    if (typeof L !== 'undefined' && $('#pzh-cnt-map').length) {
+    // Leaflet is enqueued in the footer, so wait for the document to be ready
+    // before touching L — otherwise the guard below always fails and the
+    // #pzh-cnt-map box stays empty.
+    $(function () {
+        if (typeof L === 'undefined' || !$('#pzh-cnt-map').length) return;
+
         var cntCenter = (window.pzh_options && pzh_options.map_center) || [35.7219, 51.3347];
         var cntZoom   = (window.pzh_options && pzh_options.map_zoom) || 13;
         var cntKey    = (window.pzh_options && pzh_options.neshan_key) || '';
@@ -227,7 +246,7 @@ $subjects      = pzh_contact_subjects();
                 attributionControl: false,
                 scrollWheelZoom: false
             });
-            L.tileLayer((window.pzh_options && pzh_options.map_tiles) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 5 }).addTo(cntMap);
+            L.tileLayer((window.pzh_options && pzh_options.map_tiles) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, maxNativeZoom: 19, minZoom: 5, referrerPolicy: 'strict-origin-when-cross-origin' }).addTo(cntMap);
         }
 
         // Shop pin at the map center
@@ -239,7 +258,7 @@ $subjects      = pzh_contact_subjects();
                 iconAnchor: [17, 46]
             })
         }).addTo(cntMap);
-    }
+    });
 
     // ---- Form submission (AJAX into the admin inbox) ----
     var $form = $('#pzh-cnt-form');

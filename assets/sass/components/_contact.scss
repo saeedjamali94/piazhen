@@ -263,6 +263,11 @@ $cnt-orange-deep: #F04B00;
     }
 
     // --- Map (Neshan / Leaflet, same pattern as the checkout map) ---
+    &-mapcol {
+        flex: 0 0 469.5px;
+        min-width: 0;
+    }
+
     &-map {
         width: 469.5px;
         height: 385.5px;
@@ -278,6 +283,49 @@ $cnt-orange-deep: #F04B00;
 
         .leaflet-control-zoom a {
             color: $textColor;
+        }
+
+        // Address card under the map (shop address + directions link)
+        &__addr {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: $white;
+            border: 2px solid $cnt-border;
+            border-radius: 20px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: $textColor;
+            line-height: 1.9;
+
+            i {
+                flex: 0 0 auto;
+                color: $cnt-orange;
+                font-size: 16px;
+            }
+
+            span {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+        }
+
+        &__route {
+            flex: 0 0 auto;
+            padding: 7px 16px;
+            background: $cnt-orange;
+            border-radius: 999px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: $white;
+            white-space: nowrap;
+
+            &:hover {
+                background: $cnt-orange-deep;
+                color: $white;
+            }
         }
     }
 
@@ -502,6 +550,11 @@ $cnt-orange-deep: #F04B00;
         &-panel {
             width: 100%;
             max-width: none;
+        }
+
+        &-mapcol {
+            width: 100%;
+            flex-basis: auto;
         }
 
         &-map {

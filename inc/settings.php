@@ -167,11 +167,27 @@ function pzh_social_links() {
 }
 
 function pzh_map_defaults() {
+    // The tiles URL must be a Leaflet {z}/{x}/{y} template. A value saved
+    // without the placeholders (e.g. /z/x/y.png) makes the browser request
+    // the literal path and tile.openstreetmap.org answers 400 for every tile.
+    $tiles = pzh_setting('map', 'osm_tiles');
+    if (!is_string($tiles)
+        || strpos($tiles, '{z}') === false
+        || strpos($tiles, '{x}') === false
+        || strpos($tiles, '{y}') === false
+    ) {
+        $tiles = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    }
+
+    // OSM serves tiles up to zoom 19 — requests above that get a 400.
+    $zoom = absint(pzh_setting('map', 'map_zoom'));
+    $zoom = max(5, min(19, $zoom));
+
     return array(
         'lat'   => floatval(pzh_setting('map', 'map_lat')),
         'lng'   => floatval(pzh_setting('map', 'map_lng')),
-        'zoom'  => absint(pzh_setting('map', 'map_zoom')),
-        'tiles' => pzh_setting('map', 'osm_tiles'),
+        'zoom'  => $zoom,
+        'tiles' => $tiles,
     );
 }
 
@@ -567,9 +583,9 @@ function pzh_admin_settings_render() {
                             pzh_render_text_field('map', 'map_lat', __('عرض جغرافیایی مرکز نقشه', 'piazhen'), 'number', '', 'ltr');
                             pzh_render_text_field('map', 'map_lng', __('طول جغرافیایی مرکز نقشه', 'piazhen'), 'number', '', 'ltr');
                             pzh_render_text_field('map', 'map_zoom', __('زوم پیش‌فرض نقشه', 'piazhen'), 'number', __('عددی بین ۱ تا ۱۹', 'piazhen'), 'ltr');
-                            pzh_render_text_field('map', 'osm_tiles', __('آدرس تایل OSM', 'piazhen'), 'url');
+                            pzh_render_text_field('map', 'osm_tiles', __('آدرس تایل OSM', 'piazhen'), 'url', __('الگو باید شامل {z}، {x} و {y} باشد — مثال: https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'piazhen'), 'ltr');
                             pzh_render_text_field('map', 'nominatim', __('آدرس Nominatim', 'piazhen'), 'url');
-                            pzh_render_text_field('map', 'neshan_key', __('کلید API نقشه نشان', 'piazhen'), 'text', __('اختیاری — بدون آن نقشه با OSM نمایش داده می‌شود.', 'piazhen'), 'ltr');
+                            pzh_render_text_field('map', 'neshan_key', __('کلید API نقشه نشان', 'piazhen'), 'text', __('توصیه می‌شود — تایل‌های OSM در ایران گاهی مسدود یا ناپایدار می‌شوند. بدون کلید، نقشه با OSM نمایش داده می‌شود.', 'piazhen'), 'ltr');
                             pzh_render_text_field('map', 'neshan_url', __('آدرس API نقشه نشان', 'piazhen'), 'url');
                             break;
 

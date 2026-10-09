@@ -310,6 +310,61 @@
     }
 }
 
+// Orders rows: product image + clickable details side by side (the image and
+// the title link to the product page)
+.dash-row-card--orders {
+    .dash-row-card__main {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .dash-row-card__thumb {
+        width: 96px;
+        height: 96px;
+        border-radius: 12px;
+        display: block;
+
+        &--link {
+            transition: opacity $transition-fast;
+
+            &:hover {
+                opacity: 0.85;
+            }
+        }
+    }
+
+    .dash-row-card__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dash-row-card__specs {
+        &--link {
+            color: inherit;
+            text-decoration: none;
+
+            &:hover {
+                .dash-spec__label {
+                    color: $siteOrange;
+                }
+            }
+        }
+    }
+
+    // Keep the thumbnail compact instead of the global full-width 16/10
+    // treatment on mobile
+    @media (max-width: $bp-md - 1px) {
+        .dash-row-card__thumb {
+            width: 72px;
+            height: 72px;
+            aspect-ratio: auto;
+        }
+    }
+}
+
 .dash-spec {
     display: flex;
     align-items: center;

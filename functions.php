@@ -98,15 +98,16 @@ function piazhen_scripts() {
     wp_enqueue_script('bootstrap-js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', array('jquery'), '5.3.8', true);
     wp_enqueue_script('piazhen-js', PZH_THEME_URI . '/assets/js/app.js', array('jquery', 'swiper-js'), pzh_asset_version('/assets/js/app.js'), true);
 
-    // Checkout + contact page map (Neshan SDK with API key, or plain Leaflet + OSM fallback)
-    if (is_checkout() || is_page_template('page-contact.php')) {
+    // Checkout, dashboard + contact page maps (Neshan SDK with API key, or plain Leaflet + OSM fallback)
+    if (is_checkout() || is_page_template('page-contact.php') || is_page_template('page-dashboard.php')) {
         if (pzh_neshan_api_key()) {
             // Official Neshan Leaflet SDK (Persian map tiles)
             wp_enqueue_style('leaflet-css', 'https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.css', array(), '1.0.8');
             wp_enqueue_script('leaflet-js', 'https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/index.js', array('jquery'), '1.0.8', true);
         } else {
-            wp_enqueue_style('leaflet-css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4');
-            wp_enqueue_script('leaflet-js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array('jquery'), '1.9.4', true);
+            // Local Leaflet (no CDN dependency — the map must never break)
+            wp_enqueue_style('leaflet-css', PZH_THEME_URI . '/assets/vendor/leaflet/leaflet.css', array(), '1.9.4');
+            wp_enqueue_script('leaflet-js', PZH_THEME_URI . '/assets/vendor/leaflet/leaflet.js', array('jquery'), '1.9.4', true);
         }
     }
 
@@ -1966,9 +1967,6 @@ function pzh_cart_totals_html() {
             <?php _e('ادامه فرایند خرید', 'piazhen'); ?>
             <i class="fa-solid fa-arrow-left"></i>
         </a>
-        <a href="<?php echo esc_url(get_permalink(wc_get_page_id('shop'))); ?>" class="cart-continue-link">
-            <?php _e('ادامه خرید', 'piazhen'); ?>
-        </a>
     </div>
     <?php
     return ob_get_clean();
@@ -2207,7 +2205,11 @@ function pzh_checkout_pickup_rate_id() {
 
 /** Subtitle under a shipping-method card title (mockup copy). */
 function pzh_ship_method_subtitle($rate) {
-    $id = $rate->get_method_id();
+    return pzh_ship_method_subtitle_by_id($rate->get_method_id());
+}
+
+/** Subtitle for a raw method id (used for rates and for zone-config methods). */
+function pzh_ship_method_subtitle_by_id($id) {
     if ($id === 'WC_Courier_Method') {
         return 'ارسال همان روز';
     }
@@ -2217,9 +2219,8 @@ function pzh_ship_method_subtitle($rate) {
     return '';
 }
 
-/** Inline SVG icon for a shipping-method card. */
-function pzh_ship_method_icon($rate) {
-    $id = $rate->get_method_id();
+/** Inline SVG icon for a raw method id (used when no admin image is set). */
+function pzh_ship_method_icon_by_id($id) {
     // Delivery scooter
     if ($id === 'WC_Courier_Method') {
         return '<svg viewBox="0 0 50 25" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19h27"/><path d="M24 19v-5h-6l-3-4H5v9"/><rect x="13" y="6" width="11" height="8" rx="1"/><path d="M30 14l4-5h6v10h-4"/><circle cx="10" cy="19" r="3"/><circle cx="38" cy="19" r="3"/></svg>';
@@ -2230,6 +2231,200 @@ function pzh_ship_method_icon($rate) {
     }
     // Generic box
     return '<svg viewBox="0 0 36 34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="6" width="28" height="24" rx="2"/><path d="M4 12h28"/></svg>';
+}
+
+/**
+ * Enabled non-pickup methods straight from the zone configuration. These are
+ * the methods the admin sees in WC settings; some of them only produce a
+ * rate once the address (استان/شهر) is filled, so the checkout also lists
+ * them as pending cards instead of hiding them until then.
+ */
+function pzh_checkout_zone_ship_methods() {
+    $methods = array();
+    foreach (WC_Shipping_Zones::get_zones() as $zone) {
+        foreach ($zone['shipping_methods'] as $method) {
+            if ($method->id === 'local_pickup' || !$method->is_enabled()) {
+                continue;
+            }
+            $methods[] = $method;
+        }
+    }
+    return $methods;
+}
+
+/**
+ * Shipping-method image URL from the WC method settings (the PWS "img_url"
+ * option — «تصویر روش حمل و نقل»). Empty string when the admin set none.
+ */
+function pzh_ship_method_image_url($method) {
+    if (!is_object($method) || !method_exists($method, 'get_option')) {
+        return '';
+    }
+    $url = $method->get_option('img_url');
+    // Some setups store an attachment ID instead of a URL
+    if (is_numeric($url)) {
+        $url = wp_get_attachment_image_url((int) $url, 'full');
+    }
+    return is_string($url) && $url ? $url : '';
+}
+
+/**
+ * Card icon for a shipping method: the admin-set image URL (PWS img_url)
+ * when present, otherwise the built-in inline SVG.
+ * $source is a WC_Shipping_Rate or a WC_Shipping_Method.
+ */
+function pzh_ship_method_card_icon($source) {
+    $id    = '';
+    $label = '';
+    if ($source instanceof WC_Shipping_Rate) {
+        $id    = $source->get_method_id();
+        $label = $source->get_label();
+    } elseif ($source instanceof WC_Shipping_Method) {
+        $id    = $source->id;
+        $label = $source->get_title();
+    }
+
+    // Match the rate back to its zone method instance (where img_url lives)
+    static $zone_by_id = null;
+    if ($zone_by_id === null) {
+        $zone_by_id = array();
+        foreach (pzh_checkout_zone_ship_methods() as $m) {
+            $zone_by_id[$m->id] = $m;
+        }
+    }
+
+    $img = ($id && isset($zone_by_id[$id])) ? pzh_ship_method_image_url($zone_by_id[$id]) : '';
+    if ($img) {
+        echo '<img src="' . esc_url($img) . '" alt="' . esc_attr($label) . '" loading="lazy">';
+    } else {
+        echo pzh_ship_method_icon_by_id((string) $id);
+    }
+}
+
+/**
+ * Tehran's استان/شهر term ids in the PWS state_city taxonomy (looked up by
+ * name, cached per request). Used as the checkout's default destination so
+ * the shipping methods can compute rates as soon as the page loads.
+ */
+function pzh_pws_tehran_term_ids() {
+    static $ids = null;
+    if ($ids === null) {
+        $ids = array('state' => 0, 'city' => 0);
+        $states = get_terms(array('taxonomy' => 'state_city', 'parent' => 0, 'hide_empty' => false, 'number' => 0));
+        if (!is_wp_error($states)) {
+            foreach ($states as $term) {
+                if ($term->name === 'تهران') {
+                    $ids['state'] = $term->term_id;
+                    break;
+                }
+            }
+        }
+        if ($ids['state']) {
+            $cities = get_terms(array('taxonomy' => 'state_city', 'parent' => $ids['state'], 'hide_empty' => false, 'number' => 0));
+            if (!is_wp_error($cities)) {
+                foreach ($cities as $term) {
+                    if ($term->name === 'تهران') {
+                        $ids['city'] = $term->term_id;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return $ids;
+}
+
+/**
+ * Match a province/city NAME (from the map geocoder) to PWS state_city term
+ * ids so the checkout's استان/شهر selects (numeric option values) can be
+ * filled from a picked map location.
+ */
+function pzh_pws_term_ids_by_name($state_name, $city_name) {
+    $ids = array('state' => 0, 'city' => 0);
+    $state_name = trim((string) $state_name);
+    $city_name  = trim((string) $city_name);
+    if ($state_name === '') {
+        return $ids;
+    }
+
+    $states = get_terms(array('taxonomy' => 'state_city', 'parent' => 0, 'hide_empty' => false, 'number' => 0));
+    if (is_wp_error($states)) {
+        return $ids;
+    }
+    foreach ($states as $term) {
+        if ($term->name === $state_name || $state_name === 'استان ' . $term->name || strpos($state_name, $term->name) !== false) {
+            $ids['state'] = $term->term_id;
+            break;
+        }
+    }
+    if (!$ids['state'] || $city_name === '') {
+        return $ids;
+    }
+
+    $cities = get_terms(array('taxonomy' => 'state_city', 'parent' => $ids['state'], 'hide_empty' => false, 'number' => 0));
+    if (is_wp_error($cities)) {
+        return $ids;
+    }
+    foreach ($cities as $term) {
+        if ($term->name === $city_name || strpos($city_name, $term->name) !== false) {
+            $ids['city'] = $term->term_id;
+            break;
+        }
+    }
+    return $ids;
+}
+
+// Checkout opens with استان تهران preselected so the courier/tapin methods
+// become available right away (PWS default-state filter).
+add_filter('pws_default_state', function ($default, $type) {
+    if ($default) {
+        return $default;
+    }
+    $ids = pzh_pws_tehran_term_ids();
+    return $ids['state'];
+}, 10, 2);
+
+// ...and شهر تهران preselected, so the rates compute on the first
+// update_checkout that WC itself fires on page load.
+add_filter('pws_default_city', function ($default, $type, $state) {
+    if ($default) {
+        return $default;
+    }
+    $ids = pzh_pws_tehran_term_ids();
+    return $ids['city'];
+}, 10, 3);
+
+// پیک موتوری and تاپین/پست پیشتاز are always offered on the checkout —
+// regardless of the destination city, the PWS terms config (courier_on) or
+// the minimum-fee rules. Only the method's own on/off switch in WC settings
+// can hide it. (The plugin fires this filter after all its availability
+// checks, so returning true wins.)
+add_filter('woocommerce_shipping_pws_methods_is_available', function ($available, $package, $method) {
+    if (in_array($method->id, array('WC_Courier_Method', 'Tapin_Pishtaz_Method'), true)) {
+        return $method->is_enabled();
+    }
+    return $available;
+}, 10, 3);
+
+/**
+ * Render configured-but-not-rateable shipping methods as muted pending cards
+ * (methods exist in WC settings but produce no rate for the current address).
+ */
+function pzh_render_ship_pending_cards($methods) {
+    if (!$methods) {
+        return;
+    }
+    foreach ($methods as $method) {
+        ?>
+        <div class="pzh-ship-methods__card pzh-ship-methods__card--pending">
+            <span class="pzh-ship-methods__icon"><?php pzh_ship_method_card_icon($method); ?></span>
+            <span class="pzh-ship-methods__text">
+                <span class="pzh-ship-methods__name"><?php echo esc_html($method->get_title()); ?></span>
+                <span class="pzh-ship-methods__desc"><?php esc_html_e('پس از تکمیل استان و شهر فعال می‌شود', 'piazhen'); ?></span>
+            </span>
+        </div>
+        <?php
+    }
 }
 
 /**
@@ -2244,6 +2439,20 @@ function pzh_render_checkout_dynamic() {
     $is_pickup    = pzh_checkout_is_pickup();
     $rates        = pzh_checkout_ship_rates();
     $pickup_id    = pzh_checkout_pickup_rate_id();
+
+    // Zone methods the admin configured but that produced no rate yet for
+    // the current address (e.g. Tapin/PWS waits for استان/شهر) — shown as
+    // muted pending cards so they don't silently disappear from the checkout.
+    $rate_method_ids = array();
+    foreach ($rates as $rate) {
+        $rate_method_ids[$rate->get_method_id()] = true;
+    }
+    $pending_methods = array();
+    foreach (pzh_checkout_zone_ship_methods() as $method) {
+        if (!isset($rate_method_ids[$method->id])) {
+            $pending_methods[] = $method;
+        }
+    }
 
     $chosen    = (array) WC()->session->get('chosen_shipping_methods');
     // The checked radio must match the active mode: pickup radio when pickup
@@ -2329,15 +2538,16 @@ function pzh_render_checkout_dynamic() {
 
             <?php if ($rates): ?>
             <div class="pzh-ship-methods__cards">
-                <?php foreach (array_slice($rates, 0, 2) as $i => $rate): ?>
+                <?php foreach ($rates as $i => $rate): ?>
                 <button type="button" class="pzh-ship-methods__card<?php echo ($rate->get_id() === $chosen_id) ? ' is-selected' : ''; ?>" data-rate-index="<?php echo (int) $i; ?>">
-                    <span class="pzh-ship-methods__icon"><?php echo pzh_ship_method_icon($rate); ?></span>
+                    <span class="pzh-ship-methods__icon"><?php pzh_ship_method_card_icon($rate); ?></span>
                     <span class="pzh-ship-methods__text">
                         <span class="pzh-ship-methods__name"><?php echo esc_html($rate->get_label()); ?></span>
                         <span class="pzh-ship-methods__desc"><?php echo esc_html(pzh_ship_method_subtitle($rate)); ?></span>
                     </span>
                 </button>
                 <?php endforeach; ?>
+                <?php pzh_render_ship_pending_cards($pending_methods); ?>
             </div>
 
             <!-- WC radios stay in the DOM (hidden when pickup is chosen) so
@@ -2356,6 +2566,11 @@ function pzh_render_checkout_dynamic() {
             </ul>
             <?php else: ?>
             <p class="shipping-methods-note"><?php esc_html_e('برای مشاهده روش‌های ارسال، آدرس خود را تکمیل کنید.', 'piazhen'); ?></p>
+            <?php if ($pending_methods): ?>
+            <div class="pzh-ship-methods__cards">
+                <?php pzh_render_ship_pending_cards($pending_methods); ?>
+            </div>
+            <?php endif; ?>
             <?php endif; ?>
         </div>
 
@@ -2691,11 +2906,16 @@ function pzh_reverse_geocode() {
         }
 
         $addr = $body['address'];
+        $state_name = isset($addr['state']) ? $addr['state'] : '';
+        $city_name  = isset($addr['city']) ? $addr['city'] : (isset($addr['town']) ? $addr['town'] : '');
+        $pws_ids    = pzh_pws_term_ids_by_name($state_name, $city_name);
         wp_send_json_success(array(
             'geocoded' => true,
             'address'  => isset($body['display_name']) ? $body['display_name'] : '',
-            'state'    => isset($addr['state']) ? $addr['state'] : '',
-            'city'     => isset($addr['city']) ? $addr['city'] : (isset($addr['town']) ? $addr['town'] : ''),
+            'state'    => $state_name,
+            'city'     => $city_name,
+            'state_id' => $pws_ids['state'],
+            'city_id'  => $pws_ids['city'],
             'district' => isset($addr['suburb']) ? $addr['suburb'] : (isset($addr['neighbourhood']) ? $addr['neighbourhood'] : ''),
             'plaque'   => isset($addr['house_number']) ? $addr['house_number'] : '',
             'unit'     => '',
@@ -2717,11 +2937,16 @@ function pzh_reverse_geocode() {
         wp_send_json_error(array('message' => __('پاسخی از نقشه دریافت نشد.', 'piazhen')));
     }
 
+    $state_name = isset($body['state']) ? $body['state'] : '';
+    $city_name  = isset($body['city']) ? $body['city'] : '';
+    $pws_ids    = pzh_pws_term_ids_by_name($state_name, $city_name);
     wp_send_json_success(array(
         'geocoded' => true,
         'address'  => isset($body['formatted_address']) ? $body['formatted_address'] : (isset($body['address']) ? $body['address'] : ''),
-        'state'    => isset($body['state']) ? $body['state'] : '',
-        'city'     => isset($body['city']) ? $body['city'] : '',
+        'state'    => $state_name,
+        'city'     => $city_name,
+        'state_id' => $pws_ids['state'],
+        'city_id'  => $pws_ids['city'],
         'district' => isset($body['neighbourhood']) ? $body['neighbourhood'] : (isset($body['neighborhood']) ? $body['neighborhood'] : (isset($body['district']) ? $body['district'] : '')),
         'plaque'   => isset($body['plaque']) ? $body['plaque'] : (isset($body['plak']) ? $body['plak'] : ''),
         'unit'     => isset($body['unit']) ? $body['unit'] : (isset($body['vahed']) ? $body['vahed'] : ''),
@@ -3122,11 +3347,22 @@ function pzh_get_reviewable_items($user_id, $limit = 10) {
  * The order/product row card shared by the reviews and orders sections
  */
 function pzh_render_order_row($args) {
-    $product     = $args['product'];
-    $order       = $args['order'];
-    $product_id  = $product->get_id();
-    $thumb       = $product->get_image('pzh_product_thumb');
-    $subtitle    = $product->get_short_description() ? wp_strip_all_tags($product->get_short_description()) : $product->get_sku();
+    $product = $args['product'];
+    $order   = $args['order'];
+
+    // The product may have been deleted since the order was placed — fall
+    // back to the stored item name + WC placeholder so the order still renders
+    if ($product) {
+        $thumb    = $product->get_image('pzh_product_thumb');
+        $title    = $product->get_name();
+        $subtitle = $product->get_short_description() ? wp_strip_all_tags($product->get_short_description()) : $product->get_sku();
+    } else {
+        $item_name = isset($args['item_name']) ? $args['item_name'] : '';
+        $thumb     = '<img src="' . esc_url(wc_placeholder_img_src('pzh_product_thumb')) . '" alt="' . esc_attr($item_name) . '">';
+        $title     = $item_name ? $item_name : sprintf(__('سفارش #%s', 'piazhen'), pzh_fa_num($order->get_order_number()));
+        $subtitle  = '';
+    }
+
     $order_total = isset($args['total_html']) ? $args['total_html'] : $order->get_formatted_order_total();
     ?>
     <div class="dash-row-card">
@@ -3134,7 +3370,7 @@ function pzh_render_order_row($args) {
             <?php echo $thumb; ?>
         </div>
         <div class="dash-row-card__main">
-            <div class="dash-row-card__title"><?php echo esc_html($product->get_name()); ?></div>
+            <div class="dash-row-card__title"><?php echo esc_html($title); ?></div>
             <?php if ($subtitle): ?>
                 <div class="dash-row-card__subtitle"><?php echo esc_html($subtitle); ?></div>
             <?php endif; ?>
@@ -3164,6 +3400,60 @@ function pzh_render_order_row($args) {
                 <?php echo $args['after']; ?>
             </div>
         <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Orders row: product image + clickable product details alongside the
+ * order date / number / price. Deleted products fall back to the stored
+ * item name + WC placeholder (no link).
+ */
+function pzh_render_dash_order_row($args) {
+    $order     = $args['order'];
+    $product   = $args['product'];
+    $item_name = isset($args['item_name']) ? $args['item_name'] : '';
+
+    if ($product) {
+        $permalink = $product->get_permalink();
+        $thumb     = $product->get_image('pzh_product_thumb');
+    } else {
+        $permalink = '';
+        $thumb     = '<img src="' . esc_url(wc_placeholder_img_src('pzh_product_thumb')) . '" alt="' . esc_attr($item_name) . '">';
+    }
+    ?>
+    <div class="dash-row-card dash-row-card--orders">
+        <div class="dash-row-card__main">
+            <?php if ($permalink): ?>
+                <a href="<?php echo esc_url($permalink); ?>" class="dash-row-card__thumb dash-row-card__thumb--link">
+            <?php else: ?>
+                <span class="dash-row-card__thumb">
+            <?php endif; ?>
+                <?php echo $thumb; ?>
+            <?php echo $permalink ? '</a>' : '</span>'; ?>
+
+            <div class="dash-row-card__info">
+                <?php if ($permalink): ?><a href="<?php echo esc_url($permalink); ?>" class="dash-row-card__specs dash-row-card__specs--link"><?php else: ?><div class="dash-row-card__specs"><?php endif; ?>
+                    <div class="dash-spec">
+                        <span class="dash-spec__label"><?php _e('تاریخ ثبت', 'piazhen'); ?></span>
+                        <span class="dash-spec__value"><?php echo get_the_date('Y/m/d', $order->get_id()); ?></span>
+                    </div>
+                    <div class="dash-spec">
+                        <span class="dash-spec__label"><?php _e('شماره سفارش', 'piazhen'); ?></span>
+                        <span class="dash-spec__value"><?php echo pzh_fa_num($order->get_order_number()); ?></span>
+                    </div>
+                    <div class="dash-spec">
+                        <span class="dash-spec__label"><?php _e('قیمت', 'piazhen'); ?></span>
+                        <span class="dash-spec__value"><?php echo wp_kses_post($order->get_formatted_order_total()); ?></span>
+                    </div>
+                <?php echo $permalink ? '</a>' : '</div>'; ?>
+                <div class="dash-row-card__rule"></div>
+                <div class="dash-spec dash-spec--status">
+                    <span class="dash-spec__label"><?php _e('وضعیت', 'piazhen'); ?></span>
+                    <span class="dash-spec__value dash-status"><?php echo esc_html($args['status_label']); ?></span>
+                </div>
+            </div>
+        </div>
     </div>
     <?php
 }
@@ -3386,44 +3676,60 @@ function pzh_render_account_section($section, $params = array()) {
             );
             $current = isset($params['status']) && isset($groups[$params['status']]) ? $params['status'] : 'jari';
 
-            echo '<div class="dash-orders-tabs">';
-            foreach ($groups as $key => $label) {
-                $count = count(wc_get_orders(array(
-                    'customer_id' => $uid,
-                    'status'      => pzh_order_status_groups()[$key],
-                    'limit'       => -1,
-                    'return'      => 'ids',
-                    'meta_query'  => pzh_wallet_topup_meta_query(),
-                )));
-                $active = ($key === $current) ? ' active' : '';
-                echo '<button type="button" class="dash-orders-tab' . $active . '" data-status="' . esc_attr($key) . '">';
-                echo esc_html($label) . ' (' . pzh_fa_num($count) . ')';
-                echo '</button>';
-            }
-            echo '</div>';
-
-            $orders = wc_get_orders(array(
+            // One query across all groups: the tab counts and the rendered
+            // rows come from the same set, so they can never disagree
+            // (previously the tabs counted all orders while the list was
+            // capped at 10 with no pagination)
+            $group_statuses = pzh_order_status_groups();
+            $all_orders = wc_get_orders(array(
                 'customer_id' => $uid,
-                'status'      => pzh_order_status_groups()[$current],
-                'limit'       => 10,
+                'status'      => array_merge(...array_values($group_statuses)),
+                'limit'       => -1,
                 'orderby'     => 'date',
                 'order'       => 'DESC',
                 'meta_query'  => pzh_wallet_topup_meta_query(),
             ));
 
+            // Group by tab. Orders whose product was deleted are kept too —
+            // the row falls back to the stored item name, so every order
+            // loads and the tab counts stay exact
+            $orders_by_group = array_fill_keys(array_keys($groups), array());
+            foreach ($all_orders as $order) {
+                $first_item = null;
+                foreach ($order->get_items() as $item) { $first_item = $item; break; }
+
+                foreach ($group_statuses as $key => $statuses) {
+                    if (in_array($order->get_status(), $statuses, true)) {
+                        $orders_by_group[$key][] = array(
+                            'order'     => $order,
+                            'product'   => $first_item ? $first_item->get_product() : null,
+                            'item_name' => $first_item ? $first_item->get_name() : '',
+                        );
+                        break;
+                    }
+                }
+            }
+
+            echo '<div class="dash-orders-tabs">';
+            foreach ($groups as $key => $label) {
+                $active = ($key === $current) ? ' active' : '';
+                echo '<button type="button" class="dash-orders-tab' . $active . '" data-status="' . esc_attr($key) . '">';
+                echo esc_html($label) . ' (' . pzh_fa_num(count($orders_by_group[$key])) . ')';
+                echo '</button>';
+            }
+            echo '</div>';
+
+            $orders = $orders_by_group[$current];
+
             if (empty($orders)) {
                 echo '<div class="dash-empty"><p>' . __('سفارشی در این بخش وجود ندارد.', 'piazhen') . '</p></div>';
             }
-            foreach ($orders as $order) {
-                $first_item = null;
-                foreach ($order->get_items() as $item) { $first_item = $item; break; }
-                if (!$first_item) continue;
-                $product = $first_item->get_product();
-                if (!$product) continue;
-                pzh_render_order_row(array(
-                    'product'      => $product,
-                    'order'        => $order,
-                    'status_label' => pzh_order_status_label($order->get_status()),
+            foreach ($orders as $entry) {
+                pzh_render_dash_order_row(array(
+                    'product'      => $entry['product'],
+                    'order'        => $entry['order'],
+                    'item_name'    => $entry['item_name'],
+                    'status_label' => pzh_order_status_label($entry['order']->get_status()),
                 ));
             }
             break;
