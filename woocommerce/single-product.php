@@ -115,7 +115,7 @@ while (have_posts()): the_post();
                     <div class="product-gallery__main">
                         <?php if (!empty($all_images)): ?>
                             <img id="main-product-image"
-                                 src="<?php echo wp_get_attachment_image_url($all_images[0], 'woocommerce_single'); ?>"
+                                 src="<?php echo wp_get_attachment_image_url($all_images[0], 'full'); ?>"
                                  alt="<?php echo esc_attr($product->get_name()); ?>"
                                  class="product-gallery__main-img"
                                  data-zoom="<?php echo wp_get_attachment_image_url($all_images[0], 'full'); ?>">

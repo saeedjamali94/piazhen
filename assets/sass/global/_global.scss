@@ -18,6 +18,9 @@ html , body {
     font-style: normal;
     min-height: 100vh;
     line-height: 2;
+    &.search-results {
+        display: block !important;
+    }
 }
 
 ul , li {

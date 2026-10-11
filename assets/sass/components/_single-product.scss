@@ -742,6 +742,14 @@
         border-bottom: 0;
     }
 
+    &#section-description {
+        padding: 2rem;
+        background: #f5f6f8;
+        border-radius: 21px;
+        border: 1px solid #b5b5b5;
+        text-align: justify;
+    }
+
     .section-heading {
         display: flex;
         align-items: center;
