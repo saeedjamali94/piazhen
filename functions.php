@@ -468,54 +468,30 @@ function pzh_get_brands() {
 /**
  * Hero banners data (title / image / link)
  * Grid: one large banner (col-md-8) + two stacked cards (col-md-4).
- * Editable via the 'pzh_hero_banners' filter.
+ * Slides are a repeater (image + link, any count) and tiles are image +
+ * title + link — all editable in admin → تنظیمات پیاژن → هیرو صفحه اصلی
+ * (option pzh_settings_hero). Empty link = shop page.
+ * Also editable via the 'pzh_hero_banners' filter.
  */
 function pzh_hero_banners() {
     $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
+    $hero     = pzh_settings('hero');
+    $link     = function ($key) use ($hero, $shop_url) {
+        return !empty($hero[$key]) ? $hero[$key] : $shop_url;
+    };
 
-    // Hero carousel slides (yellow gradient, heading + 2-line subtitle + orange pill)
+    // Hero carousel slides — image + link only (repeater, any count)
     $banners = array(
-        'slides' => array(
-            array(
-                'title'    => __('اصلاحی سریع، دقیق و بین‌نقص', 'piazhen'),
-                'subtitle' => array(
-                    __('ظاهر جذاب، تیپی تازه', 'piazhen'),
-                    __('همراه همیشگی آقایان خوش‌تیپ', 'piazhen'),
-                ),
-                'image'    => pzh_setting_image('images', 'hero_slide'),
-                'link'     => $shop_url,
-                'cta'      => __('مشاهده محصولات', 'piazhen'),
-            ),
-            array(
-                'title'    => __('ست ماشین اصلاح حرفه‌ای', 'piazhen'),
-                'subtitle' => array(
-                    __('قدرت و دقت در یک دستگاه', 'piazhen'),
-                    __('مناسب آرایشگاه و مصارف خانگی', 'piazhen'),
-                ),
-                'image'    => pzh_setting_image('images', 'hero_slide'),
-                'link'     => $shop_url,
-                'cta'      => __('مشاهده محصولات', 'piazhen'),
-            ),
-            array(
-                'title'    => __('اپیلاتور و اصلاح موی بدن', 'piazhen'),
-                'subtitle' => array(
-                    __('پوستی صاف و لطیف', 'piazhen'),
-                    __('بدون درد و سوزش', 'piazhen'),
-                ),
-                'image'    => pzh_setting_image('images', 'hero_slide'),
-                'link'     => $shop_url,
-                'cta'      => __('مشاهده محصولات', 'piazhen'),
-            ),
-        ),
+        'slides' => pzh_hero_slides($shop_url),
         // Two stacked photo tiles (left column)
         'side_cards' => array(
-            array('title' => __('اصلاح سر و صورت', 'piazhen'), 'image' => pzh_setting_image('images', 'hero_feature'), 'link' => $shop_url),
-            array('title' => __('اپیلاتور', 'piazhen'),          'image' => pzh_setting_image('images', 'hero_card2'),   'link' => $shop_url),
+            array('title' => $hero['side_1_title'], 'image' => pzh_setting_image('hero', 'side_1_image'), 'link' => $link('side_1_link')),
+            array('title' => $hero['side_2_title'], 'image' => pzh_setting_image('hero', 'side_2_image'), 'link' => $link('side_2_link')),
         ),
-        // Three photo tiles (bottom row)
+        // Two photo tiles (bottom row)
         'bottom_cards' => array(
-            array('title' => __('سایر محصولات', 'piazhen'),  'image' => pzh_setting_image('images', 'hero_card3'), 'link' => $shop_url),
-            array('title' => __('حالت دهنده مو', 'piazhen'), 'image' => pzh_setting_image('images', 'hero_card2'), 'link' => $shop_url),
+            array('title' => $hero['bottom_1_title'], 'image' => pzh_setting_image('hero', 'bottom_1_image'), 'link' => $link('bottom_1_link')),
+            array('title' => $hero['bottom_2_title'], 'image' => pzh_setting_image('hero', 'bottom_2_image'), 'link' => $link('bottom_2_link')),
         ),
     );
 
@@ -751,6 +727,9 @@ function pzh_product_archive_query($query) {
     $params = pzh_get_filter_params_from_request($_GET);
     $args   = pzh_get_product_filter_args($params, $query->get('tax_query'), $query->get('meta_query'));
 
+    // In-stock products first, whatever the active sort
+    $query->set('pzh_stock_first', true);
+
     foreach ($args as $key => $value) {
         $query->set($key, $value);
     }
@@ -771,6 +750,24 @@ function pzh_discount_order_clauses($clauses, $query) {
     return $clauses;
 }
 add_filter('posts_clauses', 'pzh_discount_order_clauses', 10, 2);
+
+/**
+ * Put in-stock products first in archive/filter queries, ahead of the
+ * chosen sort (popularity, price, newest, discount, ...).
+ * Runs after pzh_discount_order_clauses so it prepends to the final orderby.
+ */
+function pzh_stock_first_order_clauses($clauses, $query) {
+    if (!$query->get('pzh_stock_first')) return $clauses;
+
+    global $wpdb;
+    $clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS pzh_stock ON ({$wpdb->posts}.ID = pzh_stock.post_id AND pzh_stock.meta_key = '_stock_status')";
+
+    $orderby = trim($clauses['orderby']);
+    $clauses['orderby'] = "(pzh_stock.meta_value = 'instock') DESC" . ($orderby !== '' ? ', ' . $orderby : '');
+
+    return $clauses;
+}
+add_filter('posts_clauses', 'pzh_stock_first_order_clauses', 20, 2);
 
 /**
  * Render the archive pagination (prev / numbers / next)
@@ -1761,6 +1758,8 @@ function pzh_filter_products() {
         'post_status'    => 'publish',
         'posts_per_page' => $per_page,
         'paged'          => $page,
+        // In-stock products first, whatever the active sort
+        'pzh_stock_first' => true,
     );
 
     // Base context: the current category page (if any)
@@ -4071,92 +4070,37 @@ function pzh_admin_withdrawals_menu() {
 add_action('admin_menu', 'pzh_admin_withdrawals_menu');
 
 // ============================================================================
-// Free Delivery Settings (threshold + suggested products) — admin panel
+// Free Delivery Settings (threshold + suggested products)
+// Admin UI lives in تنظیمات پی‌آژن → ارسال رایگان (inc/settings.php);
+// stored in the pzh_settings_delivery option array.
 // ============================================================================
 
-function pzh_admin_free_delivery_menu() {
-    add_submenu_page(
-        'pzh-wallet-withdrawals',
-        __('ارسال رایگان', 'piazhen'),
-        __('ارسال رایگان', 'piazhen'),
-        'manage_options',
-        'pzh-free-delivery',
-        'pzh_admin_free_delivery_render'
-    );
-}
-add_action('admin_menu', 'pzh_admin_free_delivery_menu');
-
-function pzh_admin_free_delivery_render() {
-    // Save settings
-    if (isset($_POST['pzh_fd_save']) && check_admin_referer('pzh_free_delivery_settings')) {
-        $threshold = isset($_POST['pzh_fd_threshold']) ? absint($_POST['pzh_fd_threshold']) : 0;
-        update_option('pzh_free_delivery_threshold', $threshold);
-
-        $products = isset($_POST['pzh_fd_products']) ? array_map('absint', (array) $_POST['pzh_fd_products']) : array();
-        $products = array_values(array_filter(array_unique($products)));
-        update_option('pzh_free_delivery_products', $products);
-
-        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('تنظیمات ذخیره شد.', 'piazhen') . '</p></div>';
-    }
-
-    $threshold    = absint(get_option('pzh_free_delivery_threshold', 5000000));
-    $selected_ids = array_map('absint', (array) get_option('pzh_free_delivery_products', array()));
-    $products     = get_posts(array(
-        'post_type'      => array('product', 'product_variation'),
-        'post_status'    => 'publish',
-        'posts_per_page' => -1,
-        'orderby'        => 'title',
-        'order'          => 'ASC',
-    ));
-    ?>
-    <div class="wrap">
-        <h1><?php _e('تنظیمات ارسال رایگان', 'piazhen'); ?></h1>
-        <form method="post" action="">
-            <?php wp_nonce_field('pzh_free_delivery_settings'); ?>
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <label for="pzh_fd_threshold"><?php _e('حداقل مبلغ برای ارسال رایگان (تومان)', 'piazhen'); ?></label>
-                    </th>
-                    <td>
-                        <input type="number" id="pzh_fd_threshold" name="pzh_fd_threshold" class="regular-text"
-                               value="<?php echo esc_attr($threshold); ?>" min="0" step="1000" style="direction: ltr;">
-                        <p class="description"><?php _e('مثلاً ۵۰۰۰۰۰۰ — اگر مجموع سبد کمتر از این مبلغ باشد، نوار پیشرفت و محصولات پیشنهادی نمایش داده می‌شود.', 'piazhen'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="pzh_fd_products"><?php _e('محصولات پیشنهادی', 'piazhen'); ?></label>
-                    </th>
-                    <td>
-                        <select id="pzh_fd_products" name="pzh_fd_products[]" multiple size="12" style="min-width: 420px; max-width: 100%;">
-                            <?php foreach ($products as $product_post): ?>
-                                <?php $product = wc_get_product($product_post); ?>
-                                <?php if (!$product || !$product->is_purchasable()) continue; ?>
-                                <option value="<?php echo esc_attr($product_post->ID); ?>" <?php selected(in_array($product_post->ID, $selected_ids, true)); ?>>
-                                    <?php echo esc_html($product->get_name()); ?> (#<?php echo $product_post->ID; ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <p class="description"><?php _e('برای انتخاب چند محصول، کلید Ctrl (یا Cmd) را نگه دارید. این محصولات وقتی سبد به حد ارسال رایگان نرسیده پیشنهاد می‌شوند.', 'piazhen'); ?></p>
-                    </td>
-                </tr>
-            </table>
-            <p class="submit">
-                <button type="submit" name="pzh_fd_save" class="button button-primary"><?php _e('ذخیره تنظیمات', 'piazhen'); ?></button>
-            </p>
-        </form>
-    </div>
-    <?php
-}
-
 /**
- * Free delivery settings helper
+ * Free delivery settings helper.
+ *
+ * Reads the new pzh_settings_delivery option; if it was never saved, falls
+ * back to the legacy pzh_free_delivery_threshold / pzh_free_delivery_products
+ * options so previously configured values survive.
  */
 function pzh_free_delivery_data() {
+    $saved = get_option('pzh_settings_delivery', array());
+    if (!is_array($saved)) {
+        $saved = array();
+    }
+
+    $legacy_products = array_values(array_filter(array_map('absint', (array) get_option('pzh_free_delivery_products', array()))));
+
+    $threshold = isset($saved['threshold'])
+        ? absint($saved['threshold'])
+        : absint(get_option('pzh_free_delivery_threshold', 5000000));
+
+    $product_ids = (isset($saved['products']) && is_array($saved['products']))
+        ? array_values(array_filter(array_map('absint', $saved['products'])))
+        : $legacy_products;
+
     return array(
-        'threshold'   => absint(get_option('pzh_free_delivery_threshold', 5000000)),
-        'product_ids' => array_values(array_filter(array_map('absint', (array) get_option('pzh_free_delivery_products', array())))),
+        'threshold'   => $threshold,
+        'product_ids' => $product_ids,
     );
 }
 
@@ -4166,7 +4110,7 @@ function pzh_free_delivery_data() {
  * cart progress bar uses.)
  */
 function pzh_free_delivery_active() {
-    $threshold = absint(get_option('pzh_free_delivery_threshold', 5000000));
+    $threshold = pzh_free_delivery_data()['threshold'];
     if ($threshold < 1) {
         return false;
     }

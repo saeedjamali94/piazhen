@@ -53,5 +53,27 @@
             }
             $btn.hide();
         });
+
+        // Hero slides repeater — add a new row cloned from the hidden template
+        $(document).on('click', '.pzh-repeater-add', function (e) {
+            e.preventDefault();
+
+            var $container = $($(this).data('target'));
+            if (!$container.length) {
+                return;
+            }
+
+            var idx = parseInt($container.data('next-index'), 10) || 0;
+            var $row = $($container.find('.pzh-repeater-template').html().replace(/__i__/g, idx));
+
+            $container.find('.pzh-repeater-template').before($row);
+            $container.data('next-index', idx + 1);
+        });
+
+        // Hero slides repeater — remove a row
+        $(document).on('click', '.pzh-repeater-remove', function (e) {
+            e.preventDefault();
+            $(this).closest('.pzh-repeater-row').remove();
+        });
     });
 })(jQuery);

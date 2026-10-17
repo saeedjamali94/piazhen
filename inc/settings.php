@@ -2,9 +2,8 @@
 /**
  * Piazhen Site Settings — admin panel for site-wide configuration
  *
- * Uses the native WordPress Options API (matching the existing free-delivery
- * and wallet-withdrawals admin panels). One option array per tab:
- *   pzh_settings_general | contact | images | map | sms
+ * Uses the native WordPress Options API. One option array per tab:
+ *   pzh_settings_general | contact | hero | delivery | map | sms
  *
  * @package Piazhen
  */
@@ -35,11 +34,23 @@ function pzh_settings_defaults($tab) {
             'twitter'   => 'https://x.com/piazhen',
             'linkedin'  => 'https://linkedin.com/company/piazhen',
         ),
-        'images' => array(
-            'hero_slide'   => PZH_THEME_URI . '/assets/images/cover1.png',
-            'hero_feature' => PZH_THEME_URI . '/assets/images/image.png',
-            'hero_card2'   => PZH_THEME_URI . '/assets/images/card2.png',
-            'hero_card3'   => PZH_THEME_URI . '/assets/images/card3.png',
+        'hero' => array(
+            // Carousel slides live in the 'slides' repeater (array of
+            // array('image' => …, 'link' => …)) — see pzh_hero_slide_rows().
+            // Two stacked side tiles
+            'side_1_image'  => PZH_THEME_URI . '/assets/images/image.png',
+            'side_1_title'  => __('اصلاح سر و صورت', 'piazhen'),
+            'side_1_link'   => '',
+            'side_2_image'  => PZH_THEME_URI . '/assets/images/card2.png',
+            'side_2_title'  => __('اپیلاتور', 'piazhen'),
+            'side_2_link'   => '',
+            // Bottom row tiles
+            'bottom_1_image' => PZH_THEME_URI . '/assets/images/card3.png',
+            'bottom_1_title' => __('سایر محصولات', 'piazhen'),
+            'bottom_1_link'  => '',
+            'bottom_2_image' => PZH_THEME_URI . '/assets/images/card2.png',
+            'bottom_2_title' => __('حالت دهنده مو', 'piazhen'),
+            'bottom_2_link'  => '',
         ),
         'map' => array(
             'map_lat'    => '35.7219',
@@ -89,19 +100,15 @@ function pzh_setting($tab, $key) {
 }
 
 /**
- * Resolve an image setting to a URL.
+ * Resolve a stored image value to a URL.
  *
  * Handles three storage formats:
- *  - empty string → returns the tab default
+ *  - empty string → returns $default
  *  - numeric (attachment ID) → wp_get_attachment_image_url()
  *  - full URL → returned as-is
  *  - bare filename → prefixed with PZH_THEME_URI (legacy compat)
  */
-function pzh_setting_image($tab, $key) {
-    $value    = pzh_setting($tab, $key);
-    $defaults = pzh_settings_defaults($tab);
-    $default  = isset($defaults[$key]) ? $defaults[$key] : '';
-
+function pzh_resolve_image_value($value, $default = '') {
     if (empty($value)) {
         return $default;
     }
@@ -122,6 +129,85 @@ function pzh_setting_image($tab, $key) {
 
     // Bare filename — prefix with theme URI
     return PZH_THEME_URI . '/' . ltrim($value, '/');
+}
+
+/**
+ * Resolve an image setting to a URL.
+ */
+function pzh_setting_image($tab, $key) {
+    $value    = pzh_setting($tab, $key);
+    $defaults = pzh_settings_defaults($tab);
+    $default  = isset($defaults[$key]) ? $defaults[$key] : '';
+    return pzh_resolve_image_value($value, $default);
+}
+
+// ============================================================================
+// Hero carousel slides (repeater)
+// ============================================================================
+
+/**
+ * Raw hero slide rows as stored in settings: array of array('image' => …, 'link' => …).
+ *
+ *  - If the 'slides' repeater was saved → those rows (may be empty).
+ *  - Else if legacy fixed slide_1..3 fields hold values → migrated from them.
+ *  - Else out-of-box default: 3 slides with the theme cover image.
+ */
+function pzh_hero_slide_rows() {
+    $saved = get_option('pzh_settings_hero', array());
+    if (!is_array($saved)) {
+        $saved = array();
+    }
+
+    if (isset($saved['slides']) && is_array($saved['slides'])) {
+        return $saved['slides'];
+    }
+
+    // Legacy: previously saved fixed slide fields (before the repeater)
+    $rows = array();
+    for ($i = 1; $i <= 3; $i++) {
+        $image = isset($saved["slide_{$i}_image"]) ? $saved["slide_{$i}_image"] : '';
+        $link  = isset($saved["slide_{$i}_link"]) ? $saved["slide_{$i}_link"] : '';
+        if ($image !== '' || $link !== '') {
+            $rows[] = array('image' => $image, 'link' => $link);
+        }
+    }
+    if (!empty($rows)) {
+        return $rows;
+    }
+
+    // Out-of-box: three slides with the default cover image
+    $cover = PZH_THEME_URI . '/assets/images/cover1.png';
+    return array(
+        array('image' => $cover, 'link' => ''),
+        array('image' => $cover, 'link' => ''),
+        array('image' => $cover, 'link' => ''),
+    );
+}
+
+/**
+ * Resolved slides for the front-end: array of array('image' => url, 'link' => url).
+ * Rows without an image are skipped; empty link = shop page.
+ */
+function pzh_hero_slides($shop_url = '') {
+    if (!$shop_url) {
+        $shop_url = class_exists('WooCommerce') ? wc_get_page_permalink('shop') : SITE_URL . '/shop';
+    }
+
+    $slides = array();
+    foreach (pzh_hero_slide_rows() as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $image = pzh_resolve_image_value(isset($row['image']) ? $row['image'] : '');
+        if (!$image) {
+            continue;
+        }
+        $slides[] = array(
+            'image' => $image,
+            'link'  => !empty($row['link']) ? $row['link'] : $shop_url,
+        );
+    }
+    return $slides;
 }
 
 // ============================================================================
@@ -264,8 +350,8 @@ function pzh_js_strings() {
 
 function pzh_admin_settings_menu() {
     add_menu_page(
-        __('تنظیمات پی‌آژن', 'piazhen'),
-        __('تنظیمات پی‌آژن', 'piazhen'),
+        __('تنظیمات پیاژن', 'piazhen'),
+        __('تنظیمات پیاژن', 'piazhen'),
         'manage_options',
         'pzh-settings',
         'pzh_admin_settings_render',
@@ -339,6 +425,28 @@ function pzh_sanitize_setting($value, $type) {
             return esc_url_raw($value);
         case 'textarea':
             return sanitize_textarea_field($value);
+        case 'products':
+            // Multi-select of product IDs (array) → unique positive ints
+            $ids = array_map('absint', (array) $value);
+            return array_values(array_filter(array_unique($ids)));
+        case 'hero_slides':
+            // Repeater rows: array('image' => …, 'link' => …)
+            $rows = array();
+            foreach ((array) $value as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $image = isset($row['image']) ? $row['image'] : '';
+                $link  = isset($row['link']) ? $row['link'] : '';
+                // Image: attachment ID, URL, or empty
+                $image = is_numeric($image) ? absint($image) : (empty($image) ? '' : esc_url_raw($image));
+                $link  = esc_url_raw($link);
+                if ($image === '' && $link === '') {
+                    continue; // drop fully-empty rows
+                }
+                $rows[] = array('image' => $image, 'link' => $link);
+            }
+            return $rows;
         default:
             return sanitize_text_field($value);
     }
@@ -445,6 +553,93 @@ function pzh_render_textarea_field($tab, $key, $label, $description = '', $rows 
 }
 
 /**
+ * Render a section heading row (groups fields inside a tab).
+ */
+function pzh_render_section_row($title, $description = '') {
+    ?>
+    <tr class="pzh-section-row">
+        <th scope="row" colspan="2">
+            <h2 style="margin: 0.5em 0 0.25em;"><?php echo esc_html($title); ?></h2>
+            <?php if ($description): ?>
+                <p class="description"><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
+        </th>
+    </tr>
+    <?php
+}
+
+/**
+ * Render one hero-slide repeater row (image + link). $index is the numeric
+ * row key, or '__i__' for the JS template row.
+ */
+function pzh_render_slide_row($index, $row = array()) {
+    $image   = isset($row['image']) ? $row['image'] : '';
+    $link    = isset($row['link']) ? $row['link'] : '';
+    $img_src = pzh_resolve_image_value($image, '');
+    $prefix  = $index;
+    ?>
+    <div class="pzh-repeater-row">
+        <div class="pzh-media-row">
+            <input type="hidden"
+                   name="pzh_hero[slides][<?php echo esc_attr($prefix); ?>][image]"
+                   id="pzh_hero_slides_<?php echo esc_attr($prefix); ?>_image"
+                   value="<?php echo esc_attr($image); ?>">
+            <div class="pzh-media-preview" id="pzh_preview_hero_slides_<?php echo esc_attr($prefix); ?>_image">
+                <?php if ($img_src): ?>
+                    <img src="<?php echo esc_url($img_src); ?>" alt="" style="max-width:120px;max-height:80px;">
+                <?php endif; ?>
+            </div>
+            <button type="button"
+                    class="button pzh-media-upload"
+                    data-target="pzh_hero_slides_<?php echo esc_attr($prefix); ?>_image"
+                    data-preview="pzh_preview_hero_slides_<?php echo esc_attr($prefix); ?>_image">
+                <?php _e('انتخاب تصویر', 'piazhen'); ?>
+            </button>
+        </div>
+        <input type="url"
+               name="pzh_hero[slides][<?php echo esc_attr($prefix); ?>][link]"
+               class="regular-text pzh-repeater-link"
+               value="<?php echo esc_attr($link); ?>"
+               dir="ltr"
+               placeholder="<?php esc_attr_e('خالی = صفحه فروشگاه', 'piazhen'); ?>">
+        <button type="button" class="button pzh-repeater-remove"><?php _e('حذف اسلاید', 'piazhen'); ?></button>
+    </div>
+    <?php
+}
+
+/**
+ * Render the hero slides repeater (saved rows + hidden JS template + add button).
+ */
+function pzh_render_hero_slides_repeater() {
+    $rows = pzh_hero_slide_rows();
+    ?>
+    <tr>
+        <th scope="row">
+            <label><?php _e('اسلایدهای کاروسل', 'piazhen'); ?></label>
+        </th>
+        <td>
+            <div class="pzh-repeater" id="pzh_hero_slides" data-next-index="<?php echo esc_attr(count($rows)); ?>">
+                <?php foreach ($rows as $i => $row): ?>
+                    <?php pzh_render_slide_row($i, $row); ?>
+                <?php endforeach; ?>
+
+                <!-- JS template for new rows ('__i__' replaced on clone) -->
+                <div class="pzh-repeater-template" style="display:none;">
+                    <?php pzh_render_slide_row('__i__'); ?>
+                </div>
+            </div>
+            <p>
+                <button type="button" class="button pzh-repeater-add" data-target="#pzh_hero_slides">
+                    <?php _e('افزودن اسلاید', 'piazhen'); ?>
+                </button>
+            </p>
+            <p class="description"><?php _e('تعداد اسلایدها دلخواه است؛ هر اسلاید فقط یک تصویر + لینک دارد. اسلاید بدون تصویر نمایش داده نمی‌شود.', 'piazhen'); ?></p>
+        </td>
+    </tr>
+    <?php
+}
+
+/**
  * Save handler for a settings tab.
  */
 function pzh_save_settings_tab($tab, $field_types) {
@@ -494,7 +689,8 @@ function pzh_admin_settings_render() {
     $tabs = array(
         'general' => __('عمومی', 'piazhen'),
         'contact' => __('تماس و شبکه‌های اجتماعی', 'piazhen'),
-        'images'  => __('تصاویر', 'piazhen'),
+        'hero'    => __('هیرو صفحه اصلی', 'piazhen'),
+        'delivery' => __('ارسال رایگان', 'piazhen'),
         'map'     => __('نقشه و API', 'piazhen'),
         'sms'     => __('پیامک', 'piazhen'),
         'instagram' => __('اینستاگرام', 'piazhen'),
@@ -513,9 +709,15 @@ function pzh_admin_settings_render() {
             'telegram' => 'url', 'instagram' => 'url',
             'twitter' => 'url', 'linkedin' => 'url',
         ),
-        'images' => array(
-            'hero_slide' => 'image', 'hero_feature' => 'image',
-            'hero_card2' => 'image', 'hero_card3' => 'image',
+        'hero' => array(
+            'slides' => 'hero_slides',
+            'side_1_image' => 'image', 'side_1_title' => 'text', 'side_1_link' => 'url',
+            'side_2_image' => 'image', 'side_2_title' => 'text', 'side_2_link' => 'url',
+            'bottom_1_image' => 'image', 'bottom_1_title' => 'text', 'bottom_1_link' => 'url',
+            'bottom_2_image' => 'image', 'bottom_2_title' => 'text', 'bottom_2_link' => 'url',
+        ),
+        'delivery' => array(
+            'threshold' => 'number', 'products' => 'products',
         ),
         'map' => array(
             'map_lat' => 'float', 'map_lng' => 'float', 'map_zoom' => 'number',
@@ -572,11 +774,67 @@ function pzh_admin_settings_render() {
                             pzh_render_text_field('contact', 'linkedin', __('لینکدین', 'piazhen'), 'url');
                             break;
 
-                        case 'images':
-                            pzh_render_image_field('images', 'hero_slide', __('اسلایدر اصلی (cover1.png)', 'piazhen'));
-                            pzh_render_image_field('images', 'hero_feature', __('تصویر کارت بزرگ (image.png)', 'piazhen'));
-                            pzh_render_image_field('images', 'hero_card2', __('تصویر کارت ۲ (card2.png)', 'piazhen'));
-                            pzh_render_image_field('images', 'hero_card3', __('تصویر کارت ۳ (card3.png)', 'piazhen'));
+                        case 'hero':
+                            $hero_empty = __('خالی = صفحه فروشگاه', 'piazhen');
+                            pzh_render_section_row(__('اسلایدهای کاروسل اصلی', 'piazhen'));
+                            pzh_render_hero_slides_repeater();
+
+                            pzh_render_section_row(__('کارت‌های کناری (ستون باریک)', 'piazhen'));
+                            pzh_render_image_field('hero', 'side_1_image', __('تصویر کارت کناری ۱', 'piazhen'));
+                            pzh_render_text_field('hero', 'side_1_title', __('عنوان کارت کناری ۱', 'piazhen'));
+                            pzh_render_text_field('hero', 'side_1_link', __('لینک کارت کناری ۱', 'piazhen'), 'url', $hero_empty, 'ltr');
+                            pzh_render_image_field('hero', 'side_2_image', __('تصویر کارت کناری ۲', 'piazhen'));
+                            pzh_render_text_field('hero', 'side_2_title', __('عنوان کارت کناری ۲', 'piazhen'));
+                            pzh_render_text_field('hero', 'side_2_link', __('لینک کارت کناری ۲', 'piazhen'), 'url', $hero_empty, 'ltr');
+
+                            pzh_render_section_row(__('کارت‌های ردیف پایین', 'piazhen'));
+                            pzh_render_image_field('hero', 'bottom_1_image', __('تصویر کارت پایین ۱', 'piazhen'));
+                            pzh_render_text_field('hero', 'bottom_1_title', __('عنوان کارت پایین ۱', 'piazhen'));
+                            pzh_render_text_field('hero', 'bottom_1_link', __('لینک کارت پایین ۱', 'piazhen'), 'url', $hero_empty, 'ltr');
+                            pzh_render_image_field('hero', 'bottom_2_image', __('تصویر کارت پایین ۲', 'piazhen'));
+                            pzh_render_text_field('hero', 'bottom_2_title', __('عنوان کارت پایین ۲', 'piazhen'));
+                            pzh_render_text_field('hero', 'bottom_2_link', __('لینک کارت پایین ۲', 'piazhen'), 'url', $hero_empty, 'ltr');
+                            break;
+
+                        case 'delivery':
+                            $delivery     = pzh_free_delivery_data();
+                            $selected_ids = $delivery['product_ids'];
+                            $products     = get_posts(array(
+                                'post_type'      => array('product', 'product_variation'),
+                                'post_status'    => 'publish',
+                                'posts_per_page' => -1,
+                                'orderby'        => 'title',
+                                'order'          => 'ASC',
+                            ));
+                            ?>
+                            <tr>
+                                <th scope="row">
+                                    <label for="pzh_delivery_threshold"><?php _e('حداقل مبلغ برای ارسال رایگان (تومان)', 'piazhen'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="number" id="pzh_delivery_threshold" name="pzh_delivery[threshold]" class="regular-text"
+                                           value="<?php echo esc_attr($delivery['threshold']); ?>" min="0" step="1000" style="direction: ltr;">
+                                    <p class="description"><?php _e('مثلاً ۵۰۰۰۰۰۰ — اگر مجموع سبد کمتر از این مبلغ باشد، نوار پیشرفت و محصولات پیشنهادی نمایش داده می‌شود. خالی یا ۰ یعنی ارسال رایگان غیرفعال.', 'piazhen'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="pzh_delivery_products"><?php _e('محصولات پیشنهادی', 'piazhen'); ?></label>
+                                </th>
+                                <td>
+                                    <select id="pzh_delivery_products" name="pzh_delivery[products][]" multiple size="12" style="min-width: 420px; max-width: 100%;">
+                                        <?php foreach ($products as $product_post): ?>
+                                            <?php $product = function_exists('wc_get_product') ? wc_get_product($product_post) : false; ?>
+                                            <?php if (!$product || !$product->is_purchasable()) continue; ?>
+                                            <option value="<?php echo esc_attr($product_post->ID); ?>" <?php selected(in_array($product_post->ID, $selected_ids, true)); ?>>
+                                                <?php echo esc_html($product->get_name()); ?> (#<?php echo $product_post->ID; ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php _e('برای انتخاب چند محصول، کلید Ctrl (یا Cmd) را نگه دارید. این محصولات وقتی سبد به حد ارسال رایگان نرسیده پیشنهاد می‌شوند.', 'piazhen'); ?></p>
+                                </td>
+                            </tr>
+                            <?php
                             break;
 
                         case 'map':

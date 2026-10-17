@@ -49,3 +49,26 @@ input[dir="ltr"] {
 .rtl input[dir="ltr"] {
     text-align: left;
 }
+
+/* Hero slides repeater */
+.pzh-repeater-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.pzh-repeater-row .pzh-media-row {
+    flex: 1 1 auto;
+    min-width: 260px;
+}
+
+.pzh-repeater-row .pzh-repeater-link {
+    flex: 1 1 240px;
+    min-width: 180px;
+}

@@ -2,7 +2,7 @@
 
 // ============================================================================
 // Homepage Hero Section (per hero.png)
-// Yellow-gradient hero (col-md-8) + 2 stacked tiles + 3-tile bottom row
+// Full-bleed image carousel (col-md-8) + 2 stacked tiles + 2-tile bottom row
 // ============================================================================
 
 .heroSection {
@@ -16,7 +16,7 @@
         margin-bottom: 1rem;
     }
 
-    // Large hero slide: yellow gradient, products left, right-aligned text
+    // Large hero slide: full-bleed photo (image + link only)
     &__main-banner {
         position: relative;
         display: flex;
@@ -28,74 +28,25 @@
         .heroSection__main-img {
             position: absolute;
             top: 0;
-            bottom: 0;
             left: 0;
-            width: 58%;
+            width: 100%;
             height: 100%;
-            object-fit: contain;
-            object-position: left bottom;
+            object-fit: cover;
+            object-position: center;
             transition: transform $transition-slow;
         }
 
         &:hover .heroSection__main-img {
             transform: scale(1.03);
         }
-
-        .heroSection__content {
-            position: relative;
-            z-index: 1;
-            width: 54%;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            text-align: right;
-            padding: 24px 28px 24px 8px;
-        }
-
-        .heroSection__title {
-            font-size: 25px;
-            font-weight: 900;
-            color: #121212;
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-
-        .heroSection__subtitle {
-            font-size: 18px;
-            color: rgba($black, 0.8);
-            line-height: 1.9;
-            margin-bottom: 26px;
-
-            p {
-                margin: 0;
-            }
-        }
-
-        .heroSection__btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: $siteOrange;
-            color: $white;
-            font-size: 14px;
-            font-weight: 700;
-            padding: 14px 46px;
-            border-radius: 999px;
-            transition: all $transition-fast;
-
-            &:hover {
-                background: $siteOrangeDark;
-            }
-        }
     }
 
-    // White carousel dots (Swiper pagination) — under the CTA button,
-    // right-aligned with the content column
+    // White carousel dots (Swiper pagination) — centered under the image
     .heroSection__dots {
         position: absolute;
-        bottom: 26px;
-        right: 28px;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -109,6 +60,7 @@
             background: rgba($white, 0.9);
             opacity: 1;
             margin: 0;
+            box-shadow: 0 1px 3px rgba($black, 0.35);
             transition: all $transition-fast;
         }
 
@@ -1219,14 +1171,6 @@
     .heroSection {
         &__main-banner {
             min-height: 450px;
-
-            .heroSection__title {
-                font-size: 31px;
-            }
-
-            .heroSection__subtitle {
-                font-size: 18px;
-            }
         }
 
         &__tile .heroSection__tile-title {
@@ -1268,37 +1212,6 @@
 
         &__main-banner {
             min-height: 360px;
-
-            .heroSection__main-img {
-                width: 100%;
-                opacity: 0.5;
-            }
-
-            .heroSection__content {
-                width: 100%;
-                padding: 20px 24px 62px;
-            }
-
-            .heroSection__title {
-                font-size: 24px;
-            }
-
-            .heroSection__subtitle {
-                font-size: 15px;
-                margin-bottom: 18px;
-            }
-
-            .heroSection__btn {
-                padding: 11px 32px;
-                font-size: 13px;
-            }
-
-            .heroSection__dots {
-                right: auto;
-                left: 50%;
-                transform: translateX(-50%);
-                bottom: 20px;
-            }
         }
 
         &__tile {
@@ -1434,27 +1347,6 @@
 
         &__main-banner {
             min-height: 210px;
-
-            .heroSection__content {
-                padding: 14px 16px 12px 6px;
-            }
-
-            .heroSection__title {
-                font-size: 18px;
-                line-height: 1.5;
-                margin-bottom: 8px;
-            }
-
-            .heroSection__subtitle {
-                font-size: 13px;
-                line-height: 1.7;
-                margin-bottom: 12px;
-            }
-
-            .heroSection__btn {
-                font-size: 12px;
-                padding: 10px 26px;
-            }
         }
 
         .heroSection__tile {

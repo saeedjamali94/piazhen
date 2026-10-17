@@ -1085,7 +1085,7 @@ $(document).ready(function () {
             return null;
         }
 
-        // Homepage hero carousel (yellow slides + white dots)
+        // Homepage hero carousel (full-bleed photo slides + white dots)
         initSwiper('.hero-swiper', {
             slidesPerView: 1,
             spaceBetween: 0,

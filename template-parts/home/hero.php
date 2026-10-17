@@ -1,9 +1,9 @@
 <?php
 /**
  * Homepage Hero Section (per hero.png)
- * Row 1: large yellow-gradient hero (col-md-8, right) + two stacked photo tiles (col-md-4)
- * Row 2: three photo tiles.
- * Banners data comes from pzh_hero_banners() in functions.php.
+ * Row 1: full-bleed image carousel (col-md-8, right) + two stacked photo tiles (col-md-4)
+ * Row 2: two photo tiles.
+ * Slides (image + link, any count) and tiles come from pzh_hero_banners() in functions.php.
  */
 
 $hero = pzh_hero_banners();
@@ -14,24 +14,15 @@ $hero = pzh_hero_banners();
 
             <!-- Large Hero Carousel (RTL first = right side) -->
             <div class="col-md-8">
+                <?php if (!empty($hero['slides'])): ?>
                 <div class="swiper hero-swiper" data-hero-swiper="1">
                     <div class="swiper-wrapper">
                         <?php foreach ($hero['slides'] as $slide): ?>
                             <div class="swiper-slide">
                                 <a href="<?= esc_url($slide['link']); ?>" class="heroSection__main-banner">
                                     <img src="<?= esc_url($slide['image']); ?>"
-                                         alt="<?= esc_attr($slide['title']); ?>"
+                                         alt=""
                                          class="heroSection__main-img">
-
-                                    <div class="heroSection__content">
-                                        <h2 class="heroSection__title"><?= esc_html($slide['title']); ?></h2>
-                                        <div class="heroSection__subtitle">
-                                            <?php foreach ((array) $slide['subtitle'] as $line): ?>
-                                                <p><?= esc_html($line); ?></p>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <span class="heroSection__btn"><?= esc_html($slide['cta']); ?></span>
-                                    </div>
                                 </a>
                             </div>
                         <?php endforeach; ?>
@@ -40,6 +31,7 @@ $hero = pzh_hero_banners();
                     <!-- Carousel dots (white, Swiper pagination) -->
                     <div class="heroSection__dots"></div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Bottom Row: Three Photo Tiles -->
                 <div class="col-12">
