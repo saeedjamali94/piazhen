@@ -449,18 +449,19 @@ function pzh_get_brand_taxonomy() {
 }
 
 /**
- * Get site brand logos
+ * Get site brand logos ($limit = 0 means no limit).
  */
-function pzh_get_brands() {
+function pzh_get_brands($limit = 8) {
     $brands = array();
     foreach (pzh_get_brand_terms() as $term) {
         $thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
         $brands[] = array(
-            'name'  => $term->name,
-            'image' => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : '',
-            'link'  => get_term_link($term),
+            'term_id' => intval($term->term_id),
+            'name'    => $term->name,
+            'image'   => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : '',
+            'link'    => get_term_link($term),
         );
-        if (count($brands) >= 8) break;
+        if ($limit > 0 && count($brands) >= $limit) break;
     }
     return $brands;
 }
@@ -4979,9 +4980,120 @@ function pzh_menu_item_has_product_cat_children($item, $menu_id) {
 }
 
 /**
+ * Discover the mega-menu trigger item (top-level item with product_cat
+ * children) and return its category children as id/title pairs.
+ * Used by the settings page (dropdown options) and as the default selection.
+ */
+function pzh_get_mega_menu_categories() {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $cache = array();
+
+    $menus = wp_get_nav_menus();
+    if (empty($menus)) {
+        return $cache;
+    }
+
+    foreach ($menus as $menu) {
+        $items = wp_get_nav_menu_items($menu->term_id);
+        if (empty($items) || is_wp_error($items)) {
+            continue;
+        }
+        $map = array();
+        foreach ($items as $it) {
+            $map[intval($it->menu_item_parent)][] = $it;
+        }
+        foreach (isset($map[0]) ? $map[0] : array() as $top) {
+            if (!pzh_menu_item_has_product_cat_children($top, $menu->term_id)) {
+                continue;
+            }
+            $children = isset($map[intval($top->ID)]) ? $map[intval($top->ID)] : array();
+            foreach ($children as $c) {
+                if ($c->type === 'taxonomy' && $c->object === 'product_cat') {
+                    $cache[] = array('id' => intval($c->ID), 'title' => $c->title);
+                }
+            }
+            return $cache; // one mega menu per site
+        }
+    }
+
+    return $cache;
+}
+
+/**
+ * Mega menu header rows (settings tab 'menu'): category menu-item IDs.
+ * Defaults to the current first 6 categories. The admin may remove rows or
+ * add as many as they want (no cap). The brands column is always rendered
+ * beside these headers (its tiles come from the brand repeater).
+ */
+function pzh_mega_menu_header_ids() {
+    $saved = get_option('pzh_settings_menu', array());
+    if (is_array($saved) && isset($saved['header_items']) && is_array($saved['header_items'])) {
+        return array_values(array_unique(array_filter(array_map('absint', $saved['header_items']))));
+    }
+
+    // Default: first 6 categories in menu order
+    $ids = array();
+    foreach (pzh_get_mega_menu_categories() as $cat) {
+        $ids[] = $cat['id'];
+        if (count($ids) >= 6) {
+            break;
+        }
+    }
+    return $ids;
+}
+
+/**
+ * Mega menu brand term IDs (settings tab 'menu').
+ * Saved selection (max 4) or the current first-4 brands as default.
+ */
+function pzh_mega_menu_brand_ids() {
+    $saved = get_option('pzh_settings_menu', array());
+    if (is_array($saved) && isset($saved['brand_items']) && is_array($saved['brand_items'])) {
+        $ids = array_values(array_filter(array_map('absint', $saved['brand_items'])));
+        return array_slice($ids, 0, 4);
+    }
+
+    // Default: the first 4 current brands
+    $ids = array();
+    foreach (pzh_get_brands() as $brand) {
+        $ids[] = $brand['term_id'];
+        if (count($ids) >= 4) {
+            break;
+        }
+    }
+    return $ids;
+}
+
+/**
+ * Brands shown in the mega menu panel: admin selection (max 4), in the
+ * selected order; defaults to the current first 4.
+ */
+function pzh_get_mega_menu_brands() {
+    $all = pzh_get_brands(0); // no limit — the admin may pick any brand term
+    $by_id = array();
+    foreach ($all as $brand) {
+        $by_id[$brand['term_id']] = $brand;
+    }
+
+    $picked = array();
+    foreach (pzh_mega_menu_brand_ids() as $id) {
+        if (isset($by_id[$id])) {
+            $picked[] = $by_id[$id];
+        }
+    }
+    return array_slice($picked, 0, 4);
+}
+
+/**
  * Build the mega menu panel from the nav menu hierarchy:
  * 3 balanced, right-aligned text columns (bold headers + gray links)
  * + a 4th brands column (2-col logo tile grid, loaded dynamically).
+ * Headers come from the admin selection (settings tab 'menu', default 6
+ * categories); the brands column is always shown beside them with max 4
+ * admin-selected tiles.
  */
 function pzh_build_mega_menu_panel($item, $menu_id) {
     $map = pzh_get_menu_item_children_map($menu_id);
@@ -4997,6 +5109,24 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
         return '';
     }
 
+    // Limit to the admin-selected headers (categories in the selected order)
+    $header_ids = pzh_mega_menu_header_ids();
+    $by_id      = array();
+    foreach ($categories as $cat) {
+        $by_id[intval($cat['item']->ID)] = $cat;
+    }
+    $selected_categories = array();
+    foreach ($header_ids as $id) {
+        if (isset($by_id[$id])) {
+            $selected_categories[] = $by_id[$id];
+        }
+    }
+    $categories = $selected_categories;
+
+    if (empty($categories)) {
+        return '';
+    }
+
     // Distribute into 3 text columns, balancing the row count per column
     $columns = array(array(), array(), array());
     $weights = array(0, 0, 0);
@@ -5007,9 +5137,9 @@ function pzh_build_mega_menu_panel($item, $menu_id) {
         $weights[$target] += $weight;
     }
 
-    // Brands column: same dynamic source as the homepage grid (up to 8),
+    // Brands column: admin selection (up to 4), always beside the headers,
     // linked to the "همه برندها" category archive.
-    $brands     = pzh_get_brands();
+    $brands     = pzh_get_mega_menu_brands();
     $brands_cat = pzh_get_brands_category();
     $brands_url = SITE_URL;
     if ($brands_cat && !is_wp_error($brands_cat)) {

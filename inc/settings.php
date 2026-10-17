@@ -3,7 +3,7 @@
  * Piazhen Site Settings — admin panel for site-wide configuration
  *
  * Uses the native WordPress Options API. One option array per tab:
- *   pzh_settings_general | contact | hero | delivery | map | sms
+ *   pzh_settings_general | contact | hero | menu | delivery | map | sms
  *
  * @package Piazhen
  */
@@ -370,18 +370,21 @@ function pzh_admin_settings_enqueue($hook) {
         return;
     }
     wp_enqueue_media();
+    // Filemtime-based versions (pzh_asset_version) so the browser never
+    // serves a stale cached copy after an edit — the theme version alone
+    // doesn't change on every edit.
     wp_enqueue_script(
         'pzh-settings-admin',
         PZH_THEME_URI . '/assets/js/settings-admin.js',
         array('jquery'),
-        wp_get_theme()->get('Version'),
+        pzh_asset_version('/assets/js/settings-admin.js'),
         true
     );
     wp_enqueue_style(
         'pzh-settings-admin',
         PZH_THEME_URI . '/assets/css/settings-admin.css',
         array(),
-        wp_get_theme()->get('Version')
+        pzh_asset_version('/assets/css/settings-admin.css')
     );
 }
 add_action('admin_enqueue_scripts', 'pzh_admin_settings_enqueue');
@@ -447,6 +450,10 @@ function pzh_sanitize_setting($value, $type) {
                 $rows[] = array('image' => $image, 'link' => $link);
             }
             return $rows;
+        case 'menu_items':
+            // Repeater of selected item IDs (menu items / brand terms)
+            $ids = array_map('absint', (array) $value);
+            return array_values(array_filter(array_unique($ids)));
         default:
             return sanitize_text_field($value);
     }
@@ -640,6 +647,64 @@ function pzh_render_hero_slides_repeater() {
 }
 
 /**
+ * Render one select-repeater row (dropdown + remove button). $prefix is the
+ * numeric row key, or '__i__' for the JS template row.
+ */
+function pzh_render_select_row($tab, $key, $prefix, $options, $value = '') {
+    ?>
+    <div class="pzh-repeater-row">
+        <select name="pzh_<?php echo esc_attr($tab); ?>[<?php echo esc_attr($key); ?>][<?php echo esc_attr($prefix); ?>]"
+                class="regular-text pzh-repeater-select">
+            <option value=""><?php _e('— انتخاب —', 'piazhen'); ?></option>
+            <?php foreach ($options as $id => $label): ?>
+                <option value="<?php echo esc_attr($id); ?>" <?php selected((string) $id === (string) $value); ?>>
+                    <?php echo esc_html($label); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <button type="button" class="button pzh-repeater-remove"><?php _e('حذف', 'piazhen'); ?></button>
+    </div>
+    <?php
+}
+
+/**
+ * Render a dropdown repeater: $rows are the current selected values, $max
+ * caps how many rows can be added (JS enforces it).
+ */
+function pzh_render_select_repeater($tab, $key, $label, $options, $rows, $max, $description = '') {
+    ?>
+    <tr>
+        <th scope="row">
+            <label><?php echo esc_html($label); ?></label>
+        </th>
+        <td>
+            <div class="pzh-repeater"
+                 id="pzh_<?php echo esc_attr($tab); ?>_<?php echo esc_attr($key); ?>"
+                 data-next-index="<?php echo esc_attr(count($rows)); ?>"
+                 <?php if ($max > 0): ?>data-max="<?php echo esc_attr($max); ?>"<?php endif; ?>>
+                <?php foreach ($rows as $i => $value): ?>
+                    <?php pzh_render_select_row($tab, $key, $i, $options, $value); ?>
+                <?php endforeach; ?>
+
+                <!-- JS template for new rows ('__i__' replaced on clone) -->
+                <div class="pzh-repeater-template" style="display:none;">
+                    <?php pzh_render_select_row($tab, $key, '__i__', $options); ?>
+                </div>
+            </div>
+            <p>
+                <button type="button" class="button pzh-repeater-add" data-target="#pzh_<?php echo esc_attr($tab); ?>_<?php echo esc_attr($key); ?>">
+                    <?php _e('افزودن', 'piazhen'); ?>
+                </button>
+            </p>
+            <?php if ($description): ?>
+                <p class="description"><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php
+}
+
+/**
  * Save handler for a settings tab.
  */
 function pzh_save_settings_tab($tab, $field_types) {
@@ -690,6 +755,7 @@ function pzh_admin_settings_render() {
         'general' => __('عمومی', 'piazhen'),
         'contact' => __('تماس و شبکه‌های اجتماعی', 'piazhen'),
         'hero'    => __('هیرو صفحه اصلی', 'piazhen'),
+        'menu'    => __('مگامنو', 'piazhen'),
         'delivery' => __('ارسال رایگان', 'piazhen'),
         'map'     => __('نقشه و API', 'piazhen'),
         'sms'     => __('پیامک', 'piazhen'),
@@ -718,6 +784,9 @@ function pzh_admin_settings_render() {
         ),
         'delivery' => array(
             'threshold' => 'number', 'products' => 'products',
+        ),
+        'menu' => array(
+            'header_items' => 'menu_items', 'brand_items' => 'menu_items',
         ),
         'map' => array(
             'map_lat' => 'float', 'map_lng' => 'float', 'map_zoom' => 'number',
@@ -794,6 +863,33 @@ function pzh_admin_settings_render() {
                             pzh_render_image_field('hero', 'bottom_2_image', __('تصویر کارت پایین ۲', 'piazhen'));
                             pzh_render_text_field('hero', 'bottom_2_title', __('عنوان کارت پایین ۲', 'piazhen'));
                             pzh_render_text_field('hero', 'bottom_2_link', __('لینک کارت پایین ۲', 'piazhen'), 'url', $hero_empty, 'ltr');
+                            break;
+
+                        case 'menu':
+                            $menu_options = array();
+                            foreach (pzh_get_mega_menu_categories() as $cat) {
+                                $menu_options[$cat['id']] = $cat['title'];
+                            }
+                            $brand_options = array();
+                            foreach (pzh_get_brand_terms() as $term) {
+                                $brand_options[$term->term_id] = $term->name;
+                            }
+                            pzh_render_select_repeater(
+                                'menu', 'header_items',
+                                __('هدِرهای مگامنو', 'piazhen'),
+                                $menu_options,
+                                pzh_mega_menu_header_ids(),
+                                0,
+                                __('پیش‌فرض ۶ ردیف. هر ردیف را می‌توانید حذف یا اضافه کنید؛ ستون برندها همیشه کنار همین هدرها نمایش داده می‌شود.', 'piazhen')
+                            );
+                            pzh_render_select_repeater(
+                                'menu', 'brand_items',
+                                __('برندهای مگامنو', 'piazhen'),
+                                $brand_options,
+                                pzh_mega_menu_brand_ids(),
+                                4,
+                                __('حداکثر ۴ برند در ستون برندهای مگامنو نمایش داده می‌شود. ترتیب ردیف‌ها = ترتیب نمایش.', 'piazhen')
+                            );
                             break;
 
                         case 'delivery':

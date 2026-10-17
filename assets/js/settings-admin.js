@@ -54,12 +54,17 @@
             $btn.hide();
         });
 
-        // Hero slides repeater — add a new row cloned from the hidden template
+        // Repeater — add a new row cloned from the hidden template
         $(document).on('click', '.pzh-repeater-add', function (e) {
             e.preventDefault();
 
             var $container = $($(this).data('target'));
             if (!$container.length) {
+                return;
+            }
+
+            var max = parseInt($container.data('max'), 10) || 0;
+            if (max && $container.children('.pzh-repeater-row').length >= max) {
                 return;
             }
 
@@ -70,7 +75,7 @@
             $container.data('next-index', idx + 1);
         });
 
-        // Hero slides repeater — remove a row
+        // Repeater — remove a row
         $(document).on('click', '.pzh-repeater-remove', function (e) {
             e.preventDefault();
             $(this).closest('.pzh-repeater-row').remove();
