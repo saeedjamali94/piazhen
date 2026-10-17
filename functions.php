@@ -510,6 +510,12 @@ function pzh_get_most_selling_products($limit = 15) {
         'orderby'        => 'meta_value_num',
         'order'          => 'DESC',
         'post_status'    => 'publish',
+        'meta_query'     => array(
+            array(
+                'key'   => '_stock_status',
+                'value' => 'instock',
+            ),
+        ),
     );
     return new WP_Query($args);
 }
@@ -524,29 +530,65 @@ function pzh_get_newest_products($limit = 8) {
         'orderby'        => 'date',
         'order'          => 'DESC',
         'post_status'    => 'publish',
+        'meta_query'     => array(
+            array(
+                'key'   => '_stock_status',
+                'value' => 'instock',
+            ),
+        ),
     );
     return new WP_Query($args);
 }
 
 /**
- * Get on-sale products
+ * Get on-sale products.
+ *
+ * Sale prices can live on the product itself (simple products) or on its
+ * variations. WooCommerce normally syncs _min_variation_sale_price onto the
+ * parent, but imported data often skips that sync — so the parent IDs are
+ * derived from the on-sale variations directly instead of relying on it.
  */
 function pzh_get_on_sale_products($limit = 8) {
+    global $wpdb;
+
+    // Products with their own sale price
+    $direct_ids = $wpdb->get_col(
+        "SELECT DISTINCT post_id FROM {$wpdb->postmeta}
+         WHERE meta_key = '_sale_price' AND meta_value != ''"
+    );
+
+    // Parents of on-sale variations
+    $parent_ids = $wpdb->get_col(
+        "SELECT DISTINCT p.post_parent
+         FROM {$wpdb->postmeta} pm
+         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+         WHERE pm.meta_key = '_sale_price' AND pm.meta_value != ''
+           AND p.post_type = 'product_variation' AND p.post_parent > 0"
+    );
+
+    // Parents carrying the synced min-variation-sale meta (for completeness)
+    $synced_ids = $wpdb->get_col(
+        "SELECT DISTINCT post_id FROM {$wpdb->postmeta}
+         WHERE meta_key = '_min_variation_sale_price' AND meta_value != ''"
+    );
+
+    $ids = array_values(array_filter(array_unique(array_map('absint', array_merge($direct_ids, $parent_ids, $synced_ids)))));
+
+    if (empty($ids)) {
+        return new WP_Query(array('post_type' => 'product', 'posts_per_page' => 0));
+    }
+
     $args = array(
         'post_type'      => 'product',
-        'posts_per_page' => $limit,
         'post_status'    => 'publish',
+        'posts_per_page' => $limit,
+        'post__in'       => $ids,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
         'meta_query'     => array(
-            'relation' => 'OR',
             array(
-                'key'     => '_sale_price',
-                'value'   => '',
-                'compare' => '!=',
-            ),
-            array(
-                'key'     => '_min_variation_sale_price',
-                'value'   => '',
-                'compare' => '!=',
+                'key'   => '_stock_status',
+                'value' => 'instock',
             ),
         ),
     );

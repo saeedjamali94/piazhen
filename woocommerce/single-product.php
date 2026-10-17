@@ -124,37 +124,6 @@ while (have_posts()): the_post();
                                 <?php echo wc_placeholder_img('woocommerce_single'); ?>
                             </div>
                         <?php endif; ?>
-
-                        <!-- Action Buttons (favorite / compare / whatsapp) -->
-                        <div class="product-gallery__actions">
-                            <button class="gallery-action-btn favorite-btn product-card__favorite position-relative <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
-                                    data-product-id="<?php echo $product_id; ?>"
-                                    title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>"
-                                    style="top: 0;right: 0">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                                </svg>
-                            </button>
-                            <button class="gallery-action-btn compare-btn"
-                                    data-product-id="<?php echo $product_id; ?>"
-                                    title="<?php _e('مقایسه', 'piazhen'); ?>">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2.5" y="2.5" width="6" height="6" rx="1"/>
-                                    <path d="M15.5 2.5l-6.5 6H14l1.5-6z"/>
-                                    <circle cx="5.5" cy="13.5" r="3"/>
-                                    <line x1="11.5" y1="12.5" x2="17.5" y2="12.5"/>
-                                    <line x1="11.5" y1="14.5" x2="17.5" y2="14.5"/>
-                                    <line x1="11.5" y1="16.5" x2="17.5" y2="16.5"/>
-                                </svg>
-                            </button>
-                            <a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"
-                               class="gallery-action-btn whatsapp-btn"
-                               title="<?php _e('اشتراک‌گذاری در واتساپ', 'piazhen'); ?>">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd">
-                                    <path d="M12.05 2C6.99 2 2.89 6.1 2.89 11.16c0 1.62.42 3.19 1.22 4.58L3 22l6.43-1.69a9.12 9.12 0 0 0 4.62 1.18h.01c5.05 0 9.16-4.1 9.16-9.16 0-2.44-.95-4.74-2.68-6.47A9.09 9.09 0 0 0 12.05 2zm5.42 13.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>
-                                </svg>
-                            </a>
-                        </div>
                     </div>
 
                     <!-- Horizontal Thumbnail Strip (active thumb is darkened, no ring) -->
@@ -190,7 +159,7 @@ while (have_posts()): the_post();
                     <?php endif; ?>
 
                     <div class="product-info__row">
-                        <!-- Specs Column (renders right in RTL) -->
+                        <!-- Specs + price (top row) -->
                         <div class="product-info__specs-col">
                             <?php
                             // Quick info panels: brand, product type (category), then specs.
@@ -242,15 +211,16 @@ while (have_posts()): the_post();
                                 <?php endif; ?>
                             <?php endif; ?>
 
-                            <!-- Price (bottom-aligned with the add-to-cart button) -->
+                        </div>
+
+                        <!-- Buy block: price + variations + add to cart -->
+                        <div class="product-info__controls">
+                            <!-- Price -->
                             <div class="product-info__price" id="product-price"
                                  data-base-price="<?php echo esc_attr($display_price_html); ?>">
                                 <?php echo $display_price_html; ?>
                             </div>
-                        </div>
 
-                        <!-- Controls Column (renders left in RTL) -->
-                        <div class="product-info__controls">
                             <!-- Variations (custom AJAX picker — no plugin) -->
                             <?php if ($is_variable && !empty($variation_picker)): ?>
                                 <div class="pzh-variation-picker" data-product-id="<?php echo $product_id; ?>">
@@ -321,7 +291,7 @@ while (have_posts()): the_post();
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Add to Cart (bottom-aligned with the price) -->
+                            <!-- Add to Cart (under the variation picker) -->
                             <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                                     data-product-id="<?php echo $product_id; ?>"
                                     <?php echo $is_variable ? 'data-variable="1"' : ''; ?>
@@ -347,6 +317,37 @@ while (have_posts()): the_post();
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Left column: favorite / compare / whatsapp -->
+                        <div class="product-info__actions">
+                            <button class="gallery-action-btn favorite-btn product-card__favorite position-relative <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
+                                    data-product-id="<?php echo $product_id; ?>"
+                                    title="<?php _e('افزودن به علاقه‌مندی‌ها', 'piazhen'); ?>"
+                                    style="right: 0;top: 0">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                            </button>
+                            <button class="gallery-action-btn compare-btn"
+                                    data-product-id="<?php echo $product_id; ?>"
+                                    title="<?php _e('مقایسه', 'piazhen'); ?>">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2.5" y="2.5" width="6" height="6" rx="1"/>
+                                    <path d="M15.5 2.5l-6.5 6H14l1.5-6z"/>
+                                    <circle cx="5.5" cy="13.5" r="3"/>
+                                    <line x1="11.5" y1="12.5" x2="17.5" y2="12.5"/>
+                                    <line x1="11.5" y1="14.5" x2="17.5" y2="14.5"/>
+                                    <line x1="11.5" y1="16.5" x2="17.5" y2="16.5"/>
+                                </svg>
+                            </button>
+                            <a href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"
+                               class="gallery-action-btn whatsapp-btn"
+                               title="<?php _e('اشتراک‌گذاری در واتساپ', 'piazhen'); ?>">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd">
+                                    <path d="M12.05 2C6.99 2 2.89 6.1 2.89 11.16c0 1.62.42 3.19 1.22 4.58L3 22l6.43-1.69a9.12 9.12 0 0 0 4.62 1.18h.01c5.05 0 9.16-4.1 9.16-9.16 0-2.44-.95-4.74-2.68-6.47A9.09 9.09 0 0 0 12.05 2zm5.42 13.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
 

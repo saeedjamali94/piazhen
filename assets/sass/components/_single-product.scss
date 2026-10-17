@@ -40,9 +40,9 @@
 
 // ============================================================================
 // Product Gallery (per single-product-right.png)
-// Flat monochrome: near-white 1:1 card with a 52px radius, three 40px
-// #CFCFCF circles at the top-right, and a horizontal 130px thumb strip below
-// (the active thumb is darkened 50% — no ring, no border).
+// Flat monochrome: near-white 1:1 card with a 52px radius and a horizontal
+// 130px thumb strip below (the active thumb is darkened 50% — no ring).
+// The favorite/compare/whatsapp buttons moved to the product-info column.
 // ============================================================================
 
 .product-gallery {
@@ -79,16 +79,6 @@
             max-height: 70%;
             object-fit: contain;
         }
-    }
-
-    // Action buttons: flat circles, top-right of the card (24px top / 28px right)
-    &__actions {
-        position: absolute;
-        top: 24px;
-        right: 28px;
-        display: flex;
-        gap: 18px;
-        z-index: 3;
     }
 
     // Horizontal thumbnail strip below the card (18px gap, 6px between thumbs)
@@ -173,9 +163,10 @@
 
 // ============================================================================
 // Product Info (per single-product-left.png)
-// Full-width title + subtitle, then two sub-columns:
-//   specs column (right in RTL): info panels + more + price (bottom)
-//   controls column (left in RTL): variation picker + add-to-cart (bottom)
+// Full-width title + subtitle, then two columns:
+//   right (first in RTL): price + variation picker + add-to-cart on top,
+//     spec panels underneath
+//   left: the three action buttons (favorite / compare / whatsapp)
 // All measured values are literal from the mockup (33/27/24/32/29px, #F0F0F0
 // panels, green #80D388 pill button).
 // ============================================================================
@@ -204,19 +195,35 @@
         p { margin: 0; }
     }
 
-    // Two sub-columns, mirroring the mockup proportions (46% / gap / 46%)
+    // Two columns: right = buy block + specs, left = action buttons
     &__row {
         display: grid;
-        grid-template-columns: 41% 52%;
-        justify-content: space-between;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
     }
 
-    &__specs-col {
+    // Action buttons (favorite / compare / whatsapp): flat 40px icon circles
+    // in the left column
+    &__actions {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        gap: 18px;
+    }
+
+    // Buy block (price + variations + add to cart): top of the right column
+    &__controls {
+        grid-column: 1;
+        grid-row: 1;
         display: flex;
         flex-direction: column;
     }
 
-    &__controls {
+    // Spec panels: under the buy block, still in the right column
+    &__specs-col {
+        grid-column: 1;
+        grid-row: 2;
         display: flex;
         flex-direction: column;
     }
@@ -244,7 +251,7 @@
         }
     }
 
-    // Price: bold 32px #414141, bottom-anchored to align with the button
+    // Price: bold 32px #414141, top of the buy block (above variations)
     &__price {
         margin-top: auto;
         padding-bottom: 4px;
@@ -303,6 +310,7 @@
         line-height: 1.5;
         text-align: left;
         flex-shrink: 0; // the value always stays fully visible
+        max-width: 75%;
     }
 }
 
@@ -392,7 +400,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 20px;
+        margin-bottom: 5px;
 
         .variation-group__label {
             margin-bottom: 0;
@@ -417,8 +425,8 @@
 
 // Color swatches
 .swatch-option {
-    width: 44px;
-    height: 44px;
+    width: 30px;
+    height: 30px;
     border-radius: 8px;
     border: none;
     // hairline for white swatches on light grounds (invisible on colored ones)
@@ -570,7 +578,7 @@
     max-width: 100%;
     height: 50px;
     margin-top: auto;
-    margin-inline-start: auto; // left side in RTL (inline-end)
+    margin-inline-end: auto; // left side in RTL (inline-end)
     display: flex;
     align-items: center;
     justify-content: center;
@@ -623,7 +631,7 @@
     width: 260px;
     max-width: 100%;
     margin-top: auto;
-    margin-inline-start: auto; // same corner as the add button (RTL: left)
+    margin-inline-end: auto; // same corner as the add button (RTL: left)
     display: flex;
     align-items: center;
     border: 2px solid #80D388;
@@ -1361,12 +1369,6 @@
         &__thumb {
             flex-basis: 84px;
         }
-
-        &__actions {
-            top: 12px;
-            right: 12px;
-            gap: 8px;
-        }
     }
 
     .gallery-action-btn {
@@ -1378,7 +1380,7 @@
         }
     }
 
-    // Info: stack the two sub-columns (specs above controls)
+    // Info: single column — action buttons first, then the buy block, then specs
     .product-info {
         &__title {
             font-size: 19px;
@@ -1386,6 +1388,17 @@
         &__subtitle {
             font-size: 19px;
             margin-bottom: 24px;
+        }
+        &__actions {
+            grid-column: auto;
+            grid-row: auto;
+            order: -1;
+            gap: 12px;
+        }
+        &__controls,
+        &__specs-col {
+            grid-column: auto;
+            grid-row: auto;
         }
         &__row {
             grid-template-columns: 1fr;
@@ -1530,7 +1543,6 @@
 
     .add-to-cart-single {
         width: 100%;
-        max-width: 260px;
         font-size: 18px;
         padding: 12px 24px;
     }
