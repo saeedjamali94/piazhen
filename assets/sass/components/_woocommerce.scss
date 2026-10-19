@@ -1141,13 +1141,19 @@ $ckGray: #8A8A8A;
     margin: 0;
 }
 
-// Payment radios are not part of the design — kept in the DOM, hidden
-.pzh-payment-hidden {
-    display: none;
+// Payment methods are part of the design again — rendered inside the order
+// review (summary card), above the totals and the CTA.
+.pzh-payment-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #787878;
+    margin-bottom: 10px;
 }
 
-// --- Payment methods (hidden in the redesign; styles kept for safety) ---
 .woocommerce-checkout-payment {
+    margin-bottom: 24px;
+
     .wc_payment_methods {
         margin: 0;
         padding: 0;
@@ -1181,6 +1187,12 @@ $ckGray: #8A8A8A;
                 max-height: 28px;
                 width: auto;
                 margin-inline-start: auto;
+            }
+
+            .pzh-wallet-balance {
+                font-size: 12px;
+                font-weight: 500;
+                color: $gray-600;
             }
         }
 

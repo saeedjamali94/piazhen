@@ -11,6 +11,10 @@ if (!defined('ABSPATH')) {
 }
 ?>
 <div id="payment" class="woocommerce-checkout-payment">
+    <?php do_action('woocommerce_review_order_before_payment'); ?>
+
+    <span class="pzh-payment-title"><?php _e('روش پرداخت', 'piazhen'); ?></span>
+
     <?php if (WC()->cart && WC()->cart->needs_payment()): ?>
         <ul class="wc_payment_methods payment_methods methods">
             <?php
@@ -33,6 +37,8 @@ if (!defined('ABSPATH')) {
             ?>
         </ul>
     <?php endif; ?>
+
+    <?php do_action('woocommerce_review_order_after_payment'); ?>
 
     <?php wp_nonce_field('woocommerce-process_checkout', 'woocommerce-process-checkout-nonce'); ?>
 </div>

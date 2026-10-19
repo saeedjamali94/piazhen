@@ -18,6 +18,7 @@ define('SITE_URL', get_site_url());
 
 // Load site settings (admin panel + helper functions)
 require get_template_directory() . '/inc/settings.php';
+require get_template_directory() . '/inc/wallet-gateway.php';
 
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';

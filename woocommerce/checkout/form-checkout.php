@@ -44,14 +44,10 @@ if (!$checkout->is_registration_enabled() && $checkout->is_registration_required
             <?php endif; ?>
 
             <?php
-            // Only one gateway (زرین‌پال) is configured and the mockup has no
-            // payment step — keep the radios + nonce in the DOM, hidden.
+            // Payment methods render inside the order review (summary column)
+            // — see pzh_wallet_gateway_show_payment_in_review() in
+            // inc/wallet-gateway.php.
             ?>
-            <?php do_action('woocommerce_review_order_before_payment'); ?>
-            <div class="pzh-payment-hidden">
-                <?php woocommerce_checkout_payment(); ?>
-            </div>
-            <?php do_action('woocommerce_review_order_after_payment'); ?>
 
         </div>
 
