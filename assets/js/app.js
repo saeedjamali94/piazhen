@@ -2111,6 +2111,52 @@ $(document).ready(function () {
 
         // --- OTP boxes: auto-advance, backspace, paste ---
         var $otpBoxes = $card.find('.auth-otp-input');
+        var verifyInFlight = false;
+
+        // Verify the completed code (called by the button AND auto-fired when
+        // the last OTP digit is entered/pasted)
+        function verifyOtp() {
+            var codeVal = '';
+            $otpBoxes.each(function () { codeVal += $(this).val(); });
+            if (codeVal.length !== 5 || verifyInFlight) return;
+
+            clearAuthErrors();
+            verifyInFlight = true;
+            var $btn = $('#auth-verify').addClass('loading').prop('disabled', true);
+            $.ajax({
+                url: pzh_options.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pzh_auth_verify_otp',
+                    phone: authPhone,
+                    code: codeVal,
+                    redirect_to: redirectTo,
+                    nonce: pzh_options.nonce
+                },
+                success: function (resp) {
+                    verifyInFlight = false;
+                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
+                    if (resp && resp.success) {
+                        if (resp.data.next === 'register') {
+                            showAuthStep('register');
+                        } else {
+                            finishAuth(resp.data.redirect);
+                        }
+                    } else {
+                        showAuthError('otp', (resp && resp.data && resp.data.message) || 'کد وارد شده صحیح نیست.');
+                        $otpBoxes.val('').removeClass('filled');
+                        $otpBoxes.eq(0).focus();
+                        $('#auth-verify').prop('disabled', true);
+                    }
+                },
+                error: function () {
+                    verifyInFlight = false;
+                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
+                    showAuthError('otp', pzhStr('server_error'));
+                }
+            });
+        }
 
         function updateVerifyState() {
             var codeVal = '';
@@ -2118,6 +2164,7 @@ $(document).ready(function () {
             $('#auth-verify').prop('disabled', codeVal.length !== 5);
             if (codeVal.length === 5) {
                 $('#auth-code-stored').val(codeVal);
+                verifyOtp(); // auto-submit once the code is complete
             }
         }
 
@@ -2160,45 +2207,8 @@ $(document).ready(function () {
             showAuthStep('phone');
         });
 
-        // --- Verify OTP ---
-        $('#auth-verify').on('click', function () {
-            clearAuthErrors();
-            var codeVal = '';
-            $otpBoxes.each(function () { codeVal += $(this).val(); });
-
-            var $btn = $(this).addClass('loading').prop('disabled', true);
-            $.ajax({
-                url: pzh_options.ajax_url,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'pzh_auth_verify_otp',
-                    phone: authPhone,
-                    code: codeVal,
-                    redirect_to: redirectTo,
-                    nonce: pzh_options.nonce
-                },
-                success: function (resp) {
-                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
-                    if (resp && resp.success) {
-                        if (resp.data.next === 'register') {
-                            showAuthStep('register');
-                        } else {
-                            finishAuth(resp.data.redirect);
-                        }
-                    } else {
-                        showAuthError('otp', (resp && resp.data && resp.data.message) || 'کد وارد شده صحیح نیست.');
-                        $otpBoxes.val('').removeClass('filled');
-                        $otpBoxes.eq(0).focus();
-                        $('#auth-verify').prop('disabled', true);
-                    }
-                },
-                error: function () {
-                    $btn.removeClass('loading').prop('disabled', codeVal.length !== 5);
-                    showAuthError('otp', pzhStr('server_error'));
-                }
-            });
-        });
+        // --- Verify OTP (button fallback — the form usually auto-submits) ---
+        $('#auth-verify').on('click', verifyOtp);
 
         // --- Register (new users) ---
         $('#auth-register-btn').on('click', function () {
