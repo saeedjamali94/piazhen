@@ -100,6 +100,18 @@ function pzh_setting($tab, $key) {
 }
 
 /**
+ * FAQ items from the settings repeater (tab 'faq'): array of
+ * array('question' => …, 'answer' => …). Empty until the admin adds items.
+ */
+function pzh_faq_items() {
+    $saved = get_option('pzh_settings_faq', array());
+    if (is_array($saved) && isset($saved['items']) && is_array($saved['items'])) {
+        return $saved['items'];
+    }
+    return array();
+}
+
+/**
  * Resolve a stored image value to a URL.
  *
  * Handles three storage formats:
@@ -454,6 +466,21 @@ function pzh_sanitize_setting($value, $type) {
             // Repeater of selected item IDs (menu items / brand terms)
             $ids = array_map('absint', (array) $value);
             return array_values(array_filter(array_unique($ids)));
+        case 'faq_items':
+            // Repeater rows: array('question' => …, 'answer' => …)
+            $rows = array();
+            foreach ((array) $value as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $question = isset($row['question']) ? sanitize_text_field($row['question']) : '';
+                $answer   = isset($row['answer']) ? sanitize_textarea_field($row['answer']) : '';
+                if ($question === '' && $answer === '') {
+                    continue;
+                }
+                $rows[] = array('question' => $question, 'answer' => $answer);
+            }
+            return $rows;
         default:
             return sanitize_text_field($value);
     }
@@ -705,6 +732,62 @@ function pzh_render_select_repeater($tab, $key, $label, $options, $rows, $max, $
 }
 
 /**
+ * Render one FAQ repeater row (question input + answer textarea). $prefix is
+ * the numeric row key, or '__i__' for the JS template row.
+ */
+function pzh_render_faq_row($prefix, $row = array()) {
+    $question = isset($row['question']) ? $row['question'] : '';
+    $answer   = isset($row['answer']) ? $row['answer'] : '';
+    ?>
+    <div class="pzh-repeater-row pzh-repeater-row--faq">
+        <div class="pzh-faq-row-fields">
+            <input type="text"
+                   class="large-text"
+                   name="pzh_faq[items][<?php echo esc_attr($prefix); ?>][question]"
+                   value="<?php echo esc_attr($question); ?>"
+                   placeholder="<?php esc_attr_e('سوال', 'piazhen'); ?>">
+            <textarea class="large-text" rows="3"
+                      name="pzh_faq[items][<?php echo esc_attr($prefix); ?>][answer]"
+                      placeholder="<?php esc_attr_e('پاسخ', 'piazhen'); ?>"><?php echo esc_textarea($answer); ?></textarea>
+        </div>
+        <button type="button" class="button pzh-repeater-remove"><?php _e('حذف', 'piazhen'); ?></button>
+    </div>
+    <?php
+}
+
+/**
+ * Render the FAQ repeater (saved rows + hidden JS template + add button).
+ */
+function pzh_render_faq_repeater() {
+    $rows = pzh_faq_items();
+    ?>
+    <tr>
+        <th scope="row">
+            <label><?php _e('سوال و جواب‌ها', 'piazhen'); ?></label>
+        </th>
+        <td>
+            <div class="pzh-repeater" id="pzh_faq_items" data-next-index="<?php echo esc_attr(count($rows)); ?>">
+                <?php foreach ($rows as $i => $row): ?>
+                    <?php pzh_render_faq_row($i, $row); ?>
+                <?php endforeach; ?>
+
+                <!-- JS template for new rows ('__i__' replaced on clone) -->
+                <div class="pzh-repeater-template" style="display:none;">
+                    <?php pzh_render_faq_row('__i__'); ?>
+                </div>
+            </div>
+            <p>
+                <button type="button" class="button pzh-repeater-add" data-target="#pzh_faq_items">
+                    <?php _e('افزودن سوال', 'piazhen'); ?>
+                </button>
+            </p>
+            <p class="description"><?php _e('این سوال‌ها در صفحه «سوالات متداول» (قالب صفحه FAQ) به صورت آکاردئون نمایش داده می‌شوند.', 'piazhen'); ?></p>
+        </td>
+    </tr>
+    <?php
+}
+
+/**
  * Save handler for a settings tab.
  */
 function pzh_save_settings_tab($tab, $field_types) {
@@ -757,6 +840,7 @@ function pzh_admin_settings_render() {
         'hero'    => __('هیرو صفحه اصلی', 'piazhen'),
         'menu'    => __('مگامنو', 'piazhen'),
         'delivery' => __('ارسال رایگان', 'piazhen'),
+        'faq'      => __('سوالات متداول', 'piazhen'),
         'map'     => __('نقشه و API', 'piazhen'),
         'sms'     => __('پیامک', 'piazhen'),
         'instagram' => __('اینستاگرام', 'piazhen'),
@@ -784,6 +868,9 @@ function pzh_admin_settings_render() {
         ),
         'delivery' => array(
             'threshold' => 'number', 'products' => 'products',
+        ),
+        'faq' => array(
+            'items' => 'faq_items',
         ),
         'menu' => array(
             'header_items' => 'menu_items', 'brand_items' => 'menu_items',
@@ -931,6 +1018,10 @@ function pzh_admin_settings_render() {
                                 </td>
                             </tr>
                             <?php
+                            break;
+
+                        case 'faq':
+                            pzh_render_faq_repeater();
                             break;
 
                         case 'map':

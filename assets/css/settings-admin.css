@@ -72,3 +72,12 @@ input[dir="ltr"] {
     flex: 1 1 240px;
     min-width: 180px;
 }
+
+/* FAQ repeater rows: question + answer stacked */
+.pzh-repeater-row--faq .pzh-faq-row-fields {
+    flex: 1 1 auto;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}

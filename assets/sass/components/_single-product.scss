@@ -159,6 +159,10 @@
             background: $siteOrange;
         }
     }
+
+    &.whatsapp-btn {
+        background: #2ce863;
+    }
 }
 
 // ============================================================================
@@ -322,16 +326,17 @@
     margin-bottom: 20px;
 
     .variation-group {
+        margin: 17px auto;
         // Color panel group (mockup: 140px #F0F0F0 panel, header + swatch strip)
         &--swatch {
             .variation-group__label {
-                font-size: 24px;
+                font-size: 17px;
                 font-weight: 700;
                 color: #3F3F3F;
             }
 
             .variation-group__selected {
-                font-size: 24px;
+                font-size: 17px;
                 font-weight: 700;
                 color: #F2854F;
             }
@@ -392,7 +397,7 @@
 
 // Color panel (swatch attribute): #F0F0F0 box with header row + scrollable swatches
 .variation-panel {
-    padding: 16px;
+    padding: 8px 16px 0;
     background: #F0F0F0;
     border-radius: $cardRadius;
 
@@ -425,8 +430,8 @@
 
 // Color swatches
 .swatch-option {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     border-radius: 8px;
     border: none;
     // hairline for white swatches on light grounds (invisible on colored ones)
@@ -464,7 +469,7 @@
     display: inline-flex;
     align-items: center;
     height: 44px;
-    margin-inline-start: 10px;
+    margin-inline-start: 27px;
     flex-shrink: 0;
 
     &::before {
@@ -511,7 +516,7 @@
     }
 
     &__text {
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 700;
         color: #414141;
     }
@@ -582,7 +587,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 40px; // 24px keeps the 29px label on one line inside 260px
+    gap: 10px;
+    padding: 0 40px;
     border: none;
     border-radius: 999px;
     background: #80D388;
@@ -593,6 +599,33 @@
     line-height: 1;
     cursor: pointer;
     transition: background $transition-fast, opacity $transition-fast;
+
+    // Label + live price inside the pill (the price follows the selected
+    // variation via AJAX)
+    &__label {
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    &__price {
+        font-size: 0.85em;
+        font-weight: 800;
+
+        del {
+            font-size: 0.8em;
+            opacity: 0.65;
+            margin-inline-end: 6px;
+        }
+
+        ins {
+            text-decoration: none;
+        }
+
+        .woocommerce-Price-currencySymbol {
+            font-size: 0.7em;
+            margin-inline-start: 2px;
+        }
+    }
 
     &:hover:not(:disabled) {
         background: #6FC77E;
@@ -1214,6 +1247,34 @@
 }
 
 // ============================================================================
+// FAQ Page (page-faq.php — accordion driven by the settings repeater)
+// ============================================================================
+
+.faq-page {
+    padding: 28px 0 64px;
+
+    &__head {
+        margin-bottom: 28px;
+    }
+
+    &__title {
+        font-size: 24px;
+        font-weight: 700;
+        color: $siteOrange;
+        margin: 0;
+    }
+
+    &__empty {
+        font-size: 14px;
+        color: $gray-600;
+    }
+
+    .faq-accordion {
+        max-width: 860px;
+    }
+}
+
+// ============================================================================
 // Stars helper
 // ============================================================================
 
@@ -1337,7 +1398,8 @@
     }
 
     .add-to-cart-single {
-        width: 220px;
+        width: auto;
+        padding: 0 28px;
         font-size: 24px;
     }
 

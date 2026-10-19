@@ -1351,22 +1351,25 @@ $(document).ready(function () {
             if (basePriceHtml && $priceBox.length) $priceBox.html(basePriceHtml);
             if (basePriceHtml && $stickyPrice.length) $stickyPrice.html(basePriceHtml);
             $status.html('');
-            // Restore the initial buy buttons (stock state as rendered by PHP)
+            // Restore the initial buy buttons (stock state as rendered by PHP,
+            // including the price shown inside the green add-to-cart button)
             var $atc = $('.add-to-cart-single');
             $atc.each(function () {
                 var $btn = $(this);
                 if ($btn.data('initial-disabled')) {
-                    $btn.addClass('out-of-stock').prop('disabled', true).text(pzhStr('out_of_stock'));
+                    $btn.addClass('out-of-stock').prop('disabled', true)
+                        .html('<span class="add-to-cart-single__label">' + pzhStr('out_of_stock') + '</span>');
                 } else {
-                    $btn.removeClass('out-of-stock').prop('disabled', false).text($btn.data('initial-text') || pzhStr('add_to_cart'));
+                    $btn.removeClass('out-of-stock').prop('disabled', false).html($btn.data('initial-html'));
                 }
             });
         }
 
-        // Remember the initial state of the buy buttons
+        // Remember the initial state of the buy buttons (structured HTML —
+        // the desktop button carries label + price spans)
         $('.add-to-cart-single').each(function () {
             var $btn = $(this);
-            $btn.data('initial-text', $btn.text().trim());
+            $btn.data('initial-html', $btn.html());
             $btn.data('initial-disabled', $btn.prop('disabled') ? '1' : '');
         });
 
@@ -1412,6 +1415,12 @@ $(document).ready(function () {
                 $('#selected-variation-id').val('');
                 if (basePriceHtml && $priceBox.length) $priceBox.html(basePriceHtml);
                 if (basePriceHtml && $stickyPrice.length) $stickyPrice.html(basePriceHtml);
+                // Reset the price inside the add-to-cart button to the base price
+                $('.add-to-cart-single__price').each(function () {
+                    var $span = $(this);
+                    var base = $span.attr('data-base-price');
+                    if (base) $span.html(base);
+                });
                 $status.html('');
                 pzhShowSingleAddButton();
                 return;
@@ -1436,6 +1445,8 @@ $(document).ready(function () {
                         if (resp.data.price_html) {
                             if ($priceBox.length) $priceBox.html(resp.data.price_html);
                             if ($stickyPrice.length) $stickyPrice.html(resp.data.price_html);
+                            // The variation price also goes inside the green add-to-cart button
+                            $('.add-to-cart-single__price').html(resp.data.price_html);
                         }
                         if (resp.data.availability) {
                             var inStock = resp.data.in_stock;

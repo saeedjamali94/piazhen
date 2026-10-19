@@ -291,13 +291,20 @@ while (have_posts()): the_post();
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Add to Cart (under the variation picker) -->
+                            <!-- Add to Cart (under the variation picker; price inside the button
+                                 follows the selected variation via AJAX) -->
                             <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                                     data-product-id="<?php echo $product_id; ?>"
                                     <?php echo $is_variable ? 'data-variable="1"' : ''; ?>
                                     <?php echo $can_purchase ? '' : 'disabled'; ?>
                                     <?php echo ($can_purchase && $initial_cart_qty > 0) ? 'style="display:none;"' : ''; ?>>
-                                <?php echo $can_purchase ? __('افزودن به سبد خرید', 'piazhen') : __('ناموجود', 'piazhen'); ?>
+                                <?php if ($can_purchase): ?>
+                                    <span class="add-to-cart-single__label"><?php _e('افزودن به سبد خرید', 'piazhen'); ?></span>
+                                    <span class="add-to-cart-single__price"
+                                          data-base-price="<?php echo esc_attr($display_price_html); ?>"><?php echo $display_price_html; ?></span>
+                                <?php else: ?>
+                                    <?php _e('ناموجود', 'piazhen'); ?>
+                                <?php endif; ?>
                             </button>
 
                             <!-- Quantity selector — replaces the button while the product
