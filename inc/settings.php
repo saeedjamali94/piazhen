@@ -1025,8 +1025,8 @@ function pzh_admin_settings_render() {
                             break;
 
                         case 'map':
-                            pzh_render_text_field('map', 'map_lat', __('عرض جغرافیایی مرکز نقشه', 'piazhen'), 'number', '', 'ltr');
-                            pzh_render_text_field('map', 'map_lng', __('طول جغرافیایی مرکز نقشه', 'piazhen'), 'number', '', 'ltr');
+                            pzh_render_text_field('map', 'map_lat', __('عرض جغرافیایی مرکز نقشه', 'piazhen'), 'text', '', 'ltr');
+                            pzh_render_text_field('map', 'map_lng', __('طول جغرافیایی مرکز نقشه', 'piazhen'), 'text', '', 'ltr');
                             pzh_render_text_field('map', 'map_zoom', __('زوم پیش‌فرض نقشه', 'piazhen'), 'number', __('عددی بین ۱ تا ۱۹', 'piazhen'), 'ltr');
                             pzh_render_text_field('map', 'osm_tiles', __('آدرس تایل OSM', 'piazhen'), 'url', __('الگو باید شامل {z}، {x} و {y} باشد — مثال: https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'piazhen'), 'ltr');
                             pzh_render_text_field('map', 'nominatim', __('آدرس Nominatim', 'piazhen'), 'url');
