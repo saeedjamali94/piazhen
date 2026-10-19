@@ -5371,33 +5371,61 @@ function pzh_get_product_faqs($product_id) {
 }
 
 /**
- * Get related products
+ * Get related (similar) products: the exact same category as the current
+ * product (its most specific, childless category) and in stock only.
+ * Brand terms (children of the "برند ها" category) never count as the
+ * matching category.
  */
 function pzh_get_related_products($product_id, $limit = 10) {
-    $product = wc_get_product($product_id);
-    if (!$product) return array();
-
-    $related = wc_get_related_products($product_id, $limit, array());
-
-    if (empty($related)) {
-        // Fallback: same category products
-        $cats = wp_get_post_terms($product_id, 'product_cat', array('fields' => 'ids'));
-        $related = get_posts(array(
-            'post_type'      => 'product',
-            'posts_per_page' => $limit,
-            'post__not_in'   => array($product_id),
-            'tax_query'      => array(
-                array(
-                    'taxonomy' => 'product_cat',
-                    'field'    => 'term_id',
-                    'terms'    => $cats,
-                ),
-            ),
-            'fields' => 'ids',
-        ));
+    $cats = wp_get_post_terms($product_id, 'product_cat', array('fields' => 'ids'));
+    if (empty($cats) || is_wp_error($cats)) {
+        return array();
     }
 
-    return $related;
+    // Drop brand terms — they match brand-mates, not category-mates
+    $brands_cat = pzh_get_brands_category();
+    $brand_terms = $brands_cat ? get_term_children($brands_cat->term_id, 'product_cat') : array();
+    $cats = array_values(array_diff($cats, $brand_terms));
+
+    // Keep only the most specific (childless) categories so results are
+    // the exact same category, not parent-level siblings
+    $leaf = array();
+    foreach ($cats as $cid) {
+        if (empty(get_term_children($cid, 'product_cat'))) {
+            $leaf[] = $cid;
+        }
+    }
+    if (empty($leaf)) {
+        $leaf = $cats; // product sits directly in a parent category
+    }
+    if (empty($leaf)) {
+        return array();
+    }
+
+    $ids = get_posts(array(
+        'post_type'      => 'product',
+        'post_status'    => 'publish',
+        'posts_per_page' => $limit,
+        'post__not_in'   => array($product_id),
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'product_cat',
+                'field'    => 'term_id',
+                'terms'    => $leaf,
+            ),
+        ),
+        'meta_query'     => array(
+            array(
+                'key'   => '_stock_status',
+                'value' => 'instock',
+            ),
+        ),
+        'fields' => 'ids',
+    ));
+
+    return $ids;
 }
 
 // ============================================================================
