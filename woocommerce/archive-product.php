@@ -62,8 +62,75 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
         <!-- a. Categories / Subcategories Carousel -->
         <section class="archive-categories pb-4">
             <?php
-            // Children of the current category; siblings on a sub-category; top-level on shop root
-            if ($current_category) {
+            $brands_cat = pzh_get_brands_category();
+
+            // Brand archive? Either the queried term is a product_brand term,
+            // or a product_cat term inside the «برند ها» branch.
+            $current_brand = null;
+            if ($current_term && is_a($current_term, 'WP_Term') && $current_term->taxonomy === 'product_brand') {
+                $current_brand = $current_term;
+            }
+            $is_brand_context = ($current_brand !== null) || ($current_category && $brands_cat && (
+                intval($current_category->term_id) === intval($brands_cat->term_id)
+                || term_is_ancestor_of($brands_cat->term_id, $current_category->term_id, 'product_cat')
+            ));
+
+            if ($is_brand_context) {
+                // On brand pages the carousel shows BRAND taxonomy items
+                // (product_brand when populated, else the «برند ها» children):
+                // sub-brands of the current brand first, otherwise the other
+                // brands — never the plain category tree.
+                $brand_tax     = pzh_get_brand_taxonomy();
+                $brand_term_id = 0;
+
+                if ($current_brand && $current_brand->taxonomy === $brand_tax) {
+                    $brand_term_id = intval($current_brand->term_id);
+                } elseif ($current_category && $current_category->taxonomy === $brand_tax) {
+                    $brand_term_id = intval($current_category->term_id);
+                } elseif ($current_category && $brand_tax === 'product_brand') {
+                    // The page is a product_cat brand but brands live in
+                    // product_brand — map by slug.
+                    $match = get_terms(array(
+                        'taxonomy'   => 'product_brand',
+                        'slug'       => $current_category->slug,
+                        'hide_empty' => false,
+                        'number'     => 1,
+                    ));
+                    if (!empty($match) && !is_wp_error($match)) {
+                        $brand_term_id = intval($match[0]->term_id);
+                    }
+                }
+
+                if ($brand_term_id) {
+                    // Sub-brands of the current brand first
+                    $categories = get_terms(array(
+                        'taxonomy'   => $brand_tax,
+                        'hide_empty' => true,
+                        'parent'     => $brand_term_id,
+                        'exclude'    => array($brand_term_id),
+                        'number'     => 15,
+                    ));
+                    if (empty($categories) || is_wp_error($categories)) {
+                        // No sub-brands: the other brands (siblings, self excluded)
+                        $brand_term = get_term($brand_term_id, $brand_tax);
+                        $categories = get_terms(array(
+                            'taxonomy'   => $brand_tax,
+                            'hide_empty' => true,
+                            'parent'     => ($brand_term && !is_wp_error($brand_term)) ? $brand_term->parent : 0,
+                            'exclude'    => array($brand_term_id),
+                            'number'     => 15,
+                        ));
+                    }
+                } else {
+                    // Brands root (or no slug match): all brands
+                    $categories = get_terms(array(
+                        'taxonomy'   => $brand_tax,
+                        'hide_empty' => true,
+                        'number'     => 15,
+                    ));
+                }
+            } elseif ($current_category) {
+                // Children of the current category; siblings on a sub-category
                 $categories = get_terms(array(
                     'taxonomy'   => 'product_cat',
                     'hide_empty' => true,
@@ -71,7 +138,6 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
                     'number'     => 15,
                 ));
                 if (empty($categories) || is_wp_error($categories)) {
-                    // No children: show siblings (same parent level)
                     $categories = get_terms(array(
                         'taxonomy'   => 'product_cat',
                         'hide_empty' => true,
@@ -80,6 +146,7 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
                     ));
                 }
             } else {
+                // Shop root: top-level categories
                 $categories = get_terms(array(
                     'taxonomy'   => 'product_cat',
                     'hide_empty' => true,
@@ -89,7 +156,6 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
             }
 
             if (!empty($categories) && !is_wp_error($categories)):
-                $brands_cat = pzh_get_brands_category();
             ?>
                 <div class="categories-swiper-wrapper position-relative">
                     <div class="swiper categories-swiper">
