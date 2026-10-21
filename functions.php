@@ -20,6 +20,9 @@ define('SITE_URL', get_site_url());
 require get_template_directory() . '/inc/settings.php';
 require get_template_directory() . '/inc/wallet-gateway.php';
 
+// Load FX currency rates client (Netarz API — key stored in DB, transient-cached)
+require get_template_directory() . '/inc/class-pzh-fx.php';
+
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';
 
