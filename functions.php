@@ -1051,10 +1051,11 @@ function pzh_get_sidebar_category_tree($category_id = 0) {
 
 /**
  * AJAX Product Search
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_ajax_search() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $search_term = isset($_POST['term']) ? sanitize_text_field($_POST['term']) : '';
 
     if (strlen($search_term) < 2) {
@@ -1109,10 +1110,11 @@ add_action('wp_ajax_nopriv_pzh_ajax_search', 'pzh_ajax_search');
 
 /**
  * AJAX Get Cart Data (count + mini-cart HTML)
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_get_cart_data() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $cart_count = WC()->cart->get_cart_contents_count();
     $cart_total = WC()->cart->get_cart_total();
 
@@ -1243,10 +1245,13 @@ add_action('wp_ajax_nopriv_pzh_add_to_cart', 'pzh_add_to_cart');
 
 /**
  * AJAX Get Variation Popup HTML
+ *
+ * Public read-only endpoint, no nonce check: the nonce is baked into the page
+ * HTML, and cached pages serve stale/session-bound nonces to logged-out
+ * visitors, which makes check_ajax_referer() die with 403. No state changes
+ * here, so there is no CSRF surface to protect.
  */
 function pzh_get_variation_popup() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     if (!$product_id) {
         wp_send_json_error(array('message' => __('محصول نامعتبر است.', 'piazhen')));
@@ -1352,10 +1357,11 @@ add_action('wp_ajax_nopriv_pzh_get_variation_popup', 'pzh_get_variation_popup');
 
 /**
  * AJAX Match Variation - find variation ID from selected attributes
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_get_variation_match() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     $attributes = isset($_POST['attributes']) ? $_POST['attributes'] : array();
 
@@ -1787,10 +1793,11 @@ function pzh_compare_page_url() {
 
 /**
  * AJAX Filter Products (custom, no plugins)
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_filter_products() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $page        = max(1, isset($_POST['page']) ? intval($_POST['page']) : 1);
     $per_page    = isset($_POST['per_page']) ? intval($_POST['per_page']) : 12;
     $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
@@ -1838,10 +1845,11 @@ add_action('wp_ajax_nopriv_pzh_filter_products', 'pzh_filter_products');
 
 /**
  * AJAX Get Mini-Cart HTML (used after cart fragment updates)
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_get_mini_cart() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $cart_count = WC()->cart->get_cart_contents_count();
     $cart_total = WC()->cart->get_cart_total();
 
@@ -2849,10 +2857,11 @@ add_action('woocommerce_checkout_create_order', 'pzh_checkout_save_national_id',
 /**
  * AJAX: search the map for a place (Neshan API with key, Nominatim fallback)
  * for the checkout map modal's search bar.
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_map_search() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $term = isset($_POST['term']) ? sanitize_text_field(wp_unslash($_POST['term'])) : '';
     $lat  = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
     $lng  = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
@@ -2912,10 +2921,11 @@ add_action('wp_ajax_nopriv_pzh_map_search', 'pzh_map_search');
 
 /**
  * AJAX: reverse geocode map coordinates via Neshan (requires the API key)
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_reverse_geocode() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : 0;
     $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : 0;
 
@@ -4724,10 +4734,11 @@ add_action('wp_ajax_nopriv_pzh_newsletter_subscribe', 'pzh_newsletter_subscribe'
 
 /**
  * AJAX: magazine filters / search / pagination
+ *
+ * Public read-only endpoint, no nonce check (same reason as
+ * pzh_get_variation_popup: cached pages serve stale nonces to guests → 403).
  */
 function pzh_blog_ajax() {
-    check_ajax_referer('pzh_ajax_nonce', 'nonce');
-
     $page     = max(1, isset($_POST['page']) ? intval($_POST['page']) : 1);
     $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 9;
     $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
