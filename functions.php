@@ -23,6 +23,9 @@ require get_template_directory() . '/inc/wallet-gateway.php';
 // Load FX currency rates client (Netarz API — key stored in DB, transient-cached)
 require get_template_directory() . '/inc/class-pzh-fx.php';
 
+// Load product FX price fields (currency + value on the product edit screen)
+require get_template_directory() . '/inc/product-fx.php';
+
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';
 

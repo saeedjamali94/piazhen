@@ -70,6 +70,11 @@ function pzh_settings_defaults($tab) {
         'instagram' => array(
             'instagram_username' => 'piazhen',
         ),
+        'fx' => array(
+            'api_key'   => '',
+            'base_url'  => 'https://netarz.ir/api/fx/v1',
+            'cache_ttl' => '10',
+        ),
     );
 
     return isset($defaults[$tab]) ? $defaults[$tab] : array();
@@ -844,6 +849,7 @@ function pzh_admin_settings_render() {
         'map'     => __('نقشه و API', 'piazhen'),
         'sms'     => __('پیامک', 'piazhen'),
         'instagram' => __('اینستاگرام', 'piazhen'),
+        'fx'      => __('نرخ ارز', 'piazhen'),
     );
 
     $current_tab = isset($_GET['tab']) && isset($tabs[$_GET['tab']]) ? $_GET['tab'] : 'general';
@@ -886,6 +892,9 @@ function pzh_admin_settings_render() {
         ),
         'instagram' => array(
             'instagram_username' => 'text',
+        ),
+        'fx' => array(
+            'api_key' => 'text', 'base_url' => 'url', 'cache_ttl' => 'number',
         ),
     );
 
@@ -1052,6 +1061,12 @@ function pzh_admin_settings_render() {
                                 </td>
                             </tr>
                             <?php
+                            break;
+
+                        case 'fx':
+                            pzh_render_text_field('fx', 'api_key', __('کلید API نرخ ارز (Netarz)', 'piazhen'), 'text', __('از پنل Netarz دریافت می‌شود — فقط در دیتابیس ذخیره می‌شود و در کد قالب قرار نمی‌گیرد.', 'piazhen'), 'ltr');
+                            pzh_render_text_field('fx', 'base_url', __('آدرس پایه API', 'piazhen'), 'url', '', 'ltr');
+                            pzh_render_text_field('fx', 'cache_ttl', __('مدت کش نرخ‌ها (دقیقه)', 'piazhen'), 'number', __('نرخ‌ها این مدت در کش نگه داشته می‌شوند تا صفحه برای هر بازدید منتظر API نماند.', 'piazhen'), 'ltr');
                             break;
                     }
                     ?>
