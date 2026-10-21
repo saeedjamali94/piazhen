@@ -26,6 +26,9 @@ require get_template_directory() . '/inc/class-pzh-fx.php';
 // Load product FX price fields (currency + value on the product edit screen)
 require get_template_directory() . '/inc/product-fx.php';
 
+// Load FX price sync cron (twice-daily Toman price update from live rates)
+require get_template_directory() . '/inc/fx-price-sync.php';
+
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';
 

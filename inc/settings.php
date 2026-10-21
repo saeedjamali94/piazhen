@@ -1067,6 +1067,29 @@ function pzh_admin_settings_render() {
                             pzh_render_text_field('fx', 'api_key', __('کلید API نرخ ارز (Netarz)', 'piazhen'), 'text', __('از پنل Netarz دریافت می‌شود — فقط در دیتابیس ذخیره می‌شود و در کد قالب قرار نمی‌گیرد.', 'piazhen'), 'ltr');
                             pzh_render_text_field('fx', 'base_url', __('آدرس پایه API', 'piazhen'), 'url', '', 'ltr');
                             pzh_render_text_field('fx', 'cache_ttl', __('مدت کش نرخ‌ها (دقیقه)', 'piazhen'), 'number', __('نرخ‌ها این مدت در کش نگه داشته می‌شوند تا صفحه برای هر بازدید منتظر API نماند.', 'piazhen'), 'ltr');
+
+                            $sync_status = get_option('pzh_fx_price_sync_status');
+                            if (is_array($sync_status) && isset($sync_status['started'])):
+                                $run_label = !empty($sync_status['finished'])
+                                    ? date_i18n('Y/m/d H:i', $sync_status['finished'])
+                                    : __('در حال اجرا…', 'piazhen');
+                                $summary = sprintf(
+                                    __('آخرین اجرا: %s — کل: %d | به‌روزرسانی: %d | خطا: %d', 'piazhen'),
+                                    $run_label,
+                                    isset($sync_status['total']) ? intval($sync_status['total']) : 0,
+                                    isset($sync_status['updated']) ? intval($sync_status['updated']) : 0,
+                                    isset($sync_status['failed']) ? intval($sync_status['failed']) : 0
+                                );
+                                ?>
+                                <tr>
+                                    <th scope="row"><?php _e('همگام‌سازی خودکار قیمت‌ها', 'piazhen'); ?></th>
+                                    <td>
+                                        <p><?php echo esc_html($summary); ?></p>
+                                        <p class="description"><?php _e('روزانه دو بار (۰۳:۰۰ و ۱۵:۰۰ به وقت سایت) قیمت محصولات و متغیرهای دارای ارز، از نرخ فروش Netarz به تومان به‌روزرسانی می‌شود.', 'piazhen'); ?></p>
+                                    </td>
+                                </tr>
+                                <?php
+                            endif;
                             break;
                     }
                     ?>
