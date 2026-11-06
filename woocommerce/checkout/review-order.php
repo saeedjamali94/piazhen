@@ -59,18 +59,16 @@ if (!defined('ABSPATH')) {
                             // No choice yet: default to the first ship rate
                             // (same default the WC totals use)
                             if ($chosen_id === '' || $chosen_id === $rate->get_id()) {
-                                if (0 < $rate->get_cost()) {
+                                if ($rate->get_method_id() === 'WC_Courier_Method') {
+                                    // پیک موتوری is ALWAYS postpaid — the courier
+                                    // collects the fee on delivery, so it is never
+                                    // "free" and never charged on the order
+                                    $label = __('بصورت پس کرایه', 'piazhen');
+                                } elseif (0 < $rate->get_cost()) {
                                     // Full label includes the price; strip the
                                     // PWS image so it stays plain text
                                     $full = preg_replace('/<img[^>]*>/', '', wc_cart_totals_shipping_method_label($rate));
                                     $label = trim(wp_strip_all_tags($full));
-                                } elseif ($rate->get_method_id() === 'WC_Courier_Method' && !pzh_free_delivery_active()) {
-                                    // پیک موتوری with a zero fee ships postpaid —
-                                    // the courier collects the fee on delivery, so
-                                    // it is not "free". (When the store's own
-                                    // free-delivery threshold zeroed the rate, the
-                                    // store pays and "رایگان" stays correct.)
-                                    $label = __('بصورت پس کرایه', 'piazhen');
                                 } else {
                                     $label = __('رایگان', 'piazhen');
                                 }

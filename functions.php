@@ -2678,7 +2678,23 @@ function pzh_render_checkout_dynamic() {
         <div class="pzh-ship-methods">
             <div class="pzh-ship-methods__head">
                 <span class="pzh-ship-methods__title"><?php esc_html_e('انتخاب روش ارسال', 'piazhen'); ?><span class="required">*</span></span>
-                <span class="pzh-ship-methods__note"><?php echo pzh_free_delivery_active() ? esc_html__('هزینه ارسال این سفارش رایگان است', 'piazhen') : esc_html__('هزینه ارسال به عهده مشتری', 'piazhen'); ?></span>
+                <?php
+                // پیک موتوری is always postpaid — the free-delivery note must
+                // not claim "رایگان" when the courier is the chosen method
+                $chosen_is_peik = false;
+                foreach ($rates as $r) {
+                    if ($r->get_id() === $chosen_id && $r->get_method_id() === 'WC_Courier_Method') {
+                        $chosen_is_peik = true;
+                        break;
+                    }
+                }
+                if ($chosen_is_peik) {
+                    $ship_note = __('پیک موتوری بصورت پس کرایه ارسال می‌شود', 'piazhen');
+                } else {
+                    $ship_note = pzh_free_delivery_active() ? __('هزینه ارسال این سفارش رایگان است', 'piazhen') : __('هزینه ارسال به عهده مشتری', 'piazhen');
+                }
+                ?>
+                <span class="pzh-ship-methods__note"><?php echo esc_html($ship_note); ?></span>
             </div>
 
             <?php if ($rates): ?>
@@ -4266,19 +4282,29 @@ function pzh_free_delivery_active() {
 }
 
 /**
- * When the threshold is reached, zero the real shipping cost of every rate
- * (local pickup is already free) so the cart AND checkout totals — and the
- * order itself — are actually free, not just the progress bar.
+ * Shipping cost rules:
+ *  - پیک موتوری (WC_Courier_Method) is ALWAYS postpaid (پس کرایه): the
+ *    courier collects the fee on delivery, so the order is never charged
+ *    for it — and the store's free-delivery threshold never absorbs it.
+ *  - Every other non-pickup method: when the free-delivery threshold is
+ *    reached, zero the real shipping cost so the cart AND checkout totals —
+ *    and the order itself — are actually free, not just the progress bar.
  */
 function pzh_free_delivery_zero_rates($rates, $package) {
-    if (!pzh_free_delivery_active()) {
-        return $rates;
-    }
     foreach ($rates as $rate) {
         if (strpos($rate->get_id(), 'local_pickup') === 0) {
             continue;
         }
-        if (0 < $rate->get_cost()) {
+
+        // پیک موتوری: always postpaid — never free, never charged on the order
+        if ($rate->get_method_id() === 'WC_Courier_Method') {
+            if (0 < $rate->get_cost()) {
+                $rate->set_cost(0);
+            }
+            continue;
+        }
+
+        if (pzh_free_delivery_active() && 0 < $rate->get_cost()) {
             $rate->set_cost(0);
         }
     }
