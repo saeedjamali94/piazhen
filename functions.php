@@ -38,6 +38,9 @@ require get_template_directory() . '/inc/product-hesabfa.php';
 // Load the product «اوریجینال» checkbox + card badge
 require get_template_directory() . '/inc/product-original.php';
 
+// Load the product-box shortcode + admin insert-product picker
+require get_template_directory() . '/inc/shortcode-product-box.php';
+
 // Load the one-time migration of URL-encoded variation attribute keys
 require get_template_directory() . '/inc/product-attribute-keys.php';
 

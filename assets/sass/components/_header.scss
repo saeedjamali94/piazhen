@@ -1291,7 +1291,9 @@
         padding-left: 60px;
     }
 
-    // Chevron toggle (circle; fills brand yellow when open)
+    // Chevron toggle (circle; hidden once its item is open — the accordion
+    // closes the item when a sibling opens, and closing the drawer resets
+    // every toggle to the collapsed state)
     .mob-toggle {
         position: absolute;
         top: 50%;
@@ -1313,16 +1315,10 @@
             background: $gray-200;
             color: $textColor;
         }
-
-        &__icon {
-            transition: transform $transition-base;
-        }
     }
 
     li.is-open > .mob-toggle {
-        .mob-toggle__icon {
-            transform: rotate(180deg);
-        }
+        display: none;
     }
 
     // Current page highlight: orange start bar + soft yellow tint
