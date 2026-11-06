@@ -18,15 +18,14 @@ if (!defined('ABSPATH')) {
                     <?php _e('با گذشته‌ی بیش از ۱۰ سال در بازار ایران، ما در «پیاژن» بهترین محصولات اصلی و با کیفیت در حوزهٔ ماشین‌های اصلاح مردانه و زنانه، دستگاه ماشین زن خط زن، اپیلاتور برس بادی و برس حرارتی را به شما عرضه می‌کنیم.', 'piazhen'); ?>
                 </p>
                 <div class="footer-namad" aria-label="<?php esc_attr_e('نماد اعتماد الکترونیکی', 'piazhen'); ?>">
-                    <span class="footer-namad__mark">e</span>
-                    <span class="footer-namad__domain">eNAMAD.ir</span>
-                    <span class="footer-namad__stars">
-                        <i class="fa-solid fa-star footer-namad__star footer-namad__star--orange"></i>
-                        <i class="fa-solid fa-star footer-namad__star"></i>
-                        <i class="fa-solid fa-star footer-namad__star"></i>
-                        <i class="fa-solid fa-star footer-namad__star"></i>
-                        <i class="fa-solid fa-star footer-namad__star"></i>
-                    </span>
+                    <a referrerpolicy="origin" target="_blank" rel="noopener"
+                       href="https://trustseal.enamad.ir/?id=345343&Code=ON95puoqNv2mQXBSLPrnR38KQMDX0Rfl">
+                        <img referrerpolicy="origin"
+                             src="https://trustseal.enamad.ir/logo.aspx?id=345343&Code=ON95puoqNv2mQXBSLPrnR38KQMDX0Rfl"
+                             alt="<?php esc_attr_e('نماد اعتماد الکترونیکی', 'piazhen'); ?>"
+                             loading="lazy"
+                             code="ON95puoqNv2mQXBSLPrnR38KQMDX0Rfl">
+                    </a>
                 </div>
             </div>
 

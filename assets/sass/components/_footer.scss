@@ -71,40 +71,27 @@
         .footer-namad {
             margin-top: 60px;
             display: flex;
-            flex-direction: column;
             align-items: flex-start;
-            width: 84px;
 
-            &__mark {
-                font-size: 44px;
-                font-weight: 800;
-                font-style: italic;
-                font-family: Georgia, serif;
-                color: #0166be;
-                line-height: 1;
-                margin-bottom: 2px;
-            }
+            // Official eNamad trust seal — the remote seal image is white,
+            // so it sits in a white rounded card on the dark footer band.
+            a {
+                display: inline-block;
+                background: $white;
+                border-radius: 10px;
+                padding: 6px;
+                line-height: 0;
+                transition: transform $transition-fast;
 
-            &__domain {
-                font-size: 10px;
-                font-weight: 700;
-                color: #0b3019;
-                letter-spacing: 0.5px;
-                margin-bottom: 4px;
-            }
-
-            &__stars {
-                display: flex;
-                gap: 2px;
-                font-size: 8px;
-            }
-
-            &__star {
-                color: #d1cfd1;
-
-                &--orange {
-                    color: #ffac62;
+                &:hover {
+                    transform: translateY(-2px);
                 }
+            }
+
+            img {
+                display: block;
+                width: 96px;
+                height: auto;
             }
         }
     }

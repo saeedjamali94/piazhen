@@ -742,6 +742,46 @@
 }
 
 // ============================================================================
+// Single Product Cart Notice
+// Shown after a successful add-to-cart AJAX: confirmation message + cart link.
+// Desktop copy sits under the quantity box; mobile copy lives inside the
+// sticky bottom bar (its own full-width row).
+// ============================================================================
+
+.single-cart-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    margin-top: 14px;
+    margin-inline-end: auto; // same corner as the qty box / add button (RTL: left)
+    font-size: 13px;
+    font-weight: 600;
+    color: #38A05C;
+
+    &[hidden] {
+        display: none;
+    }
+
+    &__msg {
+        color: #38A05C;
+    }
+
+    &__link {
+        color: $siteOrange;
+        font-weight: 800;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: darken($siteOrange, 6%);
+        }
+    }
+}
+
+// ============================================================================
 // Tabs Navigation
 // ============================================================================
 
@@ -1337,6 +1377,19 @@
     z-index: 10000;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
+
+    // The cart notice takes its own full-width row above price + button
+    .single-cart-notice {
+        flex-basis: 100%;
+        width: 100%;
+        margin: 0;
+        font-size: 12px;
+
+        &__link {
+            font-size: 12px;
+        }
+    }
 
     .sticky-price {
         font-size: 15px;

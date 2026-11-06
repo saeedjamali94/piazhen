@@ -324,6 +324,12 @@ while (have_posts()): the_post();
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 </button>
                             </div>
+
+                            <!-- Cart notice — shown after a successful add-to-cart AJAX -->
+                            <div class="single-cart-notice" hidden>
+                                <span class="single-cart-notice__msg"></span>
+                                <a class="single-cart-notice__link" href="<?php echo esc_url(wc_get_cart_url()); ?>"><?php _e('مشاهده سبد خرید', 'piazhen'); ?></a>
+                            </div>
                         </div>
 
                         <!-- Left column: favorite / compare / whatsapp -->
@@ -481,6 +487,11 @@ while (have_posts()): the_post();
 
     <!-- Sticky Add to Cart Bar (mobile) -->
     <div class="sticky-add-to-cart d-md-none">
+        <!-- Cart notice — shown after a successful add-to-cart AJAX -->
+        <div class="single-cart-notice" hidden>
+            <span class="single-cart-notice__msg"></span>
+            <a class="single-cart-notice__link" href="<?php echo esc_url(wc_get_cart_url()); ?>"><?php _e('مشاهده سبد خرید', 'piazhen'); ?></a>
+        </div>
         <div class="sticky-price" id="sticky-price"><?php echo $display_price_html; ?></div>
         <button class="add-to-cart-single <?php echo $can_purchase ? '' : 'out-of-stock'; ?>"
                 data-product-id="<?php echo $product_id; ?>"

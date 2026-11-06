@@ -651,11 +651,8 @@ $ckGray: #8A8A8A;
         grid-template-columns: minmax(0, 830px);
         gap: 24px;
 
-        // Summary card above the form on narrow screens (pure CSS — the
-        // media query re-evaluates on every resize)
-        .pzh-checkout-summary {
-            order: -1;
-        }
+        // DOM order on narrow screens: form first, summary card at the
+        // bottom (the CTA is placed after the summary by app.js)
     }
 }
 
@@ -1336,7 +1333,7 @@ $ckGray: #8A8A8A;
 .review-order__actions {
     margin-top: 36px;
 
-    // When app.js moves the CTA below the form on mobile, the layout grid
+    // When app.js moves the CTA below the summary on mobile, the layout grid
     // gap provides the spacing — drop the card-only margin
     @media (max-width: $bp-lg - 1px) {
         .pzh-checkout-layout > & {
@@ -1845,11 +1842,34 @@ $ckGray: #8A8A8A;
         display: flex;
         align-items: center;
         justify-content: center;
+
+        // Result-illustration variant (success-buy / fail-buy PNG) — no
+        // circle chrome, the image itself is the visual
+        &--image {
+            width: auto;
+            height: auto;
+            border-radius: 0;
+            background: transparent;
+            margin-bottom: 10px;
+        }
     }
 
     &--failed &__icon {
         background: rgba($danger, 0.1);
         color: $danger;
+    }
+
+    // Buy-result illustration: one-time fade + scale from zero to one
+    &__image {
+        display: block;
+        width: 120px;
+        height: auto;
+        margin: 0 auto;
+        animation: pzhBuyResultIn 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+
+        @media (max-width: $bp-sm) {
+            width: 100px;
+        }
     }
 
     &__title {
@@ -1885,6 +1905,24 @@ $ckGray: #8A8A8A;
                 color: $textColor;
             }
         }
+    }
+}
+
+// One-time buy-result illustration entrance: fade + scale from zero to one
+@keyframes pzhBuyResultIn {
+    from {
+        opacity: 0;
+        transform: scale(0);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .thankyou-header__image {
+        animation: none;
     }
 }
 

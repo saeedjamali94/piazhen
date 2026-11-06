@@ -23,15 +23,18 @@ if (!defined('ABSPATH')) {
 
         <!-- Status Header -->
         <div class="thankyou-header <?php echo $is_failed ? 'thankyou-header--failed' : ''; ?>">
-            <div class="thankyou-header__icon">
-                <?php if ($is_failed): ?>
-                    <i class="fa-solid fa-circle-xmark"></i>
-                <?php elseif ($is_paid): ?>
-                    <i class="fa-solid fa-circle-check"></i>
-                <?php else: ?>
+            <?php if ($is_failed || $is_paid): ?>
+                <!-- Result illustration (one-time fade + scale-in) -->
+                <div class="thankyou-header__icon thankyou-header__icon--image">
+                    <img class="thankyou-header__image"
+                         src="<?php echo esc_url(PZH_THEME_URI . ($is_failed ? '/assets/images/fail-buy.png' : '/assets/images/success-buy.png')); ?>"
+                         alt="<?php $is_failed ? esc_attr_e('پرداخت ناموفق', 'piazhen') : esc_attr_e('پرداخت موفق', 'piazhen'); ?>">
+                </div>
+            <?php else: ?>
+                <div class="thankyou-header__icon">
                     <i class="fa-regular fa-clock"></i>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
             <h2 class="thankyou-header__title">
                 <?php
                 if ($is_failed) {

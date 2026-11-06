@@ -778,6 +778,11 @@ $(document).ready(function () {
                             $productsCount.text(Number(response.data.total).toLocaleString('fa-IR'));
                         }
                         syncUrl(page);
+                        // Close the mobile filter drawer after the AJAX results
+                        // are applied (no-op on desktop where it's never open)
+                        if ($filterAside.hasClass('open')) {
+                            pzhCloseFilters();
+                        }
                         if (scrollToGrid && $productsContainer.length) {
                             $('html, body').animate({ scrollTop: $productsContainer.offset().top - 130 }, 250);
                         }
@@ -803,11 +808,9 @@ $(document).ready(function () {
         // --- APPLY button ---
         $filterForm.on('click', '.apply-filters-btn', function (e) {
             e.preventDefault();
+            // The drawer closes itself in the AJAX success handler once the
+            // results are applied (pzhApplyFilters → pzhCloseFilters)
             pzhApplyFilters(1, true);
-            // Close the mobile drawer after applying
-            if ($filterAside.hasClass('open')) {
-                pzhCloseFilters();
-            }
         });
 
         // --- RESET / CLEAR ALL (works from sidebar and from empty-grid message) ---
@@ -1406,6 +1409,7 @@ $(document).ready(function () {
             if (basePriceHtml && $priceBox.length) $priceBox.html(basePriceHtml);
             if (basePriceHtml && $stickyPrice.length) $stickyPrice.html(basePriceHtml);
             $status.html('');
+            $('.single-cart-notice').prop('hidden', true).hide();
             // Restore the initial buy buttons (stock state as rendered by PHP,
             // including the price shown inside the green add-to-cart button)
             var $atc = $('.add-to-cart-single');
@@ -1619,6 +1623,14 @@ $(document).ready(function () {
                             };
                         }
                     }
+
+                    // Show the cart notice (desktop: under the qty box;
+                    // mobile: its own row inside the sticky bottom bar)
+                    var cartMsg = (response.data && response.data.message) || pzhStr('add_to_cart_success');
+                    $('.single-cart-notice').each(function () {
+                        $(this).find('.single-cart-notice__msg').text(cartMsg);
+                        $(this).prop('hidden', false).show();
+                    });
                 } else {
                     pzhToast((response && response.data && response.data.message) || pzhStr('add_to_cart_error'), 'error');
                 }
@@ -1647,6 +1659,9 @@ $(document).ready(function () {
     function pzhShowSingleAddButton() {
         $('.single-qty-box').hide();
         $('.add-to-cart-single').show();
+        // The cart notice belongs to the just-added state — hide it when
+        // the user picks another variation / returns to the add button
+        $('.single-cart-notice').prop('hidden', true).hide();
     }
 
     function pzhSetSingleQtyAjax(cartKey, qty, $box) {
@@ -2045,9 +2060,11 @@ $(document).ready(function () {
         if (!$actions.length) return;
 
         if ($(window).width() < 992) {
-            // Mobile: the button sits below the form fields. It stays inside
+            // Mobile: form first, summary card second — the button sits at
+            // the very bottom, after the summary. It stays inside
             // <form class="checkout">, so WC's submit flow is untouched.
-            $formCol.after($actions);
+            var $summaryCol = $layout.children('.pzh-checkout-summary');
+            ($summaryCol.length ? $summaryCol : $formCol).after($actions);
         } else {
             // Desktop: back inside the fragment root, after the totals (so
             // the next fragment render replaces it instead of duplicating it)

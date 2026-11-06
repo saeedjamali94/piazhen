@@ -29,6 +29,9 @@ require get_template_directory() . '/inc/product-fx.php';
 // Load FX price sync cron (twice-daily Toman price update from live rates)
 require get_template_directory() . '/inc/fx-price-sync.php';
 
+// Load order admin + invoice pickup details (national ID / phone for pickup orders)
+require get_template_directory() . '/inc/order-admin-fields.php';
+
 // Load Instagram feed (newest posts of the shop's account, transient-cached)
 require get_template_directory() . '/inc/instagram.php';
 
