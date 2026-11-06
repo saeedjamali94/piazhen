@@ -52,19 +52,69 @@ function pzh_fx_currency_options() {
 }
 
 /**
+ * Normalize a user-entered number for validation/storage:
+ *  - Persian + Arabic-Indic digits → Latin digits
+ *  - Persian decimal separator (٫) → dot
+ *  - thousands separators (٬, comma when followed by 3 digits, spaces) → removed
+ *  - an unambiguous decimal comma (exactly one comma, no dot, 1–2 digits
+ *    after it) → dot, so "3,5" stores as 3.5
+ *
+ * Without this, a price typed with a Persian keyboard (۳٫۵) or as "3,000"
+ * fails is_numeric() and the whole FX pair is silently dropped on save.
+ *
+ * @param mixed $value Raw input.
+ * @return string Normalized value.
+ */
+function pzh_fx_normalize_number($value) {
+    $value = (string) $value;
+
+    // Digits: Persian + Arabic-Indic → Latin
+    $fa = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+    $ar = array('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩');
+    $en = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+    $value = str_replace($fa, $en, $value);
+    $value = str_replace($ar, $en, $value);
+
+    // Persian decimal separator → dot; Persian thousands separator → nothing
+    $value = str_replace(array('٫', '٬'), array('.', ''), $value);
+
+    // Latin comma: unambiguous decimal ("3,5") → dot; thousands ("3,000",
+    // "1,234,567") → removed.
+    if (strpos($value, '.') === false && substr_count($value, ',') >= 1) {
+        $parts    = explode(',', $value);
+        $decimals = strlen(end($parts));
+        if (substr_count($value, ',') === 1 && $decimals >= 1 && $decimals <= 2) {
+            $value = str_replace(',', '.', $value);
+        } else {
+            $value = str_replace(',', '', $value);
+        }
+    }
+
+    // Any remaining whitespace
+    $value = preg_replace('/\s+/u', '', $value);
+
+    return trim($value);
+}
+
+/**
  * Persist (or clear) an FX pair for one variation ID.
  *
  * Only a complete pair (valid currency + positive value) is stored; anything
  * partial is removed so get_post_meta never returns half-configured data.
+ * Inputs are normalized first (Persian digits, separators) so prices typed
+ * with a Persian keyboard still save.
  */
 function pzh_fx_save_pair($variation_id, $currency, $price) {
-    if (!preg_match('/^[A-Z]{3}$/', strtoupper($currency))) {
+    $currency = strtoupper(trim((string) $currency));
+    if (!preg_match('/^[A-Z]{3}$/', $currency)) {
         $currency = '';
     }
 
+    $price = pzh_fx_normalize_number($price);
+
     if ($currency !== '' && $price !== '' && is_numeric($price) && floatval($price) > 0) {
-        update_post_meta($variation_id, '_pzh_fx_currency', strtoupper($currency));
-        update_post_meta($variation_id, '_pzh_fx_price', wc_format_decimal($price));
+        update_post_meta($variation_id, '_pzh_fx_currency', $currency);
+        update_post_meta($variation_id, '_pzh_fx_price', wc_format_decimal(floatval($price)));
     } else {
         delete_post_meta($variation_id, '_pzh_fx_currency');
         delete_post_meta($variation_id, '_pzh_fx_price');
@@ -128,11 +178,21 @@ add_action('woocommerce_process_product_meta', 'pzh_fx_save_product_fields');
  * Kept minimal and defensive: nothing here must ever be able to fatal and
  * break the variation rows (they load over AJAX, so any error would leave
  * the panel empty).
+ *
+ * NB: WC 10 passes $variation as a WP_Post (render_variation_html() calls
+ * get_post()), not a WC_Product — read the ID from either shape or the
+ * saved values would never prefill in the edit form.
  */
 function pzh_fx_variation_fields($loop, $variation_data, $variation) {
-    $variation_id = (is_object($variation) && method_exists($variation, 'get_id')) ? $variation->get_id() : 0;
-    $currency     = $variation_id ? (string) get_post_meta($variation_id, '_pzh_fx_currency', true) : '';
-    $price        = $variation_id ? (string) get_post_meta($variation_id, '_pzh_fx_price', true) : '';
+    $variation_id = 0;
+    if ($variation instanceof WP_Post) {
+        $variation_id = intval($variation->ID);
+    } elseif (is_object($variation) && method_exists($variation, 'get_id')) {
+        $variation_id = intval($variation->get_id());
+    }
+
+    $currency = $variation_id ? (string) get_post_meta($variation_id, '_pzh_fx_currency', true) : '';
+    $price    = $variation_id ? (string) get_post_meta($variation_id, '_pzh_fx_price', true) : '';
 
     echo '<p class="form-field pzh-fx-field">';
     echo '<label for="pzh_fx_currency_' . esc_attr($loop) . '">' . esc_html__('ارز محصول', 'piazhen') . '</label>';

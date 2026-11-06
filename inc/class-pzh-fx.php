@@ -115,6 +115,34 @@ class PZH_FX {
     }
 
     /**
+     * Normalize API rate rows to a code-keyed map.
+     *
+     * The API may return either a list of rows ({code, buy, sell, …}) or an
+     * object already keyed by code — consumers (get_rate, convert, the
+     * price-sync cron) always read $rates[$code]['sell'], so both shapes are
+     * normalized here.
+     *
+     * @param array $data Raw data rows from the API.
+     * @return array Rate rows keyed by uppercase ISO code.
+     */
+    private static function key_rates($data) {
+        $keyed = array();
+        foreach ((array) $data as $key => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $code = isset($row['code']) && is_string($row['code'])
+                ? strtoupper(trim($row['code']))
+                : (is_string($key) && preg_match('/^[A-Z]{3}$/', strtoupper($key)) ? strtoupper($key) : '');
+            if ($code === '') {
+                continue;
+            }
+            $keyed[$code] = $row;
+        }
+        return $keyed;
+    }
+
+    /**
      * Get rates for one or more currencies.
      *
      * @param string|string[] $codes   Comma-separated string or array (e.g. 'USD,EUR').
@@ -134,7 +162,7 @@ class PZH_FX {
         if (!$refresh) {
             $cached = get_transient($transient);
             if (is_array($cached) && isset($cached['data'])) {
-                return $cached['data'];
+                return self::key_rates($cached['data']);
             }
         }
 
@@ -147,7 +175,7 @@ class PZH_FX {
         }
         set_transient($transient, $result, $ttl);
 
-        return $result['data'];
+        return self::key_rates($result['data']);
     }
 
     /**

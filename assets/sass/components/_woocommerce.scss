@@ -1077,9 +1077,10 @@ $ckGray: #8A8A8A;
         flex-wrap: wrap;
         justify-content: flex-start;
         gap: 12px 28px;
-        margin: 38px 0 0;
+        margin:0;
         padding: 0;
         list-style: none;
+        opacity: 0 !important;
 
         li {
             display: flex;
@@ -1208,6 +1209,7 @@ $ckGray: #8A8A8A;
             width: 16px;
             height: 16px;
             flex-shrink: 0;
+            opacity: 0 !important;
         }
 
         &.payment_box {
@@ -1215,7 +1217,7 @@ $ckGray: #8A8A8A;
         }
 
         .payment_box {
-            margin: 0;
+            margin: 12px 0 0;
 
             p {
                 font-size: 13px;
