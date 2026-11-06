@@ -4,7 +4,8 @@
  * of every product / variation carrying an FX price pair
  * (_pzh_fx_currency + _pzh_fx_price), using the live Netarz sell rate:
  *
- *   toman = fx_value × sell_rate   (rounded to the nearest 1000, filterable)
+ *   toman = fx_value × sell_rate   (rounded to the nearest 100,000 Toman,
+ *   filterable via pzh_fx_price_sync_round / PZH_FX_SYNC_ROUND_TO)
  *
  * Design (no plugins, WP-Cron only):
  *   - Recurring event 'pzh_fx_price_update' ('twicedaily', anchored at
@@ -48,6 +49,12 @@ if (!defined('PZH_FX_SYNC_HOUR')) {
 // Products processed per cron tick — keeps each request short.
 if (!defined('PZH_FX_SYNC_BATCH_SIZE')) {
     define('PZH_FX_SYNC_BATCH_SIZE', 30);
+}
+
+// Updated prices are rounded to the nearest multiple of this Toman unit
+// (default: 100,000).
+if (!defined('PZH_FX_SYNC_ROUND_TO')) {
+    define('PZH_FX_SYNC_ROUND_TO', 100000);
 }
 
 // ============================================================================
@@ -146,8 +153,9 @@ function pzh_fx_price_sync_process_item($item, $rates) {
     }
 
     $toman = $value * floatval($rates[$currency]['sell']);
-    // Round to the nearest 1000 Toman (filterable).
-    $toman = apply_filters('pzh_fx_price_sync_round', round($toman / 1000) * 1000, $toman);
+    // Round to the nearest PZH_FX_SYNC_ROUND_TO Toman (filterable).
+    $unit  = max(1, (int) PZH_FX_SYNC_ROUND_TO);
+    $toman = apply_filters('pzh_fx_price_sync_round', round($toman / $unit) * $unit, $toman);
 
     $product = wc_get_product((int) $item['id']);
     if (!$product) {
