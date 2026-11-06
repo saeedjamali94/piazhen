@@ -48,6 +48,15 @@
 .product-gallery {
     position: sticky;
     top: 120px;
+    background: #fbfbfb;
+    padding: 1rem;
+    border-radius: 29px;
+    border: 1px solid #d6d6d6;
+    @media(max-width: 575px){
+        background: transparent;
+        padding: 0;
+        border: 0;
+    }
 
     // Main image card: 1:1, #FEFEFE, radius 52px, flat (no border, no shadow)
     &__main {
@@ -178,6 +187,15 @@
 .product-info {
     // The mockup uses IRANSansWebFaNum everywhere; scope this column to it explicitly.
     font-family: "IRANSansWebFaNum", sans-serif;
+    background: #fbfbfb;
+    padding: 2rem;
+    border-radius: 29px;
+    border: 1px solid #d6d6d6;
+    @media(max-width: 575px){
+        background: transparent;
+        padding: 0;
+        border: 0;
+    }
 
     // Title: orange, bold, 33px
     &__title {

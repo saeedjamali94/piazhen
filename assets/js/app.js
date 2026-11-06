@@ -888,6 +888,29 @@ $(document).ready(function () {
     // ========================================================================
     // Variation Popup for Archive Products
     // ========================================================================
+
+    // Local variation matching: resolve a selected attribute combo against a
+    // precomputed variation map (instant — no server round-trip). Returns the
+    // matching map entry or null. Attribute keys/values come from the same PHP
+    // source on both sides, so comparison is verbatim.
+    function pzhMatchVariationLocal(map, attrs) {
+        if (!map || !map.length || !attrs) return null;
+        var keys = Object.keys(attrs).sort();
+        for (var i = 0; i < map.length; i++) {
+            var m = map[i];
+            if (!m || !m.attributes) continue;
+            var mkeys = Object.keys(m.attributes).sort();
+            if (mkeys.length !== keys.length) continue;
+            var ok = true;
+            for (var j = 0; j < keys.length; j++) {
+                var k = keys[j];
+                if (String(m.attributes[k]) !== String(attrs[k])) { ok = false; break; }
+            }
+            if (ok) return m;
+        }
+        return null;
+    }
+
     var $modal    = $('#variation-modal');
     var $modalInner = $('#variation-modal-inner');
 
@@ -917,6 +940,9 @@ $(document).ready(function () {
             success: function (response) {
                 if (response && response.success) {
                     $modalInner.html(response.data.html);
+                    // Store the precomputed variation map for instant local
+                    // matching (the AJAX match endpoint stays as fallback).
+                    $modalInner.data('pzh-variation-map', response.data.variation_map || []);
                     // Init variation select change handlers
                     initVariationPopup(productId);
                 } else {
@@ -977,7 +1003,21 @@ $(document).ready(function () {
                 return;
             }
 
-            // Try to find matching variation via AJAX
+            // Instant local match from the precomputed variation map
+            var localMatch = pzhMatchVariationLocal($popup.data('pzh-variation-map'), attrs);
+            if (localMatch) {
+                $message.html('<span class="text-success">' + localMatch.availability + '</span>');
+                if (localMatch.price_html) {
+                    $price.html(localMatch.price_html);
+                }
+                $submit.prop('disabled', false)
+                       .text(pzhStr('add_to_cart'))
+                       .data('variation-id', localMatch.variation_id)
+                       .data('attributes', JSON.stringify(attrs));
+                return;
+            }
+
+            // Fallback: find matching variation via AJAX
             $.ajax({
                 url: pzh_options.ajax_url,
                 type: 'POST',
@@ -1345,6 +1385,21 @@ $(document).ready(function () {
         var $status = $variationPicker.find('.variation-picker__status');
         var basePriceHtml = $priceBox.length ? $priceBox.data('base-price') : '';
 
+        // Precomputed variation map embedded by single-product.php — attribute
+        // combos resolve locally and instantly; the AJAX stays as fallback.
+        // The cart snapshot mirrors the endpoint's cart_qty/cart_item_key and
+        // is kept up to date after each add-to-cart.
+        var variationMap   = [];
+        window.pzhVarState.cart = {};
+        var $mapEl = document.getElementById('pzh-variation-map');
+        if ($mapEl) {
+            try {
+                var mapData = JSON.parse($mapEl.textContent);
+                if (mapData && mapData.variations) variationMap = mapData.variations;
+                if (mapData && mapData.cart) window.pzhVarState.cart = mapData.cart;
+            } catch (e) {}
+        }
+
         function resetVariationState() {
             window.pzhVarState = { attributes: {}, variationId: 0 };
             $('#selected-variation-id').val('');
@@ -1427,6 +1482,56 @@ $(document).ready(function () {
             }
 
             // All attributes selected → find the matching variation
+            // Applies a match result (local map entry or AJAX data — same shape)
+            function applySingleMatch(data) {
+                window.pzhVarState.variationId = data.variation_id;
+                $('#selected-variation-id').val(data.variation_id);
+                if (data.price_html) {
+                    if ($priceBox.length) $priceBox.html(data.price_html);
+                    if ($stickyPrice.length) $stickyPrice.html(data.price_html);
+                    // The variation price also goes inside the green add-to-cart button
+                    $('.add-to-cart-single__price').html(data.price_html);
+                }
+                if (data.availability) {
+                    var inStock = data.in_stock;
+                    var icon = inStock ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ';
+                    if ($availability.length) {
+                        $availability.html(icon + data.availability);
+                        $availability.toggleClass('in-stock', inStock).toggleClass('out-of-stock', !inStock);
+                    }
+                    $status.html('<span class="' + (inStock ? 'text-success' : 'text-danger') + '">' + data.availability + '</span>');
+                }
+                // Swap main image if the variation has its own image
+                if (data.image && $mainImage) {
+                    $mainImage.src = data.image;
+                    $mainImage.setAttribute('data-zoom', data.image);
+                    $thumbsContainer.find('.product-gallery__thumb').removeClass('active');
+                }
+                // Already in the cart? Show the quantity selector instead of the button
+                if (data.cart_qty > 0) {
+                    pzhShowSingleQtyBox(variationProductId, data.variation_id, data.cart_item_key, data.cart_qty);
+                } else {
+                    pzhShowSingleAddButton();
+                }
+            }
+
+            // Instant local match from the embedded variation map
+            var localMatch = pzhMatchVariationLocal(variationMap, attrs);
+            if (localMatch) {
+                var cartItem = window.pzhVarState.cart[localMatch.variation_id];
+                applySingleMatch({
+                    variation_id:  localMatch.variation_id,
+                    price_html:    localMatch.price_html,
+                    availability:  localMatch.availability,
+                    in_stock:      localMatch.in_stock,
+                    image:         localMatch.image,
+                    cart_qty:      cartItem ? cartItem.qty : 0,
+                    cart_item_key: cartItem ? cartItem.key : ''
+                });
+                return;
+            }
+
+            // Fallback: server match via AJAX
             $status.html('<span class="text-muted">' + pzhStr('checking') + '</span>');
             $.ajax({
                 url: pzh_options.ajax_url,
@@ -1440,35 +1545,7 @@ $(document).ready(function () {
                 },
                 success: function (resp) {
                     if (resp && resp.success) {
-                        window.pzhVarState.variationId = resp.data.variation_id;
-                        $('#selected-variation-id').val(resp.data.variation_id);
-                        if (resp.data.price_html) {
-                            if ($priceBox.length) $priceBox.html(resp.data.price_html);
-                            if ($stickyPrice.length) $stickyPrice.html(resp.data.price_html);
-                            // The variation price also goes inside the green add-to-cart button
-                            $('.add-to-cart-single__price').html(resp.data.price_html);
-                        }
-                        if (resp.data.availability) {
-                            var inStock = resp.data.in_stock;
-                            var icon = inStock ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ';
-                            if ($availability.length) {
-                                $availability.html(icon + resp.data.availability);
-                                $availability.toggleClass('in-stock', inStock).toggleClass('out-of-stock', !inStock);
-                            }
-                            $status.html('<span class="' + (inStock ? 'text-success' : 'text-danger') + '">' + resp.data.availability + '</span>');
-                        }
-                        // Swap main image if the variation has its own image
-                        if (resp.data.image && $mainImage) {
-                            $mainImage.src = resp.data.image;
-                            $mainImage.setAttribute('data-zoom', resp.data.image);
-                            $thumbsContainer.find('.product-gallery__thumb').removeClass('active');
-                        }
-                        // Already in the cart? Show the quantity selector instead of the button
-                        if (resp.data.cart_qty > 0) {
-                            pzhShowSingleQtyBox(variationProductId, resp.data.variation_id, resp.data.cart_item_key, resp.data.cart_qty);
-                        } else {
-                            pzhShowSingleAddButton();
-                        }
+                        applySingleMatch(resp.data);
                     } else {
                         window.pzhVarState.variationId = 0;
                         $('#selected-variation-id').val('');
@@ -1533,6 +1610,14 @@ $(document).ready(function () {
                     // Swap the button for the quantity selector
                     if (response.data.cart_item_key) {
                         pzhShowSingleQtyBox(productId, variationId, response.data.cart_item_key, response.data.item_qty);
+                        // Keep the local match cart snapshot in sync so
+                        // re-selecting this variation stays on the qty box
+                        if (variationId && window.pzhVarState && window.pzhVarState.cart) {
+                            window.pzhVarState.cart[variationId] = {
+                                key: response.data.cart_item_key,
+                                qty: response.data.item_qty
+                            };
+                        }
                     }
                 } else {
                     pzhToast((response && response.data && response.data.message) || pzhStr('add_to_cart_error'), 'error');

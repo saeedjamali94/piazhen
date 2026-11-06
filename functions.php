@@ -1359,7 +1359,10 @@ function pzh_get_variation_popup() {
     <?php
     $html = ob_get_clean();
 
-    wp_send_json_success(array('html' => $html));
+    wp_send_json_success(array(
+        'html'          => $html,
+        'variation_map' => pzh_variation_map($product),
+    ));
 }
 add_action('wp_ajax_pzh_get_variation_popup', 'pzh_get_variation_popup');
 add_action('wp_ajax_nopriv_pzh_get_variation_popup', 'pzh_get_variation_popup');
@@ -1414,6 +1417,59 @@ function pzh_get_variation_match() {
 }
 add_action('wp_ajax_pzh_get_variation_match', 'pzh_get_variation_match');
 add_action('wp_ajax_nopriv_pzh_get_variation_match', 'pzh_get_variation_match');
+
+/**
+ * Client-side variation map — lets the frontend resolve a selected attribute
+ * combo to its variation instantly (no AJAX round-trip per attribute change).
+ * pzh_get_variation_match stays as the server fallback.
+ *
+ * Attribute keys/values are exactly what find_matching_product_variation()
+ * compares (attribute_pa_xxx => term slug) — the picker markup uses the same
+ * pairs, so the JS can compare them verbatim.
+ */
+function pzh_variation_map($product) {
+    if (!$product || !$product->is_type('variable')) {
+        return array();
+    }
+
+    $map = array();
+    foreach ($product->get_children() as $variation_id) {
+        $variation = wc_get_product($variation_id);
+        if (!$variation || $variation->get_status() !== 'publish') {
+            continue;
+        }
+        $map[] = array(
+            'variation_id' => intval($variation_id),
+            'attributes'   => $variation->get_variation_attributes(),
+            'price_html'   => $variation->get_price_html(),
+            'availability' => $variation->is_in_stock() ? __('موجود در انبار', 'piazhen') : __('ناموجود', 'piazhen'),
+            'in_stock'     => $variation->is_in_stock(),
+            'image'        => $variation->get_image_id() ? wp_get_attachment_image_url($variation->get_image_id(), 'woocommerce_single') : '',
+        );
+    }
+    return $map;
+}
+
+/**
+ * Cart snapshot for the local match path: variation_id => {key, qty} for the
+ * given parent product — mirrors the cart_qty/cart_item_key fields the AJAX
+ * match endpoint returns.
+ */
+function pzh_cart_variations($product_id) {
+    $items = array();
+    if (!WC()->cart) {
+        return $items;
+    }
+    foreach (WC()->cart->get_cart() as $key => $item) {
+        if ((int) $item['product_id'] === (int) $product_id && !empty($item['variation_id'])) {
+            $items[intval($item['variation_id'])] = array(
+                'key' => $key,
+                'qty' => (int) $item['quantity'],
+            );
+        }
+    }
+    return $items;
+}
 
 // ============================================================================
 // Single Product Helpers

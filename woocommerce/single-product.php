@@ -489,6 +489,18 @@ while (have_posts()): the_post();
             <?php echo $can_purchase ? __('افزودن به سبد', 'piazhen') : __('ناموجود', 'piazhen'); ?>
         </button>
     </div>
+
+    <?php if ($is_variable): ?>
+    <!-- Variation map: the frontend resolves attribute combos locally from this
+         (instant), falling back to the pzh_get_variation_match AJAX only when
+         the combo is not found here. -->
+    <script type="application/json" id="pzh-variation-map" data-product-id="<?php echo $product_id; ?>"><?php
+        echo wp_json_encode(array(
+            'variations' => pzh_variation_map($product),
+            'cart'       => pzh_cart_variations($product_id),
+        ));
+    ?></script>
+    <?php endif; ?>
 </main>
 
 <?php endwhile; ?>
