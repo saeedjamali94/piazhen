@@ -554,6 +554,22 @@
         display: none;
     }
 
+    // اوریجینال badge — bottom-left of the card image, every viewport
+    &__original {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        z-index: 2;
+        background: $saleBadge;
+        color: $white;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+        padding: 5px 9px;
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba($saleBadge, 0.35);
+    }
+
     // Desktop bottom row: green add-to-cart pill. The green price pill above
     // already shows the price, so the price row stays hidden on desktop.
     // margin-top: auto pins the row to the card bottom so pills align too.

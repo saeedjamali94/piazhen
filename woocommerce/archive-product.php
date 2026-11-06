@@ -378,6 +378,15 @@ $per_page     = intval($GLOBALS['wp_query']->query_vars['posts_per_page'] ?? 12)
         if ($current_category && $current_category->description) {
             $seo_content = $current_category->description;
             $seo_title   = sprintf(__('درباره دسته‌بندی %s', 'piazhen'), $current_category->name);
+        } elseif ($current_term && is_a($current_term, 'WP_Term') && trim((string) $current_term->description) !== '') {
+            // Any other product archive term — brands (product_brand) and
+            // tags (product_tag) get their own description box too.
+            $seo_content = $current_term->description;
+            if ($current_term->taxonomy === 'product_brand') {
+                $seo_title = sprintf(__('درباره برند %s', 'piazhen'), $current_term->name);
+            } else {
+                $seo_title = sprintf(__('درباره %s', 'piazhen'), $current_term->name);
+            }
         } elseif (is_shop()) {
             $shop_page_id = wc_get_page_id('shop');
             $seo_content  = $shop_page_id ? trim(get_post_field('post_content', $shop_page_id)) : '';

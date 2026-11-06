@@ -35,6 +35,9 @@ require get_template_directory() . '/inc/class-pzh-hesabfa.php';
 // Load product Hesabfa item code fields (product edit screen + variations)
 require get_template_directory() . '/inc/product-hesabfa.php';
 
+// Load the product «اوریجینال» checkbox + card badge
+require get_template_directory() . '/inc/product-original.php';
+
 // Load the one-time migration of URL-encoded variation attribute keys
 require get_template_directory() . '/inc/product-attribute-keys.php';
 
@@ -267,6 +270,10 @@ function pzh_get_product_card_html($product_id) {
 
             <?php if ($discount > 0): ?>
                 <span class="product-card__discount"><?php echo pzh_fa_num($discount); ?>٪</span>
+            <?php endif; ?>
+
+            <?php if (pzh_is_original($product_id)): ?>
+                <span class="product-card__original"><?php _e('اوریجینال', 'piazhen'); ?></span>
             <?php endif; ?>
 
             <button class="product-card__favorite <?php echo pzh_is_favorited($product_id) ? 'active' : ''; ?>"
