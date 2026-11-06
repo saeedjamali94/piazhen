@@ -673,6 +673,44 @@
 }
 
 // ============================================================================
+// Hesabfa stock line (status + count under the price)
+// ============================================================================
+
+.product-stock {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+
+    &--in {
+        background: rgba($success, 0.12);
+        color: #1d7a3f;
+    }
+
+    &--out {
+        background: rgba($danger, 0.1);
+        color: $danger;
+    }
+
+    &__label {
+        color: inherit;
+        opacity: 0.85;
+    }
+
+    &__value {
+        font-weight: 800;
+    }
+
+    &__unit {
+        opacity: 0.85;
+    }
+}
+
+// ============================================================================
 // Single Product Quantity Selector
 // Replaces the add-to-cart button while the product (or selected variation)
 // is in the cart — same green pill shape as the CTA it swaps with.

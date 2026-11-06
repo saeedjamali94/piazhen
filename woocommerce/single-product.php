@@ -221,6 +221,37 @@ while (have_posts()): the_post();
                                 <?php echo $display_price_html; ?>
                             </div>
 
+                            <!-- Hesabfa stock (status + count) — hidden when the
+                                 product isn't mapped to a Hesabfa item or the
+                                 API is unreachable -->
+                            <?php
+                            if ($is_variable) {
+                                $pzh_var_stocks = PZH_Hesabfa::stocks($product->get_children());
+                                if (!empty($pzh_var_stocks)) {
+                                    $pzh_stock_sum = 0.0;
+                                    foreach ($pzh_var_stocks as $pzh_s) {
+                                        $pzh_stock_sum += $pzh_s['quantity'];
+                                    }
+                                    $hesabfa_stock = array('quantity' => $pzh_stock_sum, 'in_stock' => $pzh_stock_sum > 0);
+                                } else {
+                                    $hesabfa_stock = null;
+                                }
+                            } else {
+                                $hesabfa_stock = PZH_Hesabfa::product_stock($product_id);
+                            }
+                            ?>
+                            <?php if ($hesabfa_stock): ?>
+                                <div class="product-stock <?php echo $hesabfa_stock['in_stock'] ? 'product-stock--in' : 'product-stock--out'; ?>">
+                                    <?php if ($hesabfa_stock['in_stock']): ?>
+                                        <span class="product-stock__label"><?php _e('موجودی:', 'piazhen'); ?></span>
+                                        <span class="product-stock__value"><?php echo pzh_fa_num(number_format($hesabfa_stock['quantity'])); ?></span>
+                                        <span class="product-stock__unit"><?php _e('عدد', 'piazhen'); ?></span>
+                                    <?php else: ?>
+                                        <span class="product-stock__value"><?php _e('ناموجود', 'piazhen'); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
                             <!-- Variations (custom AJAX picker — no plugin) -->
                             <?php if ($is_variable && !empty($variation_picker)): ?>
                                 <div class="pzh-variation-picker" data-product-id="<?php echo $product_id; ?>">

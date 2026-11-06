@@ -29,6 +29,15 @@ require get_template_directory() . '/inc/product-fx.php';
 // Load FX price sync cron (twice-daily Toman price update from live rates)
 require get_template_directory() . '/inc/fx-price-sync.php';
 
+// Load Hesabfa API client (product stock status + count)
+require get_template_directory() . '/inc/class-pzh-hesabfa.php';
+
+// Load product Hesabfa item code fields (product edit screen + variations)
+require get_template_directory() . '/inc/product-hesabfa.php';
+
+// Load the one-time migration of URL-encoded variation attribute keys
+require get_template_directory() . '/inc/product-attribute-keys.php';
+
 // Load order admin + invoice pickup details (national ID / phone for pickup orders)
 require get_template_directory() . '/inc/order-admin-fields.php';
 
@@ -1300,17 +1309,11 @@ function pzh_get_variation_popup() {
                 <div class="variation-fields">
                     <?php foreach ($attributes as $attribute_name => $options): ?>
                         <?php
-                        // Canonical variation attribute key (attribute_pa_xxx for
-                        // taxonomy attributes) — the key find_matching_product_variation()
-                        // actually compares against.
-                        $attr_tax = '';
-                        foreach ($product->get_attributes() as $product_attr) {
-                            if ($product_attr->get_name() === $attribute_name) {
-                                $attr_tax = $product_attr->get_taxonomy();
-                                break;
-                            }
-                        }
-                        $attr_key = $attr_tax ? 'attribute_' . $attr_tax : wc_variation_attribute_name($attribute_name);
+                        // Canonical variation attribute key — always
+                        // attribute_ + sanitize_title(name) (URL-encoded for
+                        // Persian names), exactly what WC stores and what
+                        // find_matching_product_variation() compares against.
+                        $attr_key = wc_variation_attribute_name($attribute_name);
 
                         $selected = isset($_REQUEST[$attr_key])
                             ? wc_clean(stripslashes($_REQUEST[$attr_key]))
@@ -1435,18 +1438,38 @@ function pzh_variation_map($product) {
         return array();
     }
 
+    $children = $product->get_children();
+
+    // One batched Hesabfa stock lookup for all variations of this product
+    $hesabfa_stocks = class_exists('PZH_Hesabfa') ? PZH_Hesabfa::stocks($children) : array();
+
     $map = array();
-    foreach ($product->get_children() as $variation_id) {
+    foreach ($children as $variation_id) {
         $variation = wc_get_product($variation_id);
         if (!$variation || $variation->get_status() !== 'publish') {
             continue;
         }
+
+        // Hesabfa stock overrides the WooCommerce availability when the
+        // variation is mapped (SKU / _pzh_hesabfa_code)
+        $hesabfa = isset($hesabfa_stocks[$variation_id]) ? $hesabfa_stocks[$variation_id] : null;
+        $in_stock = $hesabfa ? $hesabfa['in_stock'] : $variation->is_in_stock();
+        $availability = $in_stock ? __('موجود در انبار', 'piazhen') : __('ناموجود', 'piazhen');
+        if ($hesabfa && $hesabfa['in_stock']) {
+            $availability = sprintf(
+                /* translators: %s = stock count */
+                __('موجود در انبار — موجودی: %s عدد', 'piazhen'),
+                pzh_fa_num(number_format($hesabfa['quantity']))
+            );
+        }
+
         $map[] = array(
             'variation_id' => intval($variation_id),
             'attributes'   => $variation->get_variation_attributes(),
             'price_html'   => $variation->get_price_html(),
-            'availability' => $variation->is_in_stock() ? __('موجود در انبار', 'piazhen') : __('ناموجود', 'piazhen'),
-            'in_stock'     => $variation->is_in_stock(),
+            'availability' => $availability,
+            'in_stock'     => $in_stock,
+            'hesabfa_qty'  => $hesabfa ? $hesabfa['quantity'] : null,
             'image'        => $variation->get_image_id() ? wp_get_attachment_image_url($variation->get_image_id(), 'woocommerce_single') : '',
         );
     }
@@ -1691,9 +1714,12 @@ function pzh_get_variation_picker_data($product) {
             }
         }
 
-        // Full WC variation attribute key — this is what find_matching_product_variation()
-        // compares against (attribute_pa_xxx for taxonomies, attribute_<sanitized> for custom)
-        $attr_key = $tax ? 'attribute_' . $tax : wc_variation_attribute_name($name);
+        // Full WC variation attribute key — always the canonical form
+        // attribute_ + sanitize_title(name): for Persian names that is the
+        // URL-encoded key (attribute_pa_%d9%85%d8%af%d9%84), which is exactly
+        // what WC stores on variations and what find_matching_product_variation()
+        // compares against. Using the raw taxonomy name would never match.
+        $attr_key = wc_variation_attribute_name($name);
 
         $items = array();
         foreach ($options as $option) {

@@ -1009,14 +1009,24 @@ $(document).ready(function () {
             // Instant local match from the precomputed variation map
             var localMatch = pzhMatchVariationLocal($popup.data('pzh-variation-map'), attrs);
             if (localMatch) {
-                $message.html('<span class="text-success">' + localMatch.availability + '</span>');
+                // Hesabfa stock (hesabfa_qty) drives the availability + count
+                // shown here; an out-of-stock item disables the add button
+                var inStock = localMatch.in_stock;
+                $message.html('<span class="' + (inStock ? 'text-success' : 'text-danger') + '">' + localMatch.availability + '</span>');
                 if (localMatch.price_html) {
                     $price.html(localMatch.price_html);
                 }
-                $submit.prop('disabled', false)
-                       .text(pzhStr('add_to_cart'))
-                       .data('variation-id', localMatch.variation_id)
-                       .data('attributes', JSON.stringify(attrs));
+                if (inStock) {
+                    $submit.prop('disabled', false)
+                           .text(pzhStr('add_to_cart'))
+                           .data('variation-id', localMatch.variation_id)
+                           .data('attributes', JSON.stringify(attrs));
+                } else {
+                    $submit.prop('disabled', true)
+                           .text(pzhStr('out_of_stock'))
+                           .data('variation-id', '')
+                           .data('attributes', '{}');
+                }
                 return;
             }
 
@@ -1516,6 +1526,12 @@ $(document).ready(function () {
                     pzhShowSingleQtyBox(variationProductId, data.variation_id, data.cart_item_key, data.cart_qty);
                 } else {
                     pzhShowSingleAddButton();
+                    // Hesabfa/WC stock drives the buy button state
+                    if (data.in_stock) {
+                        $('.add-to-cart-single').removeClass('out-of-stock').prop('disabled', false);
+                    } else {
+                        $('.add-to-cart-single').addClass('out-of-stock').prop('disabled', true);
+                    }
                 }
             }
 

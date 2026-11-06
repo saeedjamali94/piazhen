@@ -75,6 +75,11 @@ function pzh_settings_defaults($tab) {
             'base_url'  => 'https://netarz.ir/api/fx/v1',
             'cache_ttl' => '10',
         ),
+        'hesabfa' => array(
+            'api_key'     => '',
+            'login_token' => '',
+            'cache_ttl'   => '5',
+        ),
     );
 
     return isset($defaults[$tab]) ? $defaults[$tab] : array();
@@ -850,6 +855,7 @@ function pzh_admin_settings_render() {
         'sms'     => __('پیامک', 'piazhen'),
         'instagram' => __('اینستاگرام', 'piazhen'),
         'fx'      => __('نرخ ارز', 'piazhen'),
+        'hesabfa' => __('حسابفا', 'piazhen'),
     );
 
     $current_tab = isset($_GET['tab']) && isset($tabs[$_GET['tab']]) ? $_GET['tab'] : 'general';
@@ -895,6 +901,9 @@ function pzh_admin_settings_render() {
         ),
         'fx' => array(
             'api_key' => 'text', 'base_url' => 'url', 'cache_ttl' => 'number',
+        ),
+        'hesabfa' => array(
+            'api_key' => 'text', 'login_token' => 'text', 'cache_ttl' => 'number',
         ),
     );
 
@@ -1090,6 +1099,12 @@ function pzh_admin_settings_render() {
                                 </tr>
                                 <?php
                             endif;
+                            break;
+
+                        case 'hesabfa':
+                            pzh_render_text_field('hesabfa', 'api_key', __('کلید API حسابفا', 'piazhen'), 'text', __('از پنل حسابفا → تنظیمات مالی → API دریافت می‌شود — فقط در دیتابیس ذخیره می‌شود.', 'piazhen'), 'ltr');
+                            pzh_render_text_field('hesabfa', 'login_token', __('توکن ورود حسابفا', 'piazhen'), 'text', __('توکن ورود (Login Token) حسابفا — فقط در دیتابیس ذخیره می‌شود.', 'piazhen'), 'ltr');
+                            pzh_render_text_field('hesabfa', 'cache_ttl', __('مدت کش موجودی (دقیقه)', 'piazhen'), 'number', __('موجودی کالاها این مدت در کش نگه داشته می‌شود تا صفحه برای هر بازدید منتظر API حسابفا نماند.', 'piazhen'), 'ltr');
                             break;
                     }
                     ?>
