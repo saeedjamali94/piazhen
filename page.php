@@ -8,7 +8,7 @@ get_header(); ?>
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <article class="contentBox">
+            <article class="contentBox py-5 my-5">
                 <?php the_content(); ?>
             </article>
         </div>
