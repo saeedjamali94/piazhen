@@ -1222,12 +1222,22 @@
         padding: 12px 0 0;
 
         .hero-swiper {
-            min-height: 360px;
+            height: auto;
+            min-height: 0;
             border-radius: 24px;
         }
 
         &__main-banner {
-            min-height: 360px;
+            min-height: 0;
+
+            // Full image: let the img drive the slide height (no fixed
+            // height, no cover cropping) so the whole banner is visible.
+            .heroSection__main-img {
+                position: static;
+                width: 100%;
+                height: auto;
+                object-fit: unset;
+            }
         }
 
         &__tile {
@@ -1349,20 +1359,20 @@
 // ============================================================================
 
 @media (max-width: $bp-sm) {
-    // Hero banner (mirror the ≤767 block's selectors so these win; min-height
-    // must be overridden too — it beats height regardless of order)
+    // Hero banner (mirror the ≤767 block's selectors so these win; keep the
+    // mobile auto-height behaviour — the slide grows with the full image)
     .heroSection {
         padding-top: 14px;
 
         .hero-swiper {
-            height: 210px;
-            min-height: 210px;
+            height: auto;
+            min-height: 0;
             border-radius: 12px;
             margin-bottom: 1.5rem;
         }
 
         &__main-banner {
-            min-height: 210px;
+            min-height: 0;
         }
 
         .heroSection__tile {
