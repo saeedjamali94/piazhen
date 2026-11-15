@@ -262,6 +262,7 @@ function pzh_get_product_card_html($product_id) {
     $discount    = pzh_get_discount_percentage($product);
     $is_variable = $product->is_type('variable');
     $in_stock    = $product->is_in_stock();
+    $card_price  = pzh_get_product_price($product);
 
     ob_start();
     ?>
@@ -306,11 +307,11 @@ function pzh_get_product_card_html($product_id) {
             <div class="product-card__price-row">
                 <?php
                 $regular_price = $product->is_on_sale() ? pzh_get_product_regular_price($product) : 0;
-                if ($regular_price > 0 && $regular_price > floatval($product->get_price())):
+                if ($regular_price > 0 && $regular_price > $card_price):
                     ?>
                     <del><?php echo wc_price($regular_price); ?></del>
                 <?php endif; ?>
-                <?php echo wc_price($product->get_price()); ?>
+                <?php echo wc_price($card_price); ?>
             </div>
 
             <?php if (!$in_stock): ?>
@@ -325,14 +326,14 @@ function pzh_get_product_card_html($product_id) {
                         data-product-id="<?php echo esc_attr($product_id); ?>"
                         aria-label="<?php _e('انتخاب و افزودن به سبد خرید', 'piazhen'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                    <span class="product-card__add-text"><?php echo wc_price($product->get_price()); ?></span>
+                    <span class="product-card__add-text"><?php echo wc_price($card_price); ?></span>
                 </button>
             <?php else: ?>
                 <button type="button" class="product-card__add product-card__add-to-cart"
                         data-product-id="<?php echo esc_attr($product_id); ?>"
                         aria-label="<?php _e('افزودن به سبد خرید', 'piazhen'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                    <span class="product-card__add-text"><?php echo wc_price($product->get_price()); ?></span>
+                    <span class="product-card__add-text"><?php echo wc_price($card_price); ?></span>
                 </button>
             <?php endif; ?>
         </div>
@@ -360,7 +361,7 @@ function pzh_get_discount_percentage($product) {
     if (!$product->is_on_sale()) return 0;
 
     $regular_price = pzh_get_product_regular_price($product);
-    $sale_price    = floatval($product->get_price());
+    $sale_price    = pzh_get_product_price($product);
 
     if ($regular_price > 0 && $sale_price > 0) {
         return round((($regular_price - $sale_price) / $regular_price) * 100);
@@ -385,6 +386,34 @@ function pzh_get_product_regular_price($product) {
             $variation = wc_get_product($child_id);
             if ($variation && '' !== $variation->get_regular_price()) {
                 $prices[] = floatval($variation->get_regular_price());
+            }
+        }
+        if (!empty($prices)) {
+            return min($prices);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Current price that works for every product type. Variable products can
+ * return an empty price from get_price() when the parent _price meta was
+ * never synced (imported data) — use the min price across their variations
+ * instead, mirroring pzh_get_product_regular_price().
+ */
+function pzh_get_product_price($product) {
+    $price = floatval($product->get_price());
+    if ($price > 0) {
+        return $price;
+    }
+
+    if ($product->is_type('variable')) {
+        $prices = array();
+        foreach ($product->get_visible_children() as $child_id) {
+            $variation = wc_get_product($child_id);
+            if ($variation && '' !== $variation->get_price()) {
+                $prices[] = floatval($variation->get_price());
             }
         }
         if (!empty($prices)) {
